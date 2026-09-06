@@ -7,6 +7,8 @@ import {
   CalendarDays,
   CarFront,
   Check,
+  ChevronLeft,
+  ChevronRight,
   ChevronDown,
   CircleDot,
   Cog,
@@ -1199,6 +1201,7 @@ export default function Home() {
           car={selectedCar}
           lang={lang}
           mode={mode}
+          inCart={cart.includes(selectedCar.id)}
           close={() => setSelectedCar(null)}
           add={() =>
             setCart((s) =>
@@ -1751,14 +1754,21 @@ function VehicleDetails({
   mode,
   close,
   add,
+  inCart,
 }: {
   car: Car;
   lang: Lang;
   mode: 'buy' | 'rent' | 'parts';
   close: () => void;
   add: () => void;
+  inCart: boolean;
 }) {
   const u = ui[lang];
+  const [photoView, setPhotoView] = useState(0);
+  const [added, setAdded] = useState(inCart);
+  const [contactOpen, setContactOpen] = useState(false);
+  const [contactSent, setContactSent] = useState(false);
+  const [viewerOpen, setViewerOpen] = useState(false);
   const labels = {
     en: {
       year: 'Year',
@@ -1772,6 +1782,17 @@ function VehicleDetails({
       location: 'Location',
       price: 'Price',
       desc: 'A carefully selected vehicle with transparent details, verified documents and support from our regional team.',
+      gallery: ['Exterior', 'Front detail', 'Rear detail'],
+      viewAll: 'View all photos',
+      photos: 'photos',
+      contactTitle: 'Contact this seller',
+      contactName: 'Your name',
+      contactPhone: 'Phone or WhatsApp',
+      contactMessage: 'Message',
+      send: 'Send request',
+      sent: 'Request sent. The seller will contact you shortly.',
+      added: 'Added to cart',
+      sections: ['Overview', 'Equipment', 'Seller'],
     },
     fr: {
       year: 'Année',
@@ -1785,6 +1806,17 @@ function VehicleDetails({
       location: 'Localisation',
       price: 'Prix',
       desc: 'Un véhicule soigneusement sélectionné, avec des informations claires, des documents vérifiés et l’accompagnement de notre équipe régionale.',
+      gallery: ['Extérieur', 'Détail avant', 'Détail arrière'],
+      viewAll: 'Voir toutes les photos',
+      photos: 'photos',
+      contactTitle: 'Contacter ce vendeur',
+      contactName: 'Votre nom',
+      contactPhone: 'Téléphone ou WhatsApp',
+      contactMessage: 'Message',
+      send: 'Envoyer la demande',
+      sent: 'Demande envoyée. Le vendeur vous contactera rapidement.',
+      added: 'Ajouté au panier',
+      sections: ['Aperçu', 'Équipements', 'Vendeur'],
     },
     es: {
       year: 'Año',
@@ -1798,6 +1830,17 @@ function VehicleDetails({
       location: 'Ubicación',
       price: 'Precio',
       desc: 'Un vehículo seleccionado cuidadosamente, con información transparente, documentos verificados y asistencia de nuestro equipo regional.',
+      gallery: ['Exterior', 'Detalle frontal', 'Detalle trasero'],
+      viewAll: 'Ver todas las fotos',
+      photos: 'fotos',
+      contactTitle: 'Contactar con este vendedor',
+      contactName: 'Tu nombre',
+      contactPhone: 'Teléfono o WhatsApp',
+      contactMessage: 'Mensaje',
+      send: 'Enviar solicitud',
+      sent: 'Solicitud enviada. El vendedor se pondrá en contacto pronto.',
+      added: 'Añadido al carrito',
+      sections: ['Resumen', 'Equipamiento', 'Vendedor'],
     },
   }[lang];
   const specs = [
@@ -1820,13 +1863,77 @@ function VehicleDetails({
           <X />
         </button>
         <div className="detail-gallery">
-          <img src={car.image} alt={`${car.make} ${car.model}`} />
+          <img
+            className={`photo-view-${photoView}`}
+            src={car.image}
+            alt={`${car.make} ${car.model}`}
+          />
+          <button
+            className="view-all-photos"
+            onClick={() => setViewerOpen(true)}
+          >
+            {labels.viewAll} · 3 {labels.photos}
+          </button>
           <div>
-            <img src={car.image} alt="" />
-            <img src={car.image} alt="" />
-            <img src={car.image} alt="" />
+            {labels.gallery.map((label, i) => (
+              <button
+                key={label}
+                className={photoView === i ? 'active' : ''}
+                onClick={() => setPhotoView(i)}
+              >
+                <img src={car.image} alt="" />
+                <span>{label}</span>
+              </button>
+            ))}
           </div>
         </div>
+        {viewerOpen && (
+          <div className="photo-viewer">
+            <button
+              className="viewer-close"
+              onClick={() => setViewerOpen(false)}
+              aria-label={u.close}
+            >
+              <X />
+            </button>
+            <button
+              className="viewer-arrow prev"
+              onClick={() => setPhotoView((photoView + 2) % 3)}
+              aria-label="Previous photo"
+            >
+              <ChevronLeft />
+            </button>
+            <figure>
+              <img
+                className={`photo-view-${photoView}`}
+                src={car.image}
+                alt={`${car.make} ${car.model} — ${labels.gallery[photoView]}`}
+              />
+              <figcaption>
+                <span>{labels.gallery[photoView]}</span>
+                <b>{photoView + 1} / 3</b>
+              </figcaption>
+            </figure>
+            <button
+              className="viewer-arrow next"
+              onClick={() => setPhotoView((photoView + 1) % 3)}
+              aria-label="Next photo"
+            >
+              <ChevronRight />
+            </button>
+            <div>
+              {labels.gallery.map((x, i) => (
+                <button
+                  key={x}
+                  className={photoView === i ? 'active' : ''}
+                  onClick={() => setPhotoView(i)}
+                >
+                  <img className={`photo-view-${i}`} src={car.image} alt={x} />
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
         <div className="detail-summary">
           <p className="auth-kicker">{u.inspected}</p>
           <h2>
@@ -1842,16 +1949,78 @@ function VehicleDetails({
             <MapPin />
             {car.location}
           </div>
-          <button onClick={add}>
-            {mode === 'rent' ? u.book : u.addCart}
-            <ShoppingCart />
+          <button
+            className={added ? 'detail-added' : ''}
+            onClick={() => {
+              add();
+              setAdded(true);
+            }}
+          >
+            {added ? labels.added : mode === 'rent' ? u.book : u.addCart}
+            {added ? <Check /> : <ShoppingCart />}
           </button>
-          <button className="contact-seller">
+          <button
+            className="contact-seller"
+            onClick={() => setContactOpen((v) => !v)}
+            aria-expanded={contactOpen}
+          >
             {u.contact}
-            <ArrowRight />
+            {contactOpen ? <X /> : <ArrowRight />}
           </button>
+          {contactOpen && (
+            <form
+              className="seller-contact"
+              onSubmit={(e) => {
+                e.preventDefault();
+                setContactSent(true);
+              }}
+            >
+              {contactSent ? (
+                <p>
+                  <Check />
+                  {labels.sent}
+                </p>
+              ) : (
+                <>
+                  <h3>{labels.contactTitle}</h3>
+                  <label>
+                    {labels.contactName}
+                    <input required />
+                  </label>
+                  <label>
+                    {labels.contactPhone}
+                    <input required type="tel" />
+                  </label>
+                  <label>
+                    {labels.contactMessage}
+                    <textarea defaultValue={`${car.make} ${car.model}`} />
+                  </label>
+                  <button>
+                    {labels.send}
+                    <ArrowRight />
+                  </button>
+                </>
+              )}
+            </form>
+          )}
         </div>
-        <div className="detail-specs">
+        <nav className="detail-nav">
+          {labels.sections.map((x, i) => (
+            <button
+              key={x}
+              onClick={() =>
+                document
+                  .getElementById(
+                    ['detail-overview', 'detail-equipment', 'detail-seller'][i],
+                  )
+                  ?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+              }
+            >
+              {x}
+            </button>
+          ))}
+        </nav>
+        <div className="detail-specs" id="detail-overview">
           <h3>{u.overview}</h3>
           <div>
             {specs.map(([k, v]) => (
@@ -1862,7 +2031,7 @@ function VehicleDetails({
             ))}
           </div>
         </div>
-        <div className="detail-equipment">
+        <div className="detail-equipment" id="detail-equipment">
           <h3>{u.equipment}</h3>
           <div>
             {[
@@ -1882,7 +2051,7 @@ function VehicleDetails({
             ))}
           </div>
         </div>
-        <div className="detail-seller">
+        <div className="detail-seller" id="detail-seller">
           <div>
             <span>JF</span>
             <div>
