@@ -875,6 +875,294 @@ footer div a {
   }
 }
 
+/* Parts catalog imagery and vehicle details */
+.parts-market-image {
+  width: 100%;
+  height: 220px;
+  object-fit: cover;
+  border-radius: 16px;
+  margin: 24px 0 12px;
+  box-shadow: 0 16px 34px #193a3420;
+}
+.parts-categories {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 7px;
+}
+.parts-categories span {
+  background: #fff8ec;
+  border: 1px solid #ead9bd;
+  border-radius: 9px;
+  padding: 8px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 9px;
+  font-weight: 750;
+}
+.parts-categories b {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--yellow);
+  display: grid;
+  place-items: center;
+  color: var(--earth);
+}
+.details-hitbox {
+  position: absolute;
+  inset: 0;
+  border: 0;
+  background: transparent;
+  z-index: 1;
+}
+.photo .badge,
+.photo .heart {
+  z-index: 2;
+}
+.photo .heart {
+  position: absolute;
+}
+.vehicle-layer {
+  justify-content: center;
+  align-items: center;
+  padding: 18px;
+}
+.vehicle-detail {
+  width: min(1180px, 100%);
+  max-height: calc(100vh - 36px);
+  overflow: auto;
+  background: #fffdf8;
+  border-radius: 20px;
+  display: grid;
+  grid-template-columns: 1.2fr 0.8fr;
+  position: relative;
+  box-shadow: 0 30px 90px #0d272366;
+}
+.detail-close {
+  position: absolute;
+  right: 18px;
+  top: 18px;
+  z-index: 5;
+  width: 40px;
+  height: 40px;
+  border: 0;
+  border-radius: 50%;
+  background: white;
+  display: grid;
+  place-items: center;
+  box-shadow: 0 6px 20px #15372f26;
+}
+.detail-gallery {
+  background: #f1eadf;
+  padding: 18px;
+}
+.detail-gallery > img {
+  width: 100%;
+  height: 390px;
+  object-fit: cover;
+  border-radius: 14px;
+}
+.detail-gallery > div {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  margin-top: 8px;
+}
+.detail-gallery > div img {
+  width: 100%;
+  height: 85px;
+  object-fit: cover;
+  border-radius: 8px;
+}
+.detail-gallery > div img:nth-child(2) {
+  object-position: left;
+}
+.detail-gallery > div img:nth-child(3) {
+  object-position: right;
+}
+.detail-summary {
+  padding: 48px 38px;
+}
+.detail-summary h2 {
+  font-family: Georgia, serif;
+  font-size: 36px;
+  font-weight: 500;
+  line-height: 1.05;
+  margin: 10px 0;
+}
+.detail-summary > p:not(.auth-kicker) {
+  font-size: 12px;
+  line-height: 1.65;
+  color: var(--muted);
+}
+.detail-summary > strong {
+  display: block;
+  color: var(--coral);
+  font-size: 27px;
+  margin: 24px 0 12px;
+}
+.detail-location {
+  display: flex;
+  gap: 7px;
+  align-items: center;
+  color: var(--muted);
+  font-size: 11px;
+  margin-bottom: 24px;
+}
+.detail-location svg {
+  width: 15px;
+}
+.detail-summary > button {
+  width: 100%;
+  border: 0;
+  border-radius: 10px;
+  padding: 13px;
+  background: var(--forest);
+  color: white;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 8px;
+}
+.detail-summary > button svg {
+  width: 16px;
+}
+.detail-summary .contact-seller {
+  background: white;
+  color: var(--forest);
+  border: 1px solid var(--forest);
+}
+.detail-specs,
+.detail-equipment,
+.detail-seller {
+  grid-column: 1/3;
+  padding: 28px 36px;
+  border-top: 1px solid var(--line);
+}
+.detail-specs h3,
+.detail-equipment h3,
+.detail-seller h3 {
+  font-family: Georgia, serif;
+  font-size: 22px;
+  font-weight: 500;
+  margin: 0 0 18px;
+}
+.detail-specs > div {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+}
+.detail-specs span {
+  background: #f7f4ec;
+  border-radius: 9px;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.detail-specs small {
+  font-size: 9px;
+  color: var(--muted);
+}
+.detail-specs b {
+  font-size: 12px;
+}
+.detail-equipment > div {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 14px;
+}
+.detail-equipment span {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 10px;
+}
+.detail-equipment svg {
+  width: 16px;
+  color: var(--coral);
+}
+.detail-seller {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.detail-seller > div {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.detail-seller > div > span {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  background: var(--forest);
+  color: white;
+  display: grid;
+  place-items: center;
+  font-weight: 900;
+}
+.detail-seller h3 {
+  margin: 0;
+  font-size: 18px;
+}
+.detail-seller p {
+  margin: 3px 0;
+  color: var(--muted);
+  font-size: 10px;
+}
+.detail-seller > b {
+  color: var(--coral);
+}
+@media (max-width: 760px) {
+  .parts-market-image {
+    height: 180px;
+  }
+  .parts-categories {
+    grid-template-columns: 1fr 1fr;
+  }
+  .vehicle-layer {
+    padding: 0;
+  }
+  .vehicle-detail {
+    height: 100%;
+    max-height: none;
+    border-radius: 0;
+    display: block;
+  }
+  .detail-gallery {
+    padding: 0;
+  }
+  .detail-gallery > img {
+    height: 280px;
+    border-radius: 0;
+  }
+  .detail-gallery > div {
+    display: none;
+  }
+  .detail-summary {
+    padding: 28px 20px;
+  }
+  .detail-summary h2 {
+    font-size: 30px;
+  }
+  .detail-specs,
+  .detail-equipment,
+  .detail-seller {
+    padding: 24px 20px;
+  }
+  .detail-specs > div,
+  .detail-equipment > div {
+    grid-template-columns: 1fr 1fr;
+  }
+  .detail-seller {
+    display: flex;
+  }
+}
+
 /* Marketplace expansion */
 .topbar nav button {
   border: 0;

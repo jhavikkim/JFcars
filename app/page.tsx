@@ -308,6 +308,101 @@ const formValue = (data: FormData, key: string, fallback = '') => {
   const value = data.get(key);
   return typeof value === 'string' && value ? value : fallback;
 };
+const ui = {
+  en: {
+    buyCar: 'Buy a car',
+    rentCar: 'Rent a car',
+    parts: 'Car parts',
+    cart: 'Cart',
+    signIn: 'Sign in',
+    buy: 'Buy',
+    rent: 'Rent',
+    partsDemand: 'Parts on demand',
+    allMakes: 'All makes',
+    models: 'Models',
+    refine: 'Quick refine',
+    clear: 'Clear all',
+    selected: 'Selected filters',
+    insurance: 'Insurance included',
+    options: 'Flexible options',
+    added: 'Added',
+    inCart: 'In cart',
+    book: 'Book now',
+    addCart: 'Add to cart',
+    details: 'View details',
+    overview: 'Overview',
+    equipment: 'Equipment',
+    seller: 'Seller information',
+    contact: 'Contact seller',
+    inspected: '150-point inspected',
+    noAccident: 'No major accident reported',
+    original: 'Original parts verified',
+    service: 'Service history available',
+    close: 'Close details',
+  },
+  fr: {
+    buyCar: 'Acheter une voiture',
+    rentCar: 'Louer une voiture',
+    parts: 'Pièces auto',
+    cart: 'Panier',
+    signIn: 'Se connecter',
+    buy: 'Acheter',
+    rent: 'Louer',
+    partsDemand: 'Pièces sur demande',
+    allMakes: 'Toutes les marques',
+    models: 'Modèles',
+    refine: 'Affiner',
+    clear: 'Tout effacer',
+    selected: 'Filtres sélectionnés',
+    insurance: 'Assurance incluse',
+    options: 'Options flexibles',
+    added: 'Ajouté',
+    inCart: 'Dans le panier',
+    book: 'Réserver',
+    addCart: 'Ajouter au panier',
+    details: 'Voir les détails',
+    overview: 'Aperçu',
+    equipment: 'Équipements',
+    seller: 'Informations vendeur',
+    contact: 'Contacter le vendeur',
+    inspected: 'Inspection en 150 points',
+    noAccident: 'Aucun accident majeur signalé',
+    original: 'Pièces d’origine vérifiées',
+    service: 'Historique d’entretien disponible',
+    close: 'Fermer les détails',
+  },
+  es: {
+    buyCar: 'Comprar un coche',
+    rentCar: 'Alquilar un coche',
+    parts: 'Repuestos',
+    cart: 'Carrito',
+    signIn: 'Iniciar sesión',
+    buy: 'Comprar',
+    rent: 'Alquilar',
+    partsDemand: 'Repuestos bajo pedido',
+    allMakes: 'Todas las marcas',
+    models: 'Modelos',
+    refine: 'Afinar',
+    clear: 'Borrar todo',
+    selected: 'Filtros seleccionados',
+    insurance: 'Seguro incluido',
+    options: 'Opciones flexibles',
+    added: 'Añadido',
+    inCart: 'En el carrito',
+    book: 'Reservar',
+    addCart: 'Añadir al carrito',
+    details: 'Ver detalles',
+    overview: 'Resumen',
+    equipment: 'Equipamiento',
+    seller: 'Información del vendedor',
+    contact: 'Contactar al vendedor',
+    inspected: 'Inspección de 150 puntos',
+    noAccident: 'Sin accidentes graves registrados',
+    original: 'Piezas originales verificadas',
+    service: 'Historial de mantenimiento disponible',
+    close: 'Cerrar detalles',
+  },
+} as const;
 export default function Home() {
   const [lang, setLang] = useState<Lang>('en'),
     [query, setQuery] = useState(''),
@@ -326,6 +421,7 @@ export default function Home() {
   const [saved, setSaved] = useState<number[]>([]),
     [compare, setCompare] = useState<number[]>([]),
     [compareOpen, setCompareOpen] = useState(false),
+    [selectedCar, setSelectedCar] = useState<Car | null>(null),
     [cart, setCart] = useState<number[]>([]),
     [inventory, setInventory] = useState<Car[]>(cars),
     [mobileFilters, setMobileFilters] = useState(false),
@@ -339,7 +435,8 @@ export default function Home() {
     ),
     [authMode, setAuthMode] = useState<'signin' | 'signup'>('signin'),
     [user, setUser] = useState<{ name: string; email: string } | null>(null);
-  const t = copy[lang];
+  const t = copy[lang],
+    u = ui[lang];
   const filtered = useMemo(() => {
     let r = inventory.filter(
       (c) =>
@@ -454,19 +551,19 @@ export default function Home() {
             className={mode === 'buy' && !heroVisible ? 'active' : ''}
             onClick={() => headerNavigate('buy')}
           >
-            Buy a car
+            {u.buyCar}
           </button>
           <button
             className={mode === 'rent' && !heroVisible ? 'active' : ''}
             onClick={() => headerNavigate('rent')}
           >
-            Rent a car
+            {u.rentCar}
           </button>
           <button
             className={mode === 'parts' && !heroVisible ? 'active' : ''}
             onClick={() => headerNavigate('parts')}
           >
-            Car parts
+            {u.parts}
           </button>
           <button
             onClick={() => {
@@ -496,7 +593,7 @@ export default function Home() {
             onClick={() => setPanel('cart')}
           >
             <ShoppingCart size={18} />
-            <span>Cart</span>
+            <span>{u.cart}</span>
             {cart.length > 0 && <b>{cart.length}</b>}
           </button>
           <button
@@ -505,7 +602,7 @@ export default function Home() {
             onClick={() => setPanel(user ? 'profile' : 'auth')}
           >
             <User size={18} />
-            <span>{user ? user.name.split(' ')[0] : 'Sign in'}</span>
+            <span>{user ? user.name.split(' ')[0] : u.signIn}</span>
           </button>
           <button className="sell">
             {t.sell}
@@ -528,7 +625,7 @@ export default function Home() {
               setMobileMenu(false);
             }}
           >
-            Buy a car
+            {u.buyCar}
           </button>
           <button
             onClick={() => {
@@ -536,7 +633,7 @@ export default function Home() {
               setMobileMenu(false);
             }}
           >
-            Rent a car
+            {u.rentCar}
           </button>
           <button
             onClick={() => {
@@ -544,7 +641,7 @@ export default function Home() {
               setMobileMenu(false);
             }}
           >
-            Car parts
+            {u.parts}
           </button>
           <button
             onClick={() => {
@@ -650,21 +747,21 @@ export default function Home() {
             onClick={() => setMode('buy')}
           >
             <CarFront />
-            Buy
+            {u.buy}
           </button>
           <button
             className={mode === 'rent' ? 'active' : ''}
             onClick={() => setMode('rent')}
           >
             <KeyRound />
-            Rent
+            {u.rent}
           </button>
           <button
             className={mode === 'parts' ? 'active' : ''}
             onClick={() => setMode('parts')}
           >
             <Cog />
-            Parts on demand
+            {u.partsDemand}
           </button>
         </div>
         <div className="brand-strip">
@@ -673,7 +770,7 @@ export default function Home() {
             onClick={() => chooseBrand('All')}
           >
             <span className="all-brand">ALL</span>
-            <b>All makes</b>
+            <b>{u.allMakes}</b>
           </button>
           {brands.slice(0, 7).map((b) => (
             <button
@@ -694,7 +791,7 @@ export default function Home() {
         </div>
         {brand !== 'All' && (
           <div className="model-row">
-            <span>Models</span>
+            <span>{u.models}</span>
             <button
               className={model === 'All' ? 'active' : ''}
               onClick={() => setModel('All')}
@@ -713,17 +810,17 @@ export default function Home() {
           </div>
         )}
         <div className="quick-filters">
-          <span>Quick refine</span>
+          <span>{u.refine}</span>
           <button onClick={() => setMaxPrice('20000000')}>
             Under 20M FCFA
           </button>
           <button onClick={() => setBody('SUV')}>SUV</button>
           <button onClick={() => setFuel('Electric')}>Electric</button>
-          <button onClick={reset}>Clear all</button>
+          <button onClick={reset}>{u.clear}</button>
         </div>
         {activeFilters.length > 0 && (
           <div className="selected-filters">
-            <b>Selected filters</b>
+            <b>{u.selected}</b>
             {activeFilters.map(([label, clear]) => (
               <button key={label} onClick={clear}>
                 {label}
@@ -731,13 +828,13 @@ export default function Home() {
               </button>
             ))}
             <button className="clear-filters" onClick={reset}>
-              Clear all
+              {u.clear}
             </button>
           </div>
         )}
       </section>
       {mode === 'parts' ? (
-        <PartsPanel />
+        <PartsPanel lang={lang} />
       ) : (
         <section className="market">
           <aside className={mobileFilters ? 'filters open' : 'filters'}>
@@ -941,6 +1038,11 @@ export default function Home() {
                   <article className="car-card" key={car.id}>
                     <div className="photo">
                       <img src={car.image} alt={`${car.make} ${car.model}`} />
+                      <button
+                        className="details-hitbox"
+                        aria-label={`${u.details}: ${car.make} ${car.model}`}
+                        onClick={() => setSelectedCar(car)}
+                      />
                       <span className="badge">
                         {mode === 'rent' ? 'Free cancellation' : car.badge}
                       </span>
@@ -988,11 +1090,10 @@ export default function Home() {
                         </span>
                       </div>
                       <div className="verified">
-                        <Check />{' '}
-                        {mode === 'rent' ? 'Insurance included' : t.trusted}
+                        <Check /> {mode === 'rent' ? u.insurance : t.trusted}
                         <span>
                           {mode === 'rent'
-                            ? 'Unlimited options'
+                            ? u.options
                             : `${money(Math.round(car.price / 72), lang)} ${t.monthly}`}
                         </span>
                       </div>
@@ -1014,7 +1115,7 @@ export default function Home() {
                           }
                         >
                           <GitCompareArrows />
-                          {compare.includes(car.id) ? 'Added' : t.compare}
+                          {compare.includes(car.id) ? u.added : t.compare}
                         </button>
                         <button
                           className={
@@ -1027,10 +1128,10 @@ export default function Home() {
                           }
                         >
                           {cart.includes(car.id)
-                            ? 'In cart'
+                            ? u.inCart
                             : mode === 'rent'
-                              ? 'Book now'
-                              : 'Add to cart'}
+                              ? u.book
+                              : u.addCart}
                           <ShoppingCart />
                         </button>
                       </div>
@@ -1091,6 +1192,19 @@ export default function Home() {
           }}
           add={(id) => setCart((s) => (s.includes(id) ? s : [...s, id]))}
           lang={lang}
+        />
+      )}
+      {selectedCar && (
+        <VehicleDetails
+          car={selectedCar}
+          lang={lang}
+          mode={mode}
+          close={() => setSelectedCar(null)}
+          add={() =>
+            setCart((s) =>
+              s.includes(selectedCar.id) ? s : [...s, selectedCar.id],
+            )
+          }
         />
       )}
       {panel && panel !== 'admin' && (
@@ -1162,31 +1276,105 @@ function Filter({
     </div>
   );
 }
-function PartsPanel() {
+const partCopy = {
+  en: {
+    k: 'PARTS ON DEMAND',
+    h: 'Tell us the part. We’ll find the match.',
+    p: 'New, used, original or compatible—verified sellers respond directly.',
+    s: ['Describe your part', 'Get verified offers', 'Choose your match'],
+    received: 'Request received.',
+    receivedP:
+      'We’ll match your part with verified sellers and notify you when offers arrive.',
+    again: 'Send another request',
+    vehicle: 'Vehicle make and model',
+    part: 'Part needed',
+    condition: 'Part condition',
+    delivery: 'Delivery country',
+    details: 'Details',
+    send: 'Send my request',
+    fast: 'Usually matched within 24 hours',
+    cats: ['Lighting', 'Brakes', 'Batteries', 'Service parts'],
+  },
+  fr: {
+    k: 'PIÈCES SUR DEMANDE',
+    h: 'Dites-nous la pièce. Nous trouvons la bonne.',
+    p: 'Neuve, d’occasion, d’origine ou compatible—des vendeurs vérifiés vous répondent.',
+    s: [
+      'Décrivez votre pièce',
+      'Recevez des offres vérifiées',
+      'Choisissez la bonne offre',
+    ],
+    received: 'Demande reçue.',
+    receivedP:
+      'Nous rechercherons votre pièce et vous informerons dès réception des offres.',
+    again: 'Envoyer une autre demande',
+    vehicle: 'Marque et modèle du véhicule',
+    part: 'Pièce recherchée',
+    condition: 'État de la pièce',
+    delivery: 'Pays de livraison',
+    details: 'Détails',
+    send: 'Envoyer ma demande',
+    fast: 'Réponse habituelle sous 24 heures',
+    cats: ['Éclairage', 'Freinage', 'Batteries', 'Entretien'],
+  },
+  es: {
+    k: 'REPUESTOS BAJO PEDIDO',
+    h: 'Dinos qué pieza buscas. Encontraremos la adecuada.',
+    p: 'Nueva, usada, original o compatible—vendedores verificados te responden.',
+    s: [
+      'Describe la pieza',
+      'Recibe ofertas verificadas',
+      'Elige la mejor opción',
+    ],
+    received: 'Solicitud recibida.',
+    receivedP: 'Buscaremos la pieza y te avisaremos cuando lleguen ofertas.',
+    again: 'Enviar otra solicitud',
+    vehicle: 'Marca y modelo del vehículo',
+    part: 'Repuesto necesario',
+    condition: 'Estado de la pieza',
+    delivery: 'País de entrega',
+    details: 'Detalles',
+    send: 'Enviar mi solicitud',
+    fast: 'Respuesta habitual en 24 horas',
+    cats: ['Iluminación', 'Frenos', 'Baterías', 'Mantenimiento'],
+  },
+} as const;
+function PartsPanel({ lang }: { lang: Lang }) {
   const [sent, setSent] = useState(false);
+  const p = partCopy[lang];
   return (
     <section className="parts-panel">
       <div className="parts-intro">
         <span>
-          <Cog /> PARTS ON DEMAND
+          <Cog /> {p.k}
         </span>
-        <h2>Tell us the part. We’ll find the match.</h2>
-        <p>
-          New, used, original or compatible—our verified sellers respond
-          directly to your request.
-        </p>
+        <h2>{p.h}</h2>
+        <p>{p.p}</p>
+        <img
+          className="parts-market-image"
+          src="/jfcars-parts-market.png"
+          alt="Headlamp, brakes, battery and service parts"
+        />
+        <div className="parts-categories">
+          {p.cats.map((x, i) => (
+            <span key={x}>
+              <b>{i + 1}</b>
+              {x}
+            </span>
+          ))}
+        </div>
         <div className="parts-steps">
           <div>
             <b>1</b>
-            <span>Describe your part</span>
+            <span>{p.s[0]}</span>
           </div>
           <div>
             <b>2</b>
-            <span>Get verified offers</span>
+            <span>{p.s[1]}</span>
           </div>
           <div>
             <b>3</b>
-            <span>Choose your match</span>
+            <span>{p.s[2]}</span>
           </div>
         </div>
       </div>
@@ -1195,12 +1383,9 @@ function PartsPanel() {
           <span>
             <Check />
           </span>
-          <h3>Request received.</h3>
-          <p>
-            We’ll match your part with verified sellers and notify you when
-            offers arrive.
-          </p>
-          <button onClick={() => setSent(false)}>Send another request</button>
+          <h3>{p.received}</h3>
+          <p>{p.receivedP}</p>
+          <button onClick={() => setSent(false)}>{p.again}</button>
         </div>
       ) : (
         <form
@@ -1210,16 +1395,16 @@ function PartsPanel() {
           }}
         >
           <label>
-            Vehicle make and model
+            {p.vehicle}
             <input required placeholder="e.g. 2020 Audi A4" />
           </label>
           <label>
-            Part needed
+            {p.part}
             <input required placeholder="e.g. Left LED headlight" />
           </label>
           <div>
             <label>
-              Part condition
+              {p.condition}
               <select>
                 <option>Any condition</option>
                 <option>New</option>
@@ -1228,7 +1413,7 @@ function PartsPanel() {
               </select>
             </label>
             <label>
-              Delivery country
+              {p.delivery}
               <select>
                 <option>Republic of the Congo</option>
                 <option>Cabinda (Angola)</option>
@@ -1239,14 +1424,14 @@ function PartsPanel() {
             </label>
           </div>
           <label>
-            Details
+            {p.details}
             <textarea placeholder="Add a part number, VIN, color or anything helpful…" />
           </label>
           <button>
-            Send my request <ArrowRight />
+            {p.send} <ArrowRight />
           </button>
           <small>
-            <CircleDot /> Usually matched within 24 hours
+            <CircleDot /> {p.fast}
           </small>
         </form>
       )}
@@ -1557,6 +1742,157 @@ function ProfileEmpty({
       <Icon />
       <h3>{title}</h3>
       <p>{text}</p>
+    </div>
+  );
+}
+function VehicleDetails({
+  car,
+  lang,
+  mode,
+  close,
+  add,
+}: {
+  car: Car;
+  lang: Lang;
+  mode: 'buy' | 'rent' | 'parts';
+  close: () => void;
+  add: () => void;
+}) {
+  const u = ui[lang];
+  const labels = {
+    en: {
+      year: 'Year',
+      mileage: 'Mileage',
+      fuel: 'Fuel',
+      body: 'Body',
+      gearbox: 'Transmission',
+      drive: 'Drivetrain',
+      color: 'Color',
+      seats: 'Seats',
+      location: 'Location',
+      price: 'Price',
+      desc: 'A carefully selected vehicle with transparent details, verified documents and support from our regional team.',
+    },
+    fr: {
+      year: 'Année',
+      mileage: 'Kilométrage',
+      fuel: 'Énergie',
+      body: 'Carrosserie',
+      gearbox: 'Transmission',
+      drive: 'Motricité',
+      color: 'Couleur',
+      seats: 'Places',
+      location: 'Localisation',
+      price: 'Prix',
+      desc: 'Un véhicule soigneusement sélectionné, avec des informations claires, des documents vérifiés et l’accompagnement de notre équipe régionale.',
+    },
+    es: {
+      year: 'Año',
+      mileage: 'Kilometraje',
+      fuel: 'Combustible',
+      body: 'Carrocería',
+      gearbox: 'Transmisión',
+      drive: 'Tracción',
+      color: 'Color',
+      seats: 'Plazas',
+      location: 'Ubicación',
+      price: 'Precio',
+      desc: 'Un vehículo seleccionado cuidadosamente, con información transparente, documentos verificados y asistencia de nuestro equipo regional.',
+    },
+  }[lang];
+  const specs = [
+    [labels.year, car.year],
+    [labels.mileage, `${car.km.toLocaleString()} km`],
+    [labels.fuel, car.fuel],
+    [labels.body, car.body],
+    [labels.gearbox, car.transmission || 'Automatic'],
+    [labels.drive, car.drivetrain || 'FWD'],
+    [labels.color, car.color || '—'],
+    [labels.seats, car.seats || 5],
+  ];
+  return (
+    <div
+      className="layer vehicle-layer"
+      onMouseDown={(e) => e.target === e.currentTarget && close()}
+    >
+      <section className="vehicle-detail">
+        <button className="detail-close" onClick={close} aria-label={u.close}>
+          <X />
+        </button>
+        <div className="detail-gallery">
+          <img src={car.image} alt={`${car.make} ${car.model}`} />
+          <div>
+            <img src={car.image} alt="" />
+            <img src={car.image} alt="" />
+            <img src={car.image} alt="" />
+          </div>
+        </div>
+        <div className="detail-summary">
+          <p className="auth-kicker">{u.inspected}</p>
+          <h2>
+            {car.make} {car.model}
+          </h2>
+          <p>{labels.desc}</p>
+          <strong>
+            {mode === 'rent'
+              ? `${money(Math.round(car.price / 650), lang)}/day`
+              : money(car.price, lang)}
+          </strong>
+          <div className="detail-location">
+            <MapPin />
+            {car.location}
+          </div>
+          <button onClick={add}>
+            {mode === 'rent' ? u.book : u.addCart}
+            <ShoppingCart />
+          </button>
+          <button className="contact-seller">
+            {u.contact}
+            <ArrowRight />
+          </button>
+        </div>
+        <div className="detail-specs">
+          <h3>{u.overview}</h3>
+          <div>
+            {specs.map(([k, v]) => (
+              <span key={String(k)}>
+                <small>{k}</small>
+                <b>{v}</b>
+              </span>
+            ))}
+          </div>
+        </div>
+        <div className="detail-equipment">
+          <h3>{u.equipment}</h3>
+          <div>
+            {[
+              u.inspected,
+              u.noAccident,
+              u.original,
+              u.service,
+              'ABS',
+              'Air conditioning',
+              'Bluetooth',
+              'Parking camera',
+            ].map((x) => (
+              <span key={x}>
+                <Check />
+                {x}
+              </span>
+            ))}
+          </div>
+        </div>
+        <div className="detail-seller">
+          <div>
+            <span>JF</span>
+            <div>
+              <h3>{u.seller}</h3>
+              <p>JFcars Verified Partner · {car.location}</p>
+            </div>
+          </div>
+          <b>4.9 / 5</b>
+        </div>
+      </section>
     </div>
   );
 }
