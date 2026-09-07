@@ -130,6 +130,7 @@ type OrderRecord = {
   status: string;
   createdAt: string;
 };
+const VEHICLE_SELLING_ENABLED = false;
 const copy = {
   en: {
     buy: 'Buy',
@@ -2237,10 +2238,12 @@ export default function Home() {
             <User size={18} />
             <span>{user ? user.name.split(' ')[0] : u.signIn}</span>
           </button>
-          <button className="sell" onClick={() => setSellOpen(true)}>
-            {t.sell}
-            <ArrowRight size={17} />
-          </button>
+          {VEHICLE_SELLING_ENABLED && (
+            <button className="sell" onClick={() => setSellOpen(true)}>
+              {t.sell}
+              <ArrowRight size={17} />
+            </button>
+          )}
           <button
             className="menu"
             aria-label={a.menu}
@@ -3141,17 +3144,19 @@ export default function Home() {
           galleryCopy[lang].description
         }
       />
-      <section className="sell-band">
-        <div>
-          <p>{f.sellEyebrow}</p>
-          <h2>{t.sellCta}</h2>
-          <span>{t.sellSub}</span>
-        </div>
-        <button onClick={() => setSellOpen(true)}>
-          {t.start}
-          <ArrowRight />
-        </button>
-      </section>
+      {VEHICLE_SELLING_ENABLED && (
+        <section className="sell-band">
+          <div>
+            <p>{f.sellEyebrow}</p>
+            <h2>{t.sellCta}</h2>
+            <span>{t.sellSub}</span>
+          </div>
+          <button onClick={() => setSellOpen(true)}>
+            {t.start}
+            <ArrowRight />
+          </button>
+        </section>
+      )}
       {compare.length > 0 && (
         <div className="compare-bar">
           <div>
@@ -3282,7 +3287,7 @@ export default function Home() {
           close={() => setPanel(null)}
         />
       )}
-      {sellOpen && (
+      {VEHICLE_SELLING_ENABLED && sellOpen && (
         <SellCarPanel
           lang={lang}
           close={() => setSellOpen(false)}
@@ -5706,16 +5711,20 @@ function AdminPanel({
           </button>
           <small>ADMIN CONSOLE</small>
           <nav>
-            {menu.map(([id, label, Icon]) => (
-              <button
-                className={tab === id ? 'active' : ''}
-                key={id}
-                onClick={() => setTab(id)}
-              >
-                <Icon />
-                {label}
-              </button>
-            ))}
+            {menu
+              .filter(
+                ([id]) => VEHICLE_SELLING_ENABLED || id !== 'seller-listings',
+              )
+              .map(([id, label, Icon]) => (
+                <button
+                  className={tab === id ? 'active' : ''}
+                  key={id}
+                  onClick={() => setTab(id)}
+                >
+                  <Icon />
+                  {label}
+                </button>
+              ))}
           </nav>
           <div className="admin-user">
             <span>AK</span>
@@ -5798,15 +5807,20 @@ function AdminPanel({
                       `${inventory.filter((car) => car.images?.length === 1).length} listings need more photos`,
                       'inventory',
                     ],
-                  ].map(([x, target], i) => (
-                    <div className="attention" key={x}>
-                      <span>{i + 1}</span>
-                      <b>{x}</b>
-                      <button onClick={() => setTab(target)}>
-                        Review <ArrowRight />
-                      </button>
-                    </div>
-                  ))}
+                  ]
+                    .filter(
+                      ([, target]) =>
+                        VEHICLE_SELLING_ENABLED || target !== 'seller-listings',
+                    )
+                    .map(([x, target], i) => (
+                      <div className="attention" key={x}>
+                        <span>{i + 1}</span>
+                        <b>{x}</b>
+                        <button onClick={() => setTab(target)}>
+                          Review <ArrowRight />
+                        </button>
+                      </div>
+                    ))}
                 </section>
               </>
             )}
@@ -6039,7 +6053,7 @@ function AdminPanel({
                 )}
               </section>
             )}{' '}
-            {tab === 'seller-listings' && (
+            {VEHICLE_SELLING_ENABLED && tab === 'seller-listings' && (
               <section className="admin-card admin-collection sell-requests">
                 <div>
                   <h3>Seller listing requests</h3>
