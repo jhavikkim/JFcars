@@ -1,10 +1,41 @@
-import type { Metadata } from "next";
-import "./globals.css";
+import type { Metadata } from 'next';
+import './globals.css';
 export const metadata: Metadata = {
-  metadataBase: new URL("https://jfcars.leafy-bard-3849.chatgpt.site"),
-  title:"JFcars — Used cars, made joyful",
-  description:"Find quality used cars with clear details, smart filters and zero pressure.",
-  openGraph:{title:"JFcars — Used cars, made joyful",description:"Find quality used cars with clear details, smart filters and zero pressure.",images:["/og.png"]},
-  twitter:{card:"summary_large_image",title:"JFcars — Used cars, made joyful",description:"Find quality used cars with clear details, smart filters and zero pressure.",images:["/og.png"]}
+  metadataBase: new URL('https://jfcars.jhavik-kim.chatgpt.site'),
+  title: 'JFcars — Cars, rentals and parts in Central Africa',
+  description:
+    'Search, compare, buy or rent cars and request auto parts across Central African markets.',
+  alternates: {
+    canonical: '/',
+    languages: {
+      en: '/?lang=en',
+      fr: '/?lang=fr',
+      es: '/?lang=es',
+      'x-default': '/',
+    },
+  },
+  openGraph: {
+    title: 'JFcars — Move happy',
+    description: 'Cars, rentals and parts for Central Africa.',
+    images: ['/og.png'],
+    locale: 'en',
+    alternateLocale: ['fr', 'es'],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'JFcars — Move happy',
+    description: 'Cars, rentals and parts for Central Africa.',
+    images: ['/og.png'],
+  },
 };
-export default function RootLayout({children}:{children:React.ReactNode}){return <html lang="en"><body>{children}</body></html>}
+export default function RootLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  return (
+    <html lang="en" suppressHydrationWarning>
+      <body>{children}</body>
+    </html>
+  );
+}
