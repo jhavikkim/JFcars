@@ -18,10 +18,12 @@ import {
   EyeOff,
   GitCompareArrows,
   Heart,
+  Images,
   KeyRound,
   Languages,
   LogOut,
   MapPin,
+  Maximize2,
   Menu,
   Package,
   Plus,
@@ -91,8 +93,20 @@ type SellRequest = {
   status: 'Pending' | 'Accepted' | 'Rejected';
   createdAt?: string;
 };
-type StorefrontLocaleContent = { headline: string; description: string };
-type StorefrontContent = Partial<Record<Lang, StorefrontLocaleContent>>;
+type GalleryItem = {
+  id: string;
+  image: string;
+  captions: Partial<Record<Lang, string>>;
+};
+type StorefrontLocaleContent = {
+  headline: string;
+  description: string;
+  galleryTitle?: string;
+  galleryDescription?: string;
+};
+type StorefrontContent = Partial<Record<Lang, StorefrontLocaleContent>> & {
+  gallery?: GalleryItem[];
+};
 type AuthSession = {
   authenticated: boolean;
   isAdmin: boolean;
@@ -204,6 +218,95 @@ const copy = {
     sellSub: 'Publica tu coche en minutos. Nosotros te ayudamos con el resto.',
     start: 'Empezar',
   },
+};
+const galleryCopy = {
+  en: {
+    nav: 'Gallery',
+    eyebrow: 'JFcars in action',
+    title: 'From the port to our local store.',
+    description:
+      'See how vehicles are handled on arrival and the everyday parts we keep close to our customers.',
+    open: 'Open photo',
+    close: 'Close gallery',
+    previous: 'Previous gallery photo',
+    next: 'Next gallery photo',
+    photos: 'photos',
+    untitled: 'JFcars gallery photo',
+  },
+  fr: {
+    nav: 'Galerie',
+    eyebrow: 'JFcars sur le terrain',
+    title: 'Du port à notre magasin local.',
+    description:
+      'Découvrez la prise en charge des véhicules à leur arrivée et les pièces courantes disponibles près de nos clients.',
+    open: 'Ouvrir la photo',
+    close: 'Fermer la galerie',
+    previous: 'Photo précédente de la galerie',
+    next: 'Photo suivante de la galerie',
+    photos: 'photos',
+    untitled: 'Photo de la galerie JFcars',
+  },
+  es: {
+    nav: 'Galería',
+    eyebrow: 'JFcars en acción',
+    title: 'Del puerto a nuestra tienda local.',
+    description:
+      'Mira cómo cuidamos los vehículos a su llegada y los repuestos habituales que mantenemos cerca de nuestros clientes.',
+    open: 'Abrir foto',
+    close: 'Cerrar galería',
+    previous: 'Foto anterior de la galería',
+    next: 'Foto siguiente de la galería',
+    photos: 'fotos',
+    untitled: 'Foto de la galería JFcars',
+  },
+} as const;
+const defaultGalleryItems: GalleryItem[] = [
+  {
+    id: 'shipment-loading',
+    image: '/jfcars-gallery-loading.webp',
+    captions: {
+      en: 'Vehicles secured for shipment',
+      fr: 'Véhicules sécurisés pour l’expédition',
+      es: 'Vehículos asegurados para el envío',
+    },
+  },
+  {
+    id: 'shipment-unloading',
+    image: '/jfcars-gallery-unloading.webp',
+    captions: {
+      en: 'Careful unloading on arrival',
+      fr: 'Déchargement soigné à l’arrivée',
+      es: 'Descarga cuidadosa a la llegada',
+    },
+  },
+  {
+    id: 'local-parts-store',
+    image: '/jfcars-gallery-parts-store.webp',
+    captions: {
+      en: 'Parts available in our local store',
+      fr: 'Pièces disponibles dans notre magasin local',
+      es: 'Repuestos disponibles en nuestra tienda local',
+    },
+  },
+];
+const normalizeGallery = (items: GalleryItem[] | undefined) => {
+  if (!Array.isArray(items)) return defaultGalleryItems;
+  const valid = items
+    .filter(
+      (item) =>
+        item &&
+        typeof item.id === 'string' &&
+        typeof item.image === 'string' &&
+        (item.image.startsWith('/') || item.image.startsWith('https://')),
+    )
+    .slice(0, 8)
+    .map((item) => ({
+      id: item.id,
+      image: item.image,
+      captions:
+        item.captions && typeof item.captions === 'object' ? item.captions : {},
+    }));
+  return valid.length ? valid : defaultGalleryItems;
 };
 const galleryExtras = [
   'https://images.unsplash.com/photo-1550355291-bbee04a92027?auto=format&fit=crop&w=1200&q=85',
@@ -1355,6 +1458,7 @@ export default function Home() {
     [mobileMenu, setMobileMenu] = useState(false),
     [mode, setMode] = useState<'buy' | 'rent' | 'parts'>('buy'),
     [heroVisible, setHeroVisible] = useState(true),
+    [galleryFocus, setGalleryFocus] = useState(false),
     [brand, setBrand] = useState('All'),
     [model, setModel] = useState('All'),
     [panel, setPanel] = useState<'auth' | 'cart' | 'profile' | 'admin' | null>(
@@ -1385,6 +1489,7 @@ export default function Home() {
     m = marketCopy[lang],
     f = flowCopy[lang],
     a = accessibilityCopy[lang];
+  const galleryItems = normalizeGallery(storefrontContent.gallery);
   const modeInventory = useMemo(
     () =>
       mode === 'rent'
@@ -1906,6 +2011,7 @@ export default function Home() {
     setPage(1);
   };
   const selectMode = (next: 'buy' | 'rent' | 'parts') => {
+    setGalleryFocus(false);
     if (next !== mode) {
       setMinPrice('Any');
       setMaxPrice('Any');
@@ -1950,6 +2056,18 @@ export default function Home() {
       () =>
         document
           .getElementById('inventory')
+          ?.scrollIntoView({ behavior: 'smooth', block: 'start' }),
+      0,
+    );
+  };
+  const galleryNavigate = () => {
+    setHeroVisible(false);
+    setGalleryFocus(true);
+    setMobileMenu(false);
+    setTimeout(
+      () =>
+        document
+          .getElementById('gallery')
           ?.scrollIntoView({ behavior: 'smooth', block: 'start' }),
       0,
     );
@@ -2038,6 +2156,7 @@ export default function Home() {
           className="logo"
           onClick={() => {
             setHeroVisible(true);
+            setGalleryFocus(false);
             window.scrollTo({ top: 0, behavior: 'smooth' });
           }}
         >
@@ -2045,27 +2164,40 @@ export default function Home() {
         </button>
         <nav>
           <button
-            className={mode === 'buy' && !heroVisible ? 'active' : ''}
+            className={
+              mode === 'buy' && !heroVisible && !galleryFocus ? 'active' : ''
+            }
             onClick={() => headerNavigate('buy')}
           >
             {u.buyCar}
           </button>
           <button
-            className={mode === 'rent' && !heroVisible ? 'active' : ''}
+            className={
+              mode === 'rent' && !heroVisible && !galleryFocus ? 'active' : ''
+            }
             onClick={() => headerNavigate('rent')}
           >
             {u.rentCar}
           </button>
           <button
-            className={mode === 'parts' && !heroVisible ? 'active' : ''}
+            className={
+              mode === 'parts' && !heroVisible && !galleryFocus ? 'active' : ''
+            }
             onClick={() => headerNavigate('parts')}
           >
             {u.parts}
+          </button>
+          <button
+            className={galleryFocus ? 'active' : ''}
+            onClick={galleryNavigate}
+          >
+            {galleryCopy[lang].nav}
           </button>
           {isAdmin && (
             <button
               onClick={() => {
                 setHeroVisible(false);
+                setGalleryFocus(false);
                 setPanel('admin');
               }}
             >
@@ -2144,10 +2276,12 @@ export default function Home() {
           >
             {u.parts}
           </button>
+          <button onClick={galleryNavigate}>{galleryCopy[lang].nav}</button>
           {isAdmin && (
             <button
               onClick={() => {
                 setHeroVisible(false);
+                setGalleryFocus(false);
                 setPanel('admin');
                 setMobileMenu(false);
               }}
@@ -2998,6 +3132,15 @@ export default function Home() {
           </div>
         </section>
       )}
+      <MainGallery
+        lang={lang}
+        items={galleryItems}
+        title={storefrontContent[lang]?.galleryTitle || galleryCopy[lang].title}
+        description={
+          storefrontContent[lang]?.galleryDescription ||
+          galleryCopy[lang].description
+        }
+      />
       <section className="sell-band">
         <div>
           <p>{f.sellEyebrow}</p>
@@ -3171,7 +3314,11 @@ export default function Home() {
       <footer>
         <button
           className="logo"
-          onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+          onClick={() => {
+            setGalleryFocus(false);
+            setHeroVisible(true);
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+          }}
         >
           <span>JF</span>cars<i>.</i>
         </button>
@@ -3183,6 +3330,212 @@ export default function Home() {
         </div>
       </footer>
     </main>
+  );
+}
+
+function MainGallery({
+  lang,
+  items,
+  title,
+  description,
+}: {
+  lang: Lang;
+  items: GalleryItem[];
+  title: string;
+  description: string;
+}) {
+  const labels = galleryCopy[lang];
+  const [active, setActive] = useState(0);
+  const [viewerOpen, setViewerOpen] = useState(false);
+  const closeViewer = useCallback(() => setViewerOpen(false), []);
+  const activeIndex = active < items.length ? active : 0;
+  const current = items[activeIndex] || items[0];
+  if (!current) return null;
+  const caption = (item: GalleryItem) =>
+    item.captions[lang] || item.captions.en || labels.untitled;
+  const move = (direction: number) =>
+    setActive((index) => (index + direction + items.length) % items.length);
+  return (
+    <section
+      className="main-gallery"
+      id="gallery"
+      aria-labelledby="gallery-title"
+    >
+      <header className="main-gallery-header">
+        <div>
+          <p>
+            <Images /> {labels.eyebrow}
+          </p>
+          <h2 id="gallery-title">{title}</h2>
+          <span>{description}</span>
+        </div>
+        <div className="main-gallery-controls">
+          <b aria-live="polite">
+            {String(activeIndex + 1).padStart(2, '0')} /{' '}
+            {String(items.length).padStart(2, '0')}
+          </b>
+          <button
+            onClick={() => move(-1)}
+            aria-label={labels.previous}
+            disabled={items.length < 2}
+          >
+            <ChevronLeft />
+          </button>
+          <button
+            onClick={() => move(1)}
+            aria-label={labels.next}
+            disabled={items.length < 2}
+          >
+            <ChevronRight />
+          </button>
+        </div>
+      </header>
+      <div className="main-gallery-view">
+        <button
+          className="main-gallery-feature"
+          onClick={() => setViewerOpen(true)}
+          aria-label={`${labels.open}: ${caption(current)}`}
+        >
+          <Image
+            key={current.image}
+            src={current.image}
+            alt={caption(current)}
+            width={1536}
+            height={1024}
+            unoptimized
+          />
+          <span>
+            <b>{caption(current)}</b>
+            <i>
+              <Maximize2 /> {labels.open}
+            </i>
+          </span>
+        </button>
+        <fieldset className="main-gallery-strip" aria-label={labels.nav}>
+          {items.map((item, index) => (
+            <button
+              key={item.id}
+              aria-pressed={activeIndex === index}
+              className={activeIndex === index ? 'active' : ''}
+              onClick={() => setActive(index)}
+            >
+              <Image
+                src={item.image}
+                alt=""
+                width={420}
+                height={280}
+                unoptimized
+              />
+              <span>
+                <small>{String(index + 1).padStart(2, '0')}</small>
+                <b>{caption(item)}</b>
+              </span>
+            </button>
+          ))}
+        </fieldset>
+      </div>
+      {viewerOpen && (
+        <GalleryViewer
+          lang={lang}
+          items={items}
+          active={activeIndex}
+          setActive={setActive}
+          close={closeViewer}
+        />
+      )}
+    </section>
+  );
+}
+
+function GalleryViewer({
+  lang,
+  items,
+  active,
+  setActive,
+  close,
+}: {
+  lang: Lang;
+  items: GalleryItem[];
+  active: number;
+  setActive: (index: number) => void;
+  close: () => void;
+}) {
+  const labels = galleryCopy[lang];
+  const item = items[active] || items[0];
+  const caption = (entry: GalleryItem) =>
+    entry.captions[lang] || entry.captions.en || labels.untitled;
+  const move = (direction: number) =>
+    setActive((active + direction + items.length) % items.length);
+  useDialog(close);
+  return (
+    <div
+      className="layer gallery-viewer-layer"
+      role="presentation"
+      onMouseDown={(event) => event.target === event.currentTarget && close()}
+    >
+      <dialog
+        open
+        className="photo-viewer site-photo-viewer"
+        aria-label={labels.nav}
+      >
+        <button
+          className="viewer-close"
+          onClick={close}
+          aria-label={labels.close}
+        >
+          <X />
+        </button>
+        <button
+          className="viewer-arrow prev"
+          onClick={() => move(-1)}
+          aria-label={labels.previous}
+          disabled={items.length < 2}
+        >
+          <ChevronLeft />
+        </button>
+        <figure aria-live="polite">
+          <Image
+            src={item.image}
+            alt={caption(item)}
+            width={1536}
+            height={1024}
+            unoptimized
+          />
+          <figcaption>
+            <span>{caption(item)}</span>
+            <b>
+              {active + 1} / {items.length}
+            </b>
+          </figcaption>
+        </figure>
+        <button
+          className="viewer-arrow next"
+          onClick={() => move(1)}
+          aria-label={labels.next}
+          disabled={items.length < 2}
+        >
+          <ChevronRight />
+        </button>
+        <div>
+          {items.map((entry, index) => (
+            <button
+              key={entry.id}
+              className={active === index ? 'active' : ''}
+              onClick={() => setActive(index)}
+              aria-label={caption(entry)}
+            >
+              <Image
+                src={entry.image}
+                alt=""
+                width={240}
+                height={150}
+                unoptimized
+              />
+            </button>
+          ))}
+        </div>
+      </dialog>
+    </div>
   );
 }
 
@@ -5110,18 +5463,34 @@ function AdminPanel({
     [contentSaved, setContentSaved] = useState(false),
     [contentLocale, setContentLocale] = useState<Lang>('en'),
     [contentDraft, setContentDraft] = useState<StorefrontContent>({
-      en: storefrontContent.en || {
-        headline: copy.en.hero,
-        description: copy.en.sub,
+      en: {
+        headline: storefrontContent.en?.headline || copy.en.hero,
+        description: storefrontContent.en?.description || copy.en.sub,
+        galleryTitle:
+          storefrontContent.en?.galleryTitle || galleryCopy.en.title,
+        galleryDescription:
+          storefrontContent.en?.galleryDescription ||
+          galleryCopy.en.description,
       },
-      fr: storefrontContent.fr || {
-        headline: copy.fr.hero,
-        description: copy.fr.sub,
+      fr: {
+        headline: storefrontContent.fr?.headline || copy.fr.hero,
+        description: storefrontContent.fr?.description || copy.fr.sub,
+        galleryTitle:
+          storefrontContent.fr?.galleryTitle || galleryCopy.fr.title,
+        galleryDescription:
+          storefrontContent.fr?.galleryDescription ||
+          galleryCopy.fr.description,
       },
-      es: storefrontContent.es || {
-        headline: copy.es.hero,
-        description: copy.es.sub,
+      es: {
+        headline: storefrontContent.es?.headline || copy.es.hero,
+        description: storefrontContent.es?.description || copy.es.sub,
+        galleryTitle:
+          storefrontContent.es?.galleryTitle || galleryCopy.es.title,
+        galleryDescription:
+          storefrontContent.es?.galleryDescription ||
+          galleryCopy.es.description,
       },
+      gallery: normalizeGallery(storefrontContent.gallery),
     });
   const [adminAddCountry, setAdminAddCountry] = useState(
     'Republic of the Congo',
@@ -5134,6 +5503,65 @@ function AdminPanel({
     order.items.some((item) => item.kind === 'rent'),
   );
   const managedBrands = catalogBrands(inventory);
+  const galleryDraft =
+    Array.isArray(contentDraft.gallery) && contentDraft.gallery.length
+      ? contentDraft.gallery
+      : defaultGalleryItems;
+  const updateGalleryImage = (index: number, image: string) =>
+    setContentDraft((current) => ({
+      ...current,
+      gallery: (Array.isArray(current.gallery) && current.gallery.length
+        ? current.gallery
+        : defaultGalleryItems
+      ).map((item, itemIndex) =>
+        itemIndex === index ? { ...item, image } : item,
+      ),
+    }));
+  const updateGalleryCaption = (index: number, caption: string) =>
+    setContentDraft((current) => ({
+      ...current,
+      gallery: (Array.isArray(current.gallery) && current.gallery.length
+        ? current.gallery
+        : defaultGalleryItems
+      ).map((item, itemIndex) =>
+        itemIndex === index
+          ? {
+              ...item,
+              captions: { ...item.captions, [contentLocale]: caption },
+            }
+          : item,
+      ),
+    }));
+  const addGalleryPhoto = () => {
+    if (galleryDraft.length >= 8) return;
+    setContentDraft((current) => ({
+      ...current,
+      gallery: [
+        ...(Array.isArray(current.gallery) && current.gallery.length
+          ? current.gallery
+          : defaultGalleryItems),
+        {
+          id: `gallery-${Date.now()}`,
+          image: '/jfcars-gallery-loading.webp',
+          captions: {
+            en: 'New gallery photo',
+            fr: 'Nouvelle photo de la galerie',
+            es: 'Nueva foto de la galería',
+          },
+        },
+      ],
+    }));
+  };
+  const removeGalleryPhoto = (index: number) => {
+    if (galleryDraft.length <= 1) return;
+    setContentDraft((current) => ({
+      ...current,
+      gallery: (Array.isArray(current.gallery) && current.gallery.length
+        ? current.gallery
+        : defaultGalleryItems
+      ).filter((_, itemIndex) => itemIndex !== index),
+    }));
+  };
   const updateOrderStatus = async (id: string, status: string) => {
     const response = await fetch('/api/admin', {
       method: 'POST',
@@ -5725,6 +6153,7 @@ function AdminPanel({
                       setContentDraft({
                         ...contentDraft,
                         [contentLocale]: {
+                          ...contentDraft[contentLocale],
                           headline: event.target.value,
                           description:
                             contentDraft[contentLocale]?.description ||
@@ -5745,6 +6174,7 @@ function AdminPanel({
                       setContentDraft({
                         ...contentDraft,
                         [contentLocale]: {
+                          ...contentDraft[contentLocale],
                           headline:
                             contentDraft[contentLocale]?.headline ||
                             copy[contentLocale].hero,
@@ -5754,6 +6184,122 @@ function AdminPanel({
                     }
                   />
                 </label>
+                <div className="content-section-title">
+                  <div>
+                    <h4>Main photo gallery</h4>
+                    <p>
+                      Edit the gallery heading, captions, order, and image URLs.
+                    </p>
+                  </div>
+                  <span>{galleryDraft.length} / 8 photos</span>
+                </div>
+                <label>
+                  Gallery heading
+                  <input
+                    value={
+                      contentDraft[contentLocale]?.galleryTitle ||
+                      galleryCopy[contentLocale].title
+                    }
+                    onChange={(event) =>
+                      setContentDraft({
+                        ...contentDraft,
+                        [contentLocale]: {
+                          ...contentDraft[contentLocale],
+                          headline:
+                            contentDraft[contentLocale]?.headline ||
+                            copy[contentLocale].hero,
+                          description:
+                            contentDraft[contentLocale]?.description ||
+                            copy[contentLocale].sub,
+                          galleryTitle: event.target.value,
+                        },
+                      })
+                    }
+                  />
+                </label>
+                <label>
+                  Gallery description
+                  <textarea
+                    value={
+                      contentDraft[contentLocale]?.galleryDescription ||
+                      galleryCopy[contentLocale].description
+                    }
+                    onChange={(event) =>
+                      setContentDraft({
+                        ...contentDraft,
+                        [contentLocale]: {
+                          ...contentDraft[contentLocale],
+                          headline:
+                            contentDraft[contentLocale]?.headline ||
+                            copy[contentLocale].hero,
+                          description:
+                            contentDraft[contentLocale]?.description ||
+                            copy[contentLocale].sub,
+                          galleryDescription: event.target.value,
+                        },
+                      })
+                    }
+                  />
+                </label>
+                <div className="gallery-admin-list">
+                  {galleryDraft.map((item, index) => {
+                    const imageReady =
+                      item.image.startsWith('/') ||
+                      item.image.startsWith('https://');
+                    return (
+                      <article key={item.id}>
+                        {imageReady ? (
+                          <Image
+                            src={item.image}
+                            alt=""
+                            width={300}
+                            height={200}
+                            unoptimized
+                          />
+                        ) : (
+                          <span>Photo URL required</span>
+                        )}
+                        <div>
+                          <b>Photo {index + 1}</b>
+                          <label>
+                            Image URL or /public path
+                            <input
+                              value={item.image}
+                              onChange={(event) =>
+                                updateGalleryImage(index, event.target.value)
+                              }
+                            />
+                          </label>
+                          <label>
+                            {contentLocale.toUpperCase()} caption
+                            <input
+                              value={item.captions[contentLocale] || ''}
+                              onChange={(event) =>
+                                updateGalleryCaption(index, event.target.value)
+                              }
+                            />
+                          </label>
+                        </div>
+                        <button
+                          type="button"
+                          aria-label={`Remove photo ${index + 1}`}
+                          disabled={galleryDraft.length <= 1}
+                          onClick={() => removeGalleryPhoto(index)}
+                        >
+                          <Trash2 />
+                        </button>
+                      </article>
+                    );
+                  })}
+                </div>
+                <button
+                  type="button"
+                  className="gallery-admin-add"
+                  disabled={galleryDraft.length >= 8}
+                  onClick={addGalleryPhoto}
+                >
+                  <Plus /> Add gallery photo
+                </button>
                 <label>
                   Announcement
                   <input
