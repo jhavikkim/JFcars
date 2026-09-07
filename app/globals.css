@@ -320,12 +320,26 @@ button {
 .filters {
   border-right: 1px solid var(--line);
   padding-right: 28px;
+  position: sticky;
+  top: 98px;
+  align-self: start;
+  max-height: calc(100vh - 118px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
 }
 .filter-head {
+  position: sticky;
+  top: 0;
+  z-index: 3;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 12px;
+  min-height: 58px;
+  margin-bottom: 0;
+  padding: 9px 0;
+  background: #fffffff2;
+  backdrop-filter: blur(10px);
 }
 .filter-head h2 {
   font-family: Georgia, serif;
@@ -342,27 +356,117 @@ button {
 .filter-close {
   display: none;
 }
+.filter-section {
+  border-bottom: 1px solid #dfe6e2;
+}
+.filter-section-title {
+  width: 100%;
+  min-height: 52px;
+  padding: 13px 0;
+  border: 0;
+  background: transparent;
+  color: var(--forest);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  text-align: left;
+}
+.filter-section-title:hover,
+.filter-title:hover {
+  color: var(--coral);
+}
+.filter-section-title:focus-visible,
+.filter-title:focus-visible,
+.pills button:focus-visible,
+.az-grid button:focus-visible,
+.brand-list button:focus-visible {
+  outline: 2px solid var(--coral);
+  outline-offset: 2px;
+}
+.filter-section-title > span:first-child {
+  font-size: 12px;
+  font-weight: 900;
+  letter-spacing: 0.035em;
+}
+.filter-section-title > span:last-child {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.filter-section-title b {
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: var(--coral);
+  color: white;
+  display: grid;
+  place-items: center;
+  font-size: 9px;
+}
+.filter-section-title svg,
+.filter-title svg {
+  width: 16px;
+  flex: 0 0 auto;
+  transition: transform 180ms ease;
+  transform: rotate(-90deg);
+}
+.filter-section-title svg.open,
+.filter-title svg.open {
+  transform: rotate(0);
+}
+.filter-section-content {
+  padding: 0 0 8px 10px;
+  border-left: 2px solid #edf0ec;
+}
 .filter-group {
-  padding: 19px 0;
+  padding: 0;
   border-bottom: 1px solid #edf0ef;
+}
+.filter-group:last-child {
+  border-bottom: 0;
 }
 .filter-title {
   border: 0;
   background: none;
   width: 100%;
+  min-height: 44px;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 0;
+  gap: 10px;
+  padding: 10px 0;
+  color: var(--ink);
+  text-align: left;
 }
-.filter-title h3,
+.filter-title-copy {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  flex: 1;
+}
+.filter-title-copy > span,
 .year h3 {
   font-size: 13px;
-  margin: 0 0 12px;
   font-weight: 800;
 }
-.filter-title svg {
-  width: 16px;
+.filter-title-copy small {
+  max-width: 105px;
+  overflow: hidden;
+  color: var(--coral);
+  font-size: 9px;
+  font-weight: 800;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.filter-group.active .filter-title-copy > span {
+  color: var(--coral);
+}
+.filter-options {
+  padding-bottom: 13px;
 }
 .pills {
   display: flex;
@@ -387,8 +491,8 @@ button {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 8px;
-  padding: 12px 0 18px;
-  border-bottom: 1px solid #edf0ef;
+  padding: 11px 0 0;
+  border-bottom: 0;
 }
 .custom-price-range label {
   display: flex;
@@ -908,7 +1012,7 @@ footer div a {
   .filter-close {
     display: block !important;
   }
-  .filter-head > button:nth-child(2) {
+  .filter-reset {
     margin-left: auto;
     margin-right: 18px;
   }
@@ -2766,9 +2870,7 @@ dialog[open].photo-viewer {
 }
 .brand-list {
   border-top: 1px solid var(--line);
-  max-height: 255px;
-  overflow: auto;
-  margin-bottom: 20px;
+  margin-bottom: 8px;
 }
 .brand-list button {
   width: 100%;
@@ -2790,8 +2892,8 @@ dialog[open].photo-viewer {
   color: #b64a35;
 }
 .filters .filter-head {
-  border-top: 1px solid var(--line);
-  padding-top: 18px;
+  border-top: 0;
+  padding-top: 9px;
 }
 .brand-search + .market {
   padding-top: 40px;
@@ -2966,11 +3068,6 @@ dialog[open].photo-viewer {
   }
   .brand-search + .market {
     padding-top: 28px;
-  }
-  .directory-title,
-  .az-grid,
-  .brand-list {
-    display: none;
   }
   .filters .filter-head {
     border-top: 0;
@@ -5153,5 +5250,95 @@ footer .logo {
     display: flex;
     flex: 0 0 115px;
     scroll-snap-align: start;
+  }
+}
+@media (max-width: 900px) {
+  .market {
+    display: block;
+    padding: 36px 18px 60px;
+  }
+  .filters {
+    display: none;
+    position: fixed;
+    inset: 0;
+    z-index: 100;
+    max-height: none;
+    padding: 18px 20px 96px;
+    overflow-y: auto;
+    border: 0;
+    background: white;
+  }
+  .filters.open {
+    display: block;
+  }
+  .filters .filter-head {
+    position: sticky;
+    top: -18px;
+    z-index: 4;
+    min-height: 70px;
+    margin: 0 -20px 5px;
+    padding: 18px 20px 10px;
+    border-bottom: 1px solid var(--line);
+    background: #fffffff2;
+    backdrop-filter: blur(10px);
+  }
+  .filter-close {
+    display: grid !important;
+    width: 44px;
+    height: 44px;
+    padding: 0 !important;
+    place-items: center;
+    border: 1px solid var(--line) !important;
+    border-radius: 50%;
+    color: var(--ink) !important;
+  }
+  .filter-reset {
+    margin-left: auto;
+    margin-right: 12px;
+  }
+  .filter-section-title {
+    min-height: 54px;
+  }
+  .pills button {
+    min-height: 44px;
+  }
+  .az-grid {
+    grid-template-columns: repeat(7, minmax(36px, 1fr));
+  }
+  .az-grid button {
+    width: 100%;
+    height: 40px;
+  }
+  .brand-list button {
+    min-height: 44px;
+  }
+  .show-results {
+    display: block;
+    position: fixed;
+    right: 20px;
+    bottom: max(16px, env(safe-area-inset-bottom));
+    left: 20px;
+    z-index: 101;
+    width: auto;
+    min-height: 52px;
+    border: 0;
+    border-radius: 12px;
+    background: var(--forest);
+    color: white;
+    box-shadow: 0 12px 30px #173b3540;
+  }
+  .mobile-filter {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+  }
+  .mobile-filter svg {
+    width: 16px;
+  }
+}
+@media (max-width: 480px) {
+  .az-grid {
+    grid-template-columns: repeat(6, minmax(36px, 1fr));
   }
 }

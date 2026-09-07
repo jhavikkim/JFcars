@@ -2,7 +2,15 @@
 
 import Image from 'next/image';
 import Link from 'next/link';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import {
+  type ReactNode,
+  useCallback,
+  useEffect,
+  useId,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import {
   ArrowRight,
   BarChart3,
@@ -995,6 +1003,9 @@ const marketCopy = {
     browse: 'Browse makes',
     listings: 'listings',
     allBrands: 'All brands',
+    locationGroup: 'Location & source',
+    essentialsGroup: 'Price & essentials',
+    specificationsGroup: 'More specifications',
     year: 'Year from',
     location: 'Location',
     source: 'Stock source',
@@ -1059,6 +1070,9 @@ const marketCopy = {
     browse: 'Parcourir les marques',
     listings: 'annonces',
     allBrands: 'Toutes les marques',
+    locationGroup: 'Localisation et origine',
+    essentialsGroup: 'Prix et critères essentiels',
+    specificationsGroup: 'Plus de caractéristiques',
     year: 'Année à partir de',
     location: 'Localisation',
     source: 'Origine du stock',
@@ -1123,6 +1137,9 @@ const marketCopy = {
     browse: 'Explorar marcas',
     listings: 'anuncios',
     allBrands: 'Todas las marcas',
+    locationGroup: 'Ubicación y origen',
+    essentialsGroup: 'Precio y datos esenciales',
+    specificationsGroup: 'Más características',
     year: 'Año desde',
     location: 'Ubicación',
     source: 'Origen del stock',
@@ -1644,6 +1661,9 @@ export default function Home() {
       null,
     ),
     [persistenceReady, setPersistenceReady] = useState(false);
+  const filterPanelRef = useRef<HTMLElement>(null);
+  const filterCloseRef = useRef<HTMLButtonElement>(null);
+  const filterButtonRef = useRef<HTMLButtonElement>(null);
   const t = copy[lang],
     u = ui[lang],
     m = marketCopy[lang],
@@ -1667,6 +1687,47 @@ export default function Home() {
     () => catalogBrands(modeInventory),
     [modeInventory],
   );
+  useEffect(() => {
+    if (!mobileFilters) return;
+    const filterTrigger = filterButtonRef.current;
+    const previousOverflow = document.body.style.overflow;
+    const desktopQuery = window.matchMedia('(min-width: 901px)');
+    const closeOnDesktop = (event: MediaQueryListEvent) => {
+      if (event.matches) setMobileFilters(false);
+    };
+    const handleDrawerKeys = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setMobileFilters(false);
+        return;
+      }
+      if (event.key !== 'Tab' || !filterPanelRef.current) return;
+      const focusable = Array.from(
+        filterPanelRef.current.querySelectorAll<HTMLElement>(
+          'button:not([disabled]), input:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])',
+        ),
+      ).filter((element) => element.offsetParent !== null);
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      if (!first || !last) return;
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      }
+    };
+    document.body.style.overflow = 'hidden';
+    filterCloseRef.current?.focus();
+    window.addEventListener('keydown', handleDrawerKeys);
+    desktopQuery.addEventListener('change', closeOnDesktop);
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      window.removeEventListener('keydown', handleDrawerKeys);
+      desktopQuery.removeEventListener('change', closeOnDesktop);
+      filterTrigger?.focus();
+    };
+  }, [mobileFilters]);
   useEffect(() => {
     let active = true;
     const hydrate = async () => {
@@ -2180,6 +2241,10 @@ export default function Home() {
     query,
     sort,
   ]);
+  const updateFacet = (setter: (value: string) => void, value: string) => {
+    setter(value);
+    setPage(1);
+  };
   const chooseBrand = (name: string) => {
     setBrand(name);
     setModel('All');
@@ -2274,49 +2339,121 @@ export default function Home() {
     setSeats('Any');
   };
   const activeFilters = [
-    query && [`“${query}”`, () => setQuery('')],
+    query && [`“${query}”`, () => updateFacet(setQuery, '')],
     brand !== 'All' && [brand, () => chooseBrand('All')],
-    model !== 'All' && [model, () => setModel('All')],
-    body !== 'Any' && [localize(body, lang), () => setBody('Any')],
-    fuel !== 'Any' && [localize(fuel, lang), () => setFuel('Any')],
+    model !== 'All' && [model, () => updateFacet(setModel, 'All')],
+    body !== 'Any' && [localize(body, lang), () => updateFacet(setBody, 'Any')],
+    fuel !== 'Any' && [localize(fuel, lang), () => updateFacet(setFuel, 'Any')],
     minPrice !== 'Any' && [
       `≥ ${money(Number(minPrice), lang)}${mode === 'rent' ? `/${f.day}` : ''}`,
-      () => setMinPrice('Any'),
+      () => updateFacet(setMinPrice, 'Any'),
     ],
     maxPrice !== 'Any' && [
       `${m.under} ${money(Number(maxPrice), lang)}${mode === 'rent' ? `/${f.day}` : ''}`,
-      () => setMaxPrice('Any'),
+      () => updateFacet(setMaxPrice, 'Any'),
     ],
-    minYear !== 'Any' && [`${minYear}+`, () => setMinYear('Any')],
-    location !== 'Any' && [location, () => setLocation('Any')],
+    minYear !== 'Any' && [`${minYear}+`, () => updateFacet(setMinYear, 'Any')],
+    location !== 'Any' && [location, () => updateFacet(setLocation, 'Any')],
     origin !== 'Any' &&
       mode !== 'rent' && [
         origin === 'local' ? m.local : m.abroad,
-        () => setOrigin('Any'),
+        () => updateFacet(setOrigin, 'Any'),
       ],
-    country !== 'Any' && [localize(country, lang), () => setCountry('Any')],
+    country !== 'Any' && [
+      localize(country, lang),
+      () => updateFacet(setCountry, 'Any'),
+    ],
     importRegion !== 'Any' && [
       localize(importRegion, lang),
-      () => setImportRegion('Any'),
+      () => updateFacet(setImportRegion, 'Any'),
     ],
-    engineMax !== 'Any' && [`≤ ${engineMax} L`, () => setEngineMax('Any')],
+    engineMax !== 'Any' && [
+      `≤ ${engineMax} L`,
+      () => updateFacet(setEngineMax, 'Any'),
+    ],
     sellerType !== 'Any' && [
       localize(sellerType, lang),
-      () => setSellerType('Any'),
+      () => updateFacet(setSellerType, 'Any'),
     ],
-    verifiedOnly && [m.verifiedOnly, () => setVerifiedOnly(false)],
-    availableOnly && [m.availableOnly, () => setAvailableOnly(false)],
-    latestOnly && [m.latestOnly, () => setLatestOnly(false)],
-    color !== 'Any' && [localize(color, lang), () => setColor('Any')],
+    verifiedOnly && [
+      m.verifiedOnly,
+      () => {
+        setVerifiedOnly(false);
+        setPage(1);
+      },
+    ],
+    availableOnly && [
+      m.availableOnly,
+      () => {
+        setAvailableOnly(false);
+        setPage(1);
+      },
+    ],
+    latestOnly && [
+      m.latestOnly,
+      () => {
+        setLatestOnly(false);
+        setPage(1);
+      },
+    ],
+    color !== 'Any' && [
+      localize(color, lang),
+      () => updateFacet(setColor, 'Any'),
+    ],
     transmission !== 'Any' && [
       localize(transmission, lang),
-      () => setTransmission('Any'),
+      () => updateFacet(setTransmission, 'Any'),
     ],
-    drivetrain !== 'Any' && [drivetrain, () => setDrivetrain('Any')],
-    maxKm !== 'Any' && [`≤ ${Number(maxKm) / 1000}k km`, () => setMaxKm('Any')],
-    doors !== 'Any' && [`${doors} ${m.doorCount}`, () => setDoors('Any')],
-    seats !== 'Any' && [`${seats} ${m.seatCount}`, () => setSeats('Any')],
+    drivetrain !== 'Any' && [
+      drivetrain,
+      () => updateFacet(setDrivetrain, 'Any'),
+    ],
+    maxKm !== 'Any' && [
+      `≤ ${Number(maxKm) / 1000}k km`,
+      () => updateFacet(setMaxKm, 'Any'),
+    ],
+    doors !== 'Any' && [
+      `${doors} ${m.doorCount}`,
+      () => updateFacet(setDoors, 'Any'),
+    ],
+    seats !== 'Any' && [
+      `${seats} ${m.seatCount}`,
+      () => updateFacet(setSeats, 'Any'),
+    ],
   ].filter(Boolean) as [string, () => void][];
+  const locationFilterCount = [
+    mode !== 'rent' ? origin : 'Any',
+    country,
+    mode !== 'rent' ? importRegion : 'Any',
+    location,
+  ].filter((value) => value !== 'Any').length;
+  const essentialsFilterCount = [
+    minPrice,
+    maxPrice,
+    minYear,
+    body,
+    fuel,
+  ].filter((value) => value !== 'Any').length;
+  const specificationsFilterCount = [
+    engineMax,
+    sellerType,
+    maxKm,
+    transmission,
+    drivetrain,
+    color,
+    doors,
+    seats,
+  ].filter((value) => value !== 'Any').length;
+  const priceFilterSummary = (() => {
+    const suffix = mode === 'rent' ? `/${f.day}` : '';
+    if (minPrice !== 'Any' && maxPrice !== 'Any')
+      return `${money(Number(minPrice), lang)} – ${money(Number(maxPrice), lang)}${suffix}`;
+    if (minPrice !== 'Any')
+      return `≥ ${money(Number(minPrice), lang)}${suffix}`;
+    if (maxPrice !== 'Any')
+      return `≤ ${money(Number(maxPrice), lang)}${suffix}`;
+    return '';
+  })();
   const pageSize = 6;
   const pageCount = Math.max(1, Math.ceil(filtered.length / pageSize));
   const currentPage = Math.min(page, pageCount);
@@ -2488,13 +2625,14 @@ export default function Home() {
               <Search />
               <input
                 value={query}
-                onChange={(e) => setQuery(e.target.value)}
+                onChange={(e) => updateFacet(setQuery, e.target.value)}
                 placeholder={t.search}
               />
               {query && (
                 <button
+                  type="button"
                   className="clear"
-                  onClick={() => setQuery('')}
+                  onClick={() => updateFacet(setQuery, '')}
                   aria-label={a.clearSearch}
                 >
                   <X />
@@ -2517,12 +2655,13 @@ export default function Home() {
               {f.quick.map((label, index) => (
                 <button
                   key={label}
+                  type="button"
                   onClick={() =>
                     index === 0
-                      ? setFuel('Electric')
+                      ? updateFacet(setFuel, 'Electric')
                       : index === 1
-                        ? setBody('SUV')
-                        : setMaxPrice('20000000')
+                        ? updateFacet(setBody, 'SUV')
+                        : updateFacet(setMaxPrice, '20000000')
                   }
                 >
                   {label}
@@ -2587,7 +2726,7 @@ export default function Home() {
             <Search />
             <input
               value={query}
-              onChange={(event) => setQuery(event.target.value)}
+              onChange={(event) => updateFacet(setQuery, event.target.value)}
               onKeyDown={(event) => {
                 if (event.key === 'Enter')
                   document
@@ -2640,8 +2779,9 @@ export default function Home() {
           <div className="model-row">
             <span>{u.models}</span>
             <button
+              type="button"
               className={model === 'All' ? 'active' : ''}
-              onClick={() => setModel('All')}
+              onClick={() => updateFacet(setModel, 'All')}
             >
               {u.allModels.replace('{brand}', brand)}
             </button>
@@ -2655,9 +2795,10 @@ export default function Home() {
               ),
             ).map((availableModel) => (
               <button
+                type="button"
                 key={availableModel}
                 className={model === availableModel ? 'active' : ''}
-                onClick={() => setModel(availableModel)}
+                onClick={() => updateFacet(setModel, availableModel)}
               >
                 {availableModel}
               </button>
@@ -2667,24 +2808,36 @@ export default function Home() {
         <div className="quick-filters">
           <span>{u.refine}</span>
           <button
-            onClick={() => setMaxPrice(mode === 'rent' ? '60000' : '20000000')}
+            type="button"
+            onClick={() =>
+              updateFacet(setMaxPrice, mode === 'rent' ? '60000' : '20000000')
+            }
           >
             {mode === 'rent' ? m.rentUnder : f.quick[2]}
           </button>
-          <button onClick={() => setBody('SUV')}>SUV</button>
-          <button onClick={() => setFuel('Electric')}>{f.quick[0]}</button>
-          <button onClick={reset}>{u.clear}</button>
+          <button type="button" onClick={() => updateFacet(setBody, 'SUV')}>
+            SUV
+          </button>
+          <button
+            type="button"
+            onClick={() => updateFacet(setFuel, 'Electric')}
+          >
+            {f.quick[0]}
+          </button>
+          <button type="button" onClick={reset}>
+            {u.clear}
+          </button>
         </div>
         {activeFilters.length > 0 && (
           <div className="selected-filters">
             <b>{u.selected}</b>
             {activeFilters.map(([label, clear]) => (
-              <button key={label} onClick={clear}>
+              <button type="button" key={label} onClick={clear}>
                 {label}
                 <X />
               </button>
             ))}
-            <button className="clear-filters" onClick={reset}>
+            <button type="button" className="clear-filters" onClick={reset}>
               {u.clear}
             </button>
           </div>
@@ -2716,53 +2869,22 @@ export default function Home() {
         />
       ) : (
         <section className="market">
-          <aside className={mobileFilters ? 'filters open' : 'filters'}>
-            <div className="directory-title">
-              <h2>{m.browse}</h2>
-              <span>
-                {modeInventory.filter((c) => !c.hidden).length} {m.listings}
-              </span>
-            </div>
-            <div className="az-grid">
-              {letters.map((l) => (
-                <button
-                  key={l}
-                  disabled={!directoryBrands.some((b) => b.name.startsWith(l))}
-                  onClick={() => {
-                    const match = directoryBrands.find((b) =>
-                      b.name.startsWith(l),
-                    );
-                    if (match) chooseBrand(match.name);
-                  }}
-                  aria-label={`${m.browse}: ${l}`}
-                >
-                  {l}
-                </button>
-              ))}
-            </div>
-            <div className="brand-list">
-              <button
-                className={brand === 'All' ? 'active' : ''}
-                onClick={() => chooseBrand('All')}
-              >
-                <span>{m.allBrands}</span>
-                <b>{modeInventory.filter((c) => !c.hidden).length}</b>
-              </button>
-              {directoryBrands.map((b) => (
-                <button
-                  key={b.name}
-                  className={brand == b.name ? 'active' : ''}
-                  onClick={() => chooseBrand(b.name)}
-                >
-                  <span>{b.name}</span>
-                  <b>{b.count}</b>
-                </button>
-              ))}
-            </div>
+          <aside
+            ref={filterPanelRef}
+            id="market-filters"
+            className={mobileFilters ? 'filters open' : 'filters'}
+            role={mobileFilters ? 'dialog' : undefined}
+            aria-modal={mobileFilters || undefined}
+            aria-label={t.filters}
+          >
             <div className="filter-head">
               <h2>{t.filters}</h2>
-              <button onClick={reset}>{t.reset}</button>
+              <button type="button" className="filter-reset" onClick={reset}>
+                {t.reset}
+              </button>
               <button
+                ref={filterCloseRef}
+                type="button"
                 className="filter-close"
                 onClick={() => setMobileFilters(false)}
                 aria-label={a.closeFilters}
@@ -2770,269 +2892,369 @@ export default function Home() {
                 <X />
               </button>
             </div>
-            {mode !== 'rent' && (
-              <Filter
-                title={m.source}
-                value={origin}
-                set={(value) => {
-                  setOrigin(value);
-                  if (value === 'local') setImportRegion('Any');
-                  if (value === 'abroad') {
-                    setCountry('Any');
-                    setLocation('Any');
-                  }
-                }}
-                values={['Any', 'local', 'abroad']}
-                labels={[t.any, m.local, m.abroad]}
-              />
-            )}
-            {(mode === 'rent' || origin !== 'abroad') && (
-              <Filter
-                title={m.country}
-                value={country}
-                set={(value) => {
-                  setCountry(value);
-                  if (value !== 'Any') {
-                    setOrigin('local');
-                    setImportRegion('Any');
-                  }
-                  if (
-                    location !== 'Any' &&
-                    value !== 'Any' &&
-                    !citiesByCountry[value]?.includes(location)
-                  )
-                    setLocation('Any');
-                }}
-                values={[
-                  'Any',
-                  'Republic of the Congo',
-                  'Angola',
-                  'Cameroon',
-                  'Gabon',
-                  'DR Congo',
-                ]}
-                labels={[
-                  t.any,
-                  ...[
+            <FilterSection
+              title={m.browse}
+              activeCount={brand === 'All' ? 0 : 1}
+            >
+              <div className="directory-title">
+                <span>
+                  {modeInventory.filter((c) => !c.hidden).length} {m.listings}
+                </span>
+              </div>
+              <div className="az-grid">
+                {letters.map((l) => (
+                  <button
+                    type="button"
+                    key={l}
+                    disabled={
+                      !directoryBrands.some((b) => b.name.startsWith(l))
+                    }
+                    onClick={() => {
+                      const match = directoryBrands.find((b) =>
+                        b.name.startsWith(l),
+                      );
+                      if (match) chooseBrand(match.name);
+                    }}
+                    aria-label={`${m.browse}: ${l}`}
+                  >
+                    {l}
+                  </button>
+                ))}
+              </div>
+              <div className="brand-list">
+                <button
+                  type="button"
+                  className={brand === 'All' ? 'active' : ''}
+                  onClick={() => chooseBrand('All')}
+                  aria-pressed={brand === 'All'}
+                >
+                  <span>{m.allBrands}</span>
+                  <b>{modeInventory.filter((c) => !c.hidden).length}</b>
+                </button>
+                {directoryBrands.map((b) => (
+                  <button
+                    type="button"
+                    key={b.name}
+                    className={brand === b.name ? 'active' : ''}
+                    onClick={() => chooseBrand(b.name)}
+                    aria-pressed={brand === b.name}
+                  >
+                    <span>{b.name}</span>
+                    <b>{b.count}</b>
+                  </button>
+                ))}
+              </div>
+            </FilterSection>
+            <FilterSection
+              title={m.locationGroup}
+              activeCount={locationFilterCount}
+              defaultOpen
+            >
+              {mode !== 'rent' && (
+                <Filter
+                  key="source"
+                  title={m.source}
+                  value={origin}
+                  set={(value) => {
+                    setOrigin(value);
+                    setPage(1);
+                    if (value === 'local') setImportRegion('Any');
+                    if (value === 'abroad') {
+                      setCountry('Any');
+                      setLocation('Any');
+                    }
+                  }}
+                  values={['Any', 'local', 'abroad']}
+                  labels={[t.any, m.local, m.abroad]}
+                  defaultOpen
+                />
+              )}
+              {(mode === 'rent' || origin !== 'abroad') && (
+                <Filter
+                  key="country"
+                  title={m.country}
+                  value={country}
+                  set={(value) => {
+                    setCountry(value);
+                    setPage(1);
+                    if (value !== 'Any') {
+                      setOrigin('local');
+                      setImportRegion('Any');
+                    }
+                    if (
+                      location !== 'Any' &&
+                      value !== 'Any' &&
+                      !citiesByCountry[value]?.includes(location)
+                    )
+                      setLocation('Any');
+                  }}
+                  values={[
+                    'Any',
                     'Republic of the Congo',
                     'Angola',
                     'Cameroon',
                     'Gabon',
                     'DR Congo',
-                  ].map((value) => localize(value, lang)),
-                ]}
-              />
-            )}
-            {mode !== 'rent' && origin !== 'local' && (
+                  ]}
+                  labels={[
+                    t.any,
+                    ...[
+                      'Republic of the Congo',
+                      'Angola',
+                      'Cameroon',
+                      'Gabon',
+                      'DR Congo',
+                    ].map((value) => localize(value, lang)),
+                  ]}
+                />
+              )}
+              {mode !== 'rent' && origin !== 'local' && (
+                <Filter
+                  key="import-region"
+                  title={m.importRegion}
+                  value={importRegion}
+                  set={(value) => {
+                    setImportRegion(value);
+                    setPage(1);
+                    if (value !== 'Any') {
+                      setOrigin('abroad');
+                      setCountry('Any');
+                      setLocation('Any');
+                    }
+                  }}
+                  values={['Any', 'Europe', 'Asia', 'America']}
+                  labels={[
+                    t.any,
+                    ...['Europe', 'Asia', 'America'].map((value) =>
+                      localize(value, lang),
+                    ),
+                  ]}
+                />
+              )}
+              {(mode === 'rent' || origin !== 'abroad') && (
+                <Filter
+                  key="location"
+                  title={m.location}
+                  value={location}
+                  set={(value) => {
+                    setLocation(value);
+                    setPage(1);
+                    if (value !== 'Any') {
+                      setOrigin('local');
+                      setImportRegion('Any');
+                      setCountry(countryForCity(value) || 'Any');
+                    }
+                  }}
+                  values={[
+                    'Any',
+                    ...(country === 'Any'
+                      ? Object.values(citiesByCountry).flat()
+                      : citiesByCountry[country] || []),
+                  ]}
+                  labels={[
+                    t.any,
+                    ...(country === 'Any'
+                      ? Object.values(citiesByCountry).flat()
+                      : citiesByCountry[country] || []),
+                  ]}
+                />
+              )}
+            </FilterSection>
+            <FilterSection
+              title={m.essentialsGroup}
+              activeCount={essentialsFilterCount}
+              defaultOpen
+            >
               <Filter
-                title={m.importRegion}
-                value={importRegion}
-                set={(value) => {
-                  setImportRegion(value);
-                  if (value !== 'Any') {
-                    setOrigin('abroad');
-                    setCountry('Any');
-                    setLocation('Any');
-                  }
-                }}
-                values={['Any', 'Europe', 'Asia', 'America']}
-                labels={[
-                  t.any,
-                  ...['Europe', 'Asia', 'America'].map((value) =>
-                    localize(value, lang),
-                  ),
-                ]}
-              />
-            )}
-            {(mode === 'rent' || origin !== 'abroad') && (
+                key={`price-${mode}`}
+                title={mode === 'rent' ? m.dailyPrice : t.price}
+                value={maxPrice}
+                set={(value) => updateFacet(setMaxPrice, value)}
+                values={
+                  mode === 'rent'
+                    ? ['Any', '30000', '40000', '50000', '60000']
+                    : ['Any', '15000000', '20000000', '25000000', '30000000']
+                }
+                labels={
+                  mode === 'rent'
+                    ? [t.any, '30k', '40k', '50k', `60k FCFA/${f.day}`]
+                    : [t.any, '15M', '20M', '25M', '30M FCFA']
+                }
+                defaultOpen
+                active={minPrice !== 'Any' || maxPrice !== 'Any'}
+                summary={priceFilterSummary}
+              >
+                <div className="custom-price-range">
+                  <label>
+                    {m.minPrice}
+                    {mode === 'rent' ? ` / ${f.day}` : ''}
+                    <input
+                      type="number"
+                      min="0"
+                      step={mode === 'rent' ? '1000' : '100000'}
+                      value={minPrice === 'Any' ? '' : minPrice}
+                      onChange={(event) =>
+                        updateFacet(setMinPrice, event.target.value || 'Any')
+                      }
+                    />
+                  </label>
+                  <label>
+                    {m.maxPrice}
+                    {mode === 'rent' ? ` / ${f.day}` : ''}
+                    <input
+                      type="number"
+                      min="0"
+                      step={mode === 'rent' ? '1000' : '100000'}
+                      value={maxPrice === 'Any' ? '' : maxPrice}
+                      onChange={(event) =>
+                        updateFacet(setMaxPrice, event.target.value || 'Any')
+                      }
+                    />
+                  </label>
+                </div>
+              </Filter>
               <Filter
-                title={m.location}
-                value={location}
-                set={(value) => {
-                  setLocation(value);
-                  if (value !== 'Any') {
-                    setOrigin('local');
-                    setImportRegion('Any');
-                    setCountry(countryForCity(value) || 'Any');
-                  }
-                }}
+                key="year"
+                title={m.year}
+                value={minYear}
+                set={(value) => updateFacet(setMinYear, value)}
+                values={['Any', '2024', '2023', '2022', '2020']}
+                labels={[t.any, '2024', '2023', '2022', '2020']}
+              />
+              <Filter
+                key="body"
+                title={t.body}
+                value={body}
+                set={(value) => updateFacet(setBody, value)}
                 values={[
                   'Any',
-                  ...(country === 'Any'
-                    ? Object.values(citiesByCountry).flat()
-                    : citiesByCountry[country] || []),
-                ]}
-                labels={[
-                  t.any,
-                  ...(country === 'Any'
-                    ? Object.values(citiesByCountry).flat()
-                    : citiesByCountry[country] || []),
-                ]}
-              />
-            )}
-            <Filter
-              title={mode === 'rent' ? m.dailyPrice : t.price}
-              value={maxPrice}
-              set={setMaxPrice}
-              values={
-                mode === 'rent'
-                  ? ['Any', '30000', '40000', '50000', '60000']
-                  : ['Any', '15000000', '20000000', '25000000', '30000000']
-              }
-              labels={
-                mode === 'rent'
-                  ? [t.any, '30k', '40k', '50k', `60k FCFA/${f.day}`]
-                  : [t.any, '15M', '20M', '25M', '30M FCFA']
-              }
-            />
-            <div className="custom-price-range">
-              <label>
-                {m.minPrice}
-                {mode === 'rent' ? ` / ${f.day}` : ''}
-                <input
-                  type="number"
-                  min="0"
-                  step={mode === 'rent' ? '1000' : '100000'}
-                  value={minPrice === 'Any' ? '' : minPrice}
-                  onChange={(event) => setMinPrice(event.target.value || 'Any')}
-                />
-              </label>
-              <label>
-                {m.maxPrice}
-                {mode === 'rent' ? ` / ${f.day}` : ''}
-                <input
-                  type="number"
-                  min="0"
-                  step={mode === 'rent' ? '1000' : '100000'}
-                  value={maxPrice === 'Any' ? '' : maxPrice}
-                  onChange={(event) => setMaxPrice(event.target.value || 'Any')}
-                />
-              </label>
-            </div>
-            <Filter
-              title={m.year}
-              value={minYear}
-              set={setMinYear}
-              values={['Any', '2024', '2023', '2022', '2020']}
-              labels={[t.any, '2024', '2023', '2022', '2020']}
-            />
-            <Filter
-              title={t.body}
-              value={body}
-              set={setBody}
-              values={[
-                'Any',
-                'SUV',
-                'Sedan',
-                'Hatchback',
-                'Wagon',
-                'Coupe',
-                'Pickup',
-                'Van',
-              ]}
-              labels={[
-                t.any,
-                'SUV',
-                ...[
+                  'SUV',
                   'Sedan',
                   'Hatchback',
                   'Wagon',
                   'Coupe',
                   'Pickup',
                   'Van',
-                ].map((value) => localize(value, lang)),
-              ]}
-            />
-            <Filter
-              title={t.fuel}
-              value={fuel}
-              set={setFuel}
-              values={['Any', 'Electric', 'Hybrid', 'Petrol', 'Diesel']}
-              labels={[
-                t.any,
-                ...['Electric', 'Hybrid', 'Petrol', 'Diesel'].map((value) =>
-                  localize(value, lang),
-                ),
-              ]}
-            />
-            <Filter
-              title={m.engine}
-              value={engineMax}
-              set={setEngineMax}
-              values={['Any', '1.6', '2', '3', '4']}
-              labels={[t.any, '≤ 1.6 L', '≤ 2.0 L', '≤ 3.0 L', '≤ 4.0 L']}
-            />
-            <Filter
-              title={m.sellerType}
-              value={sellerType}
-              set={setSellerType}
-              values={['Any', 'Dealer', 'Private']}
-              labels={[
-                t.any,
-                localize('Dealer', lang),
-                localize('Private', lang),
-              ]}
-            />
-            <Filter
-              title={m.mileage}
-              value={maxKm}
-              set={setMaxKm}
-              values={['Any', '20000', '40000', '60000']}
-              labels={[t.any, '≤20k', '≤40k', '≤60k']}
-            />
-            <Filter
-              title={m.transmission}
-              value={transmission}
-              set={setTransmission}
-              values={['Any', 'Automatic', 'Manual']}
-              labels={[
-                t.any,
-                localize('Automatic', lang),
-                localize('Manual', lang),
-              ]}
-            />
-            <Filter
-              title={m.drivetrain}
-              value={drivetrain}
-              set={setDrivetrain}
-              values={['Any', 'FWD', 'RWD', 'AWD']}
-              labels={[t.any, 'FWD', 'RWD', 'AWD']}
-            />
-            <Filter
-              title={m.color}
-              value={color}
-              set={setColor}
-              values={[
-                'Any',
-                'Black',
-                'White',
-                'Silver',
-                'Blue',
-                'Yellow',
-                'Sage',
-              ]}
-              labels={[
-                t.any,
-                ...['Black', 'White', 'Silver', 'Blue', 'Yellow', 'Sage'].map(
-                  (value) => localize(value, lang),
-                ),
-              ]}
-            />
-            <Filter
-              title={m.doors}
-              value={doors}
-              set={setDoors}
-              values={['Any', '2', '4', '5']}
-              labels={[t.any, '2', '4', '5']}
-            />
-            <Filter
-              title={m.seats}
-              value={seats}
-              set={setSeats}
-              values={['Any', '2', '5', '7']}
-              labels={[t.any, '2', '5', '7']}
-            />
+                ]}
+                labels={[
+                  t.any,
+                  'SUV',
+                  ...[
+                    'Sedan',
+                    'Hatchback',
+                    'Wagon',
+                    'Coupe',
+                    'Pickup',
+                    'Van',
+                  ].map((value) => localize(value, lang)),
+                ]}
+              />
+              <Filter
+                key="fuel"
+                title={t.fuel}
+                value={fuel}
+                set={(value) => updateFacet(setFuel, value)}
+                values={['Any', 'Electric', 'Hybrid', 'Petrol', 'Diesel']}
+                labels={[
+                  t.any,
+                  ...['Electric', 'Hybrid', 'Petrol', 'Diesel'].map((value) =>
+                    localize(value, lang),
+                  ),
+                ]}
+              />
+            </FilterSection>
+            <FilterSection
+              title={m.specificationsGroup}
+              activeCount={specificationsFilterCount}
+            >
+              <Filter
+                key="engine"
+                title={m.engine}
+                value={engineMax}
+                set={(value) => updateFacet(setEngineMax, value)}
+                values={['Any', '1.6', '2', '3', '4']}
+                labels={[t.any, '≤ 1.6 L', '≤ 2.0 L', '≤ 3.0 L', '≤ 4.0 L']}
+              />
+              <Filter
+                key="seller"
+                title={m.sellerType}
+                value={sellerType}
+                set={(value) => updateFacet(setSellerType, value)}
+                values={['Any', 'Dealer', 'Private']}
+                labels={[
+                  t.any,
+                  localize('Dealer', lang),
+                  localize('Private', lang),
+                ]}
+              />
+              <Filter
+                key="mileage"
+                title={m.mileage}
+                value={maxKm}
+                set={(value) => updateFacet(setMaxKm, value)}
+                values={['Any', '20000', '40000', '60000']}
+                labels={[t.any, '≤20k', '≤40k', '≤60k']}
+              />
+              <Filter
+                key="transmission"
+                title={m.transmission}
+                value={transmission}
+                set={(value) => updateFacet(setTransmission, value)}
+                values={['Any', 'Automatic', 'Manual']}
+                labels={[
+                  t.any,
+                  localize('Automatic', lang),
+                  localize('Manual', lang),
+                ]}
+              />
+              <Filter
+                key="drivetrain"
+                title={m.drivetrain}
+                value={drivetrain}
+                set={(value) => updateFacet(setDrivetrain, value)}
+                values={['Any', 'FWD', 'RWD', 'AWD']}
+                labels={[t.any, 'FWD', 'RWD', 'AWD']}
+              />
+              <Filter
+                key="color"
+                title={m.color}
+                value={color}
+                set={(value) => updateFacet(setColor, value)}
+                values={[
+                  'Any',
+                  'Black',
+                  'White',
+                  'Silver',
+                  'Blue',
+                  'Yellow',
+                  'Sage',
+                ]}
+                labels={[
+                  t.any,
+                  ...['Black', 'White', 'Silver', 'Blue', 'Yellow', 'Sage'].map(
+                    (value) => localize(value, lang),
+                  ),
+                ]}
+              />
+              <Filter
+                key="doors"
+                title={m.doors}
+                value={doors}
+                set={(value) => updateFacet(setDoors, value)}
+                values={['Any', '2', '4', '5']}
+                labels={[t.any, '2', '4', '5']}
+              />
+              <Filter
+                key="seats"
+                title={m.seats}
+                value={seats}
+                set={(value) => updateFacet(setSeats, value)}
+                values={['Any', '2', '5', '7']}
+                labels={[t.any, '2', '5', '7']}
+              />
+            </FilterSection>
             <button
+              type="button"
               className="show-results"
               onClick={() => setMobileFilters(false)}
             >
@@ -3043,21 +3265,25 @@ export default function Home() {
             <div className="inventory-head">
               <div>
                 <p>{mode === 'rent' ? m.rentReady : t.popular}</p>
-                <h2>
+                <h2 aria-live="polite">
                   {filtered.length} {mode === 'rent' ? m.trip : t.results}
                 </h2>
               </div>
               <div>
                 <button
+                  ref={filterButtonRef}
+                  type="button"
                   className="mobile-filter"
                   onClick={() => setMobileFilters(true)}
+                  aria-expanded={mobileFilters}
+                  aria-controls="market-filters"
                 >
                   <SlidersHorizontal /> {t.filters}
                   {activeFilters.length > 0 && ` (${activeFilters.length})`}
                 </button>
                 <select
                   value={sort}
-                  onChange={(e) => setSort(e.target.value)}
+                  onChange={(e) => updateFacet(setSort, e.target.value)}
                   aria-label={t.sort}
                 >
                   <option value="recommended">{t.sort}</option>
@@ -3072,33 +3298,47 @@ export default function Home() {
             </div>
             <div className="listing-flags" aria-label={u.refine}>
               <button
+                type="button"
                 className={verifiedOnly ? 'active' : ''}
-                onClick={() => setVerifiedOnly((value) => !value)}
+                onClick={() => {
+                  setVerifiedOnly((value) => !value);
+                  setPage(1);
+                }}
                 aria-pressed={verifiedOnly}
               >
                 <Check /> {m.verifiedOnly}
               </button>
               <button
+                type="button"
                 className={availableOnly ? 'active' : ''}
-                onClick={() => setAvailableOnly((value) => !value)}
+                onClick={() => {
+                  setAvailableOnly((value) => !value);
+                  setPage(1);
+                }}
                 aria-pressed={availableOnly}
               >
                 <CarFront /> {m.availableOnly}
               </button>
               <button
+                type="button"
                 className={latestOnly ? 'active' : ''}
-                onClick={() => setLatestOnly((value) => !value)}
+                onClick={() => {
+                  setLatestOnly((value) => !value);
+                  setPage(1);
+                }}
                 aria-pressed={latestOnly}
               >
                 <Sparkles /> {m.latestOnly}
               </button>
               <button
+                type="button"
                 className={sellerType === 'Private' ? 'active' : ''}
-                onClick={() =>
+                onClick={() => {
                   setSellerType((value) =>
                     value === 'Private' ? 'Any' : 'Private',
-                  )
-                }
+                  );
+                  setPage(1);
+                }}
                 aria-pressed={sellerType === 'Private'}
               >
                 <User /> {m.privateOnly}
@@ -4158,43 +4398,97 @@ function SellCarPanel({
   );
 }
 
+function FilterSection({
+  title,
+  activeCount,
+  defaultOpen = false,
+  children,
+}: {
+  title: string;
+  activeCount: number;
+  defaultOpen?: boolean;
+  children: ReactNode;
+}) {
+  const [open, setOpen] = useState(defaultOpen);
+  const contentId = useId();
+  return (
+    <section className={`filter-section${open ? ' open' : ''}`}>
+      <button
+        type="button"
+        className="filter-section-title"
+        onClick={() => setOpen((current) => !current)}
+        aria-expanded={open}
+        aria-controls={contentId}
+      >
+        <span>{title}</span>
+        <span>
+          {activeCount > 0 && <b>{activeCount}</b>}
+          <ChevronDown className={open ? 'open' : ''} />
+        </span>
+      </button>
+      <div className="filter-section-content" id={contentId} hidden={!open}>
+        {children}
+      </div>
+    </section>
+  );
+}
 function Filter({
   title,
   value,
   set,
   values,
   labels,
+  defaultOpen = false,
+  active,
+  summary,
+  children,
 }: {
   title: string;
   value: string;
   set: (v: string) => void;
   values: string[];
   labels: string[];
+  defaultOpen?: boolean;
+  active?: boolean;
+  summary?: string;
+  children?: ReactNode;
 }) {
-  const [open, setOpen] = useState(true);
+  const [open, setOpen] = useState(defaultOpen);
+  const optionsId = useId();
+  const selectedIndex = values.indexOf(value);
+  const selectedLabel = selectedIndex >= 0 ? labels[selectedIndex] : value;
+  const hasActiveValue = active ?? value !== 'Any';
   return (
-    <div className="filter-group">
+    <div className={`filter-group${hasActiveValue ? ' active' : ''}`}>
       <button
+        type="button"
         className="filter-title"
         onClick={() => setOpen((v) => !v)}
         aria-expanded={open}
+        aria-controls={optionsId}
       >
-        <h3>{title}</h3>
+        <span className="filter-title-copy">
+          <span>{title}</span>
+          {!open && hasActiveValue && <small>{summary || selectedLabel}</small>}
+        </span>
         <ChevronDown className={open ? 'open' : ''} />
       </button>
-      {open && (
+      <div className="filter-options" id={optionsId} hidden={!open}>
         <div className="pills">
           {values.map((v, i) => (
             <button
+              type="button"
               key={v}
               className={value === v ? 'active' : ''}
               onClick={() => set(v)}
+              aria-pressed={value === v}
             >
               {labels[i]}
             </button>
           ))}
         </div>
-      )}
+        {children}
+      </div>
     </div>
   );
 }
