@@ -38,6 +38,7 @@ import {
   X,
 } from 'lucide-react';
 type Lang = 'en' | 'fr' | 'es';
+type ContactPreference = 'WhatsApp' | 'Phone' | 'Email';
 type Car = {
   id: number;
   make: string;
@@ -70,7 +71,15 @@ type Car = {
   rentable?: boolean;
   dailyRate?: number;
 };
-type UserAccount = { name: string; email: string };
+type UserAccount = {
+  name: string;
+  email: string;
+  phone?: string;
+  country?: string;
+  city?: string;
+  preferredContact?: ContactPreference;
+  preferredLanguage?: Lang;
+};
 type PartRequest = {
   id: string;
   vehicle: string;
@@ -762,6 +771,37 @@ const citiesByCountry: Record<string, string[]> = {
   Gabon: ['Libreville'],
   'DR Congo': ['Kinshasa'],
 };
+const accountMarkets = Object.keys(citiesByCountry);
+const contactPreferenceLabels: Record<
+  Lang,
+  Record<ContactPreference, string>
+> = {
+  en: { WhatsApp: 'WhatsApp', Phone: 'Phone call', Email: 'Email' },
+  fr: { WhatsApp: 'WhatsApp', Phone: 'Appel téléphonique', Email: 'E-mail' },
+  es: { WhatsApp: 'WhatsApp', Phone: 'Llamada telefónica', Email: 'Correo' },
+};
+const languageLabels: Record<Lang, Record<Lang, string>> = {
+  en: { en: 'English', fr: 'French', es: 'Spanish' },
+  fr: { en: 'Anglais', fr: 'Français', es: 'Espagnol' },
+  es: { en: 'Inglés', fr: 'Francés', es: 'Español' },
+};
+const profileCompletion = (user: UserAccount | null) => {
+  if (!user) return 0;
+  const fields = [
+    user.name,
+    user.email,
+    user.phone,
+    user.country,
+    user.city,
+    user.preferredContact,
+    user.preferredLanguage,
+  ];
+  return Math.round(
+    (fields.filter((value) => String(value || '').trim()).length /
+      fields.length) *
+      100,
+  );
+};
 const countryForCity = (city: string) =>
   Object.entries(citiesByCountry).find(([, cities]) =>
     cities.includes(city),
@@ -1190,7 +1230,7 @@ const flowCopy = {
     helpText:
       'Browse, compare, rent or request a part. For transaction support, use the seller form on any listing.',
     privacyText:
-      'Marketplace requests and signed-in account data are stored securely for service delivery. Language preferences may also be stored on this device.',
+      'Marketplace requests and signed-in profile details—including contact, location and language preferences—are stored securely for service delivery. Device preferences may also be stored locally.',
     termsText:
       'All requests remain subject to inspection, seller confirmation, payment, delivery and local registration requirements. JFcars does not issue refunds.',
     sellTitle: 'List your vehicle',
@@ -1254,7 +1294,7 @@ const flowCopy = {
     helpText:
       'Parcourez, comparez, louez ou demandez une pièce. Pour une transaction, utilisez le formulaire vendeur de l’annonce.',
     privacyText:
-      'Les demandes et les données des comptes connectés sont conservées pour assurer le service. La préférence de langue peut aussi être stockée sur cet appareil.',
+      'Les demandes et les informations du profil connecté—notamment le contact, la localisation et la langue—sont conservées pour assurer le service. Certaines préférences peuvent aussi être stockées sur cet appareil.',
     termsText:
       'Toute demande reste soumise à l’inspection, à la confirmation du vendeur, au paiement, à la livraison et aux règles locales d’immatriculation. JFcars n’effectue aucun remboursement.',
     sellTitle: 'Publier votre véhicule',
@@ -1316,7 +1356,7 @@ const flowCopy = {
     helpText:
       'Explora, compara, alquila o solicita una pieza. Para una operación, usa el formulario del vendedor en el anuncio.',
     privacyText:
-      'Las solicitudes y los datos de las cuentas conectadas se guardan para prestar el servicio. La preferencia de idioma también puede guardarse en este dispositivo.',
+      'Las solicitudes y los datos del perfil conectado—incluidos contacto, ubicación e idioma—se guardan para prestar el servicio. Algunas preferencias también pueden guardarse en este dispositivo.',
     termsText:
       'Toda solicitud está sujeta a inspección, confirmación del vendedor, pago, entrega y requisitos locales de matriculación. JFcars no realiza reembolsos.',
     sellTitle: 'Publica tu vehículo',
@@ -1335,14 +1375,32 @@ const profileCopy = {
     cart: 'In cart',
     parts: 'Part requests',
     recent: 'Recent activity',
-    ready: 'Profile ready',
-    readyText: 'Your account is set up and ready to go.',
+    completion: 'Profile completeness',
+    complete: 'Profile complete',
+    completeText: 'Your contact and market preferences are ready to use.',
+    incompleteText: 'Add your missing details for faster requests and replies.',
+    completeAction: 'Complete profile',
+    details: 'Your details',
+    notProvided: 'Not provided',
     noPurchases: 'No purchases yet',
     purchasesText: 'Your vehicle orders will be tracked here.',
     noRentals: 'No upcoming rentals',
     rentalsText: 'Book a car and manage your trip here.',
     settings: 'Profile settings',
+    settingsText:
+      'Keep the details our regional team and sellers use to contact you up to date.',
+    phone: 'Phone or WhatsApp number',
+    country: 'Country or market',
+    city: 'City',
+    preferredLanguage: 'Preferred language',
+    preferredContact: 'Preferred contact method',
+    chooseCountry: 'Choose your market',
+    emailManaged: 'Verified and managed by your ChatGPT sign-in.',
+    authNote:
+      'Secure sign-in provides your verified email. Add your phone, city and preferences from your profile.',
     save: 'Save changes',
+    saving: 'Saving…',
+    saveError: 'Your profile could not be saved. Please try again.',
     signout: 'Sign out',
   },
   fr: {
@@ -1353,32 +1411,71 @@ const profileCopy = {
     cart: 'Dans le panier',
     parts: 'Demandes de pièces',
     recent: 'Activité récente',
-    ready: 'Profil prêt',
-    readyText: 'Votre compte est configuré et prêt.',
+    completion: 'Progression du profil',
+    complete: 'Profil complet',
+    completeText:
+      'Vos coordonnées et préférences sont prêtes à être utilisées.',
+    incompleteText:
+      'Ajoutez les informations manquantes pour accélérer vos demandes et réponses.',
+    completeAction: 'Compléter le profil',
+    details: 'Vos informations',
+    notProvided: 'Non renseigné',
     noPurchases: 'Aucun achat',
     purchasesText: 'Vos commandes de véhicules seront suivies ici.',
     noRentals: 'Aucune location à venir',
     rentalsText: 'Réservez une voiture et gérez votre voyage ici.',
     settings: 'Paramètres du profil',
+    settingsText:
+      'Tenez à jour les informations utilisées par notre équipe régionale et les vendeurs pour vous contacter.',
+    phone: 'Téléphone ou WhatsApp',
+    country: 'Pays ou marché',
+    city: 'Ville',
+    preferredLanguage: 'Langue préférée',
+    preferredContact: 'Moyen de contact préféré',
+    chooseCountry: 'Choisissez votre marché',
+    emailManaged: 'Adresse vérifiée et gérée par votre connexion ChatGPT.',
+    authNote:
+      'La connexion sécurisée fournit votre e-mail vérifié. Ajoutez votre téléphone, votre ville et vos préférences dans votre profil.',
     save: 'Enregistrer',
+    saving: 'Enregistrement…',
+    saveError: 'Impossible d’enregistrer votre profil. Réessayez.',
     signout: 'Se déconnecter',
   },
   es: {
-    welcome: 'Bienvenido de nuevo',
+    welcome: 'Te damos la bienvenida',
     tabs: ['Resumen', 'Compras', 'Alquileres', 'Ajustes'],
     glance: 'Tu actividad en JFcars',
     saved: 'Coches guardados',
     cart: 'En el carrito',
     parts: 'Solicitudes de piezas',
     recent: 'Actividad reciente',
-    ready: 'Perfil listo',
-    readyText: 'Tu cuenta está configurada y lista.',
+    completion: 'Progreso del perfil',
+    complete: 'Perfil completo',
+    completeText: 'Tus datos de contacto y preferencias están listos.',
+    incompleteText:
+      'Añade los datos que faltan para agilizar tus solicitudes y respuestas.',
+    completeAction: 'Completar perfil',
+    details: 'Tus datos',
+    notProvided: 'Sin indicar',
     noPurchases: 'Sin compras todavía',
     purchasesText: 'Aquí podrás seguir tus pedidos de vehículos.',
     noRentals: 'Sin alquileres próximos',
     rentalsText: 'Reserva un coche y gestiona tu viaje aquí.',
     settings: 'Ajustes del perfil',
+    settingsText:
+      'Mantén actualizados los datos que nuestro equipo regional y los vendedores usan para contactarte.',
+    phone: 'Teléfono o WhatsApp',
+    country: 'País o mercado',
+    city: 'Ciudad',
+    preferredLanguage: 'Idioma preferido',
+    preferredContact: 'Método de contacto preferido',
+    chooseCountry: 'Elige tu mercado',
+    emailManaged: 'Correo verificado y gestionado por tu acceso de ChatGPT.',
+    authNote:
+      'El acceso seguro proporciona tu correo verificado. Añade teléfono, ciudad y preferencias desde tu perfil.',
     save: 'Guardar cambios',
+    saving: 'Guardando…',
+    saveError: 'No se pudo guardar tu perfil. Inténtalo de nuevo.',
     signout: 'Cerrar sesión',
   },
 } as const;
@@ -1719,7 +1816,15 @@ export default function Home() {
                 partRequestCount?: number;
               };
               if (!active) return;
-              if (account.user) setUser(account.user);
+              if (account.user) {
+                setUser(account.user);
+                if (
+                  !urlLang &&
+                  account.user.preferredLanguage &&
+                  ['en', 'fr', 'es'].includes(account.user.preferredLanguage)
+                )
+                  setLang(account.user.preferredLanguage);
+              }
               if (Array.isArray(account.cart))
                 setCart((current) =>
                   Array.from(new Set([...current, ...account.cart!])),
@@ -1862,7 +1967,14 @@ export default function Home() {
         signal: controller.signal,
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify({
-          profile: { name: user.name },
+          profile: {
+            name: user.name,
+            phone: user.phone || '',
+            country: user.country || '',
+            city: user.city || '',
+            preferredContact: user.preferredContact || '',
+            preferredLanguage: user.preferredLanguage || '',
+          },
           cart,
           rentalCart,
           saved,
@@ -2231,11 +2343,19 @@ export default function Home() {
             )}
           </button>
           <button
-            className="account"
-            aria-label={user ? user.name : u.signIn}
+            className={`account${user && profileCompletion(user) < 100 ? ' incomplete' : ''}`}
+            aria-label={
+              user
+                ? `${user.name}${profileCompletion(user) < 100 ? ` · ${profileCopy[lang].completeAction}` : ''}`
+                : u.signIn
+            }
             onClick={() => setPanel(user ? 'profile' : 'auth')}
           >
-            <User size={18} />
+            {user ? (
+              <i className="account-avatar">{user.name.slice(0, 1)}</i>
+            ) : (
+              <User size={18} />
+            )}
             <span>{user ? user.name.split(' ')[0] : u.signIn}</span>
           </button>
           {VEHICLE_SELLING_ENABLED && (
@@ -3201,6 +3321,7 @@ export default function Home() {
       {selectedCar && (
         <VehicleDetails
           car={selectedCar}
+          user={user}
           lang={lang}
           mode={mode}
           inCart={(mode === 'rent' ? rentalCart : cart).includes(
@@ -3259,6 +3380,7 @@ export default function Home() {
           orders={userOrders}
           setOrders={setUserOrders}
           lang={lang}
+          onLanguageChange={setLang}
         />
       )}{' '}
       {panel === 'admin' && isAdmin && (
@@ -4355,6 +4477,7 @@ function AccountLayer({
   orders,
   setOrders,
   lang,
+  onLanguageChange,
 }: {
   panel: 'auth' | 'cart' | 'profile';
   close: () => void;
@@ -4373,6 +4496,7 @@ function AccountLayer({
   orders: OrderRecord[];
   setOrders: (orders: OrderRecord[]) => void;
   lang: Lang;
+  onLanguageChange: (language: Lang) => void;
 }) {
   const [profileTab, setProfileTab] = useState('overview');
   const [notice, setNotice] = useState('');
@@ -4381,11 +4505,15 @@ function AccountLayer({
   const [rentalStart, setRentalStart] = useState('');
   const [rentalEnd, setRentalEnd] = useState('');
   const [rentalConsent, setRentalConsent] = useState(false);
+  const [profileSaving, setProfileSaving] = useState(false);
+  const [profileSaveFailed, setProfileSaveFailed] = useState(false);
   const f = flowCopy[lang];
   const u = ui[lang];
   const p = profileCopy[lang];
   const a = accessibilityCopy[lang];
   const m = marketCopy[lang];
+  const completion = profileCompletion(user);
+  const profileComplete = completion === 100;
   const today = new Date().toISOString().slice(0, 10);
   const minimumReturnDate = rentalStart
     ? new Date(Date.parse(`${rentalStart}T00:00:00Z`) + 86_400_000)
@@ -4413,6 +4541,51 @@ function AccountLayer({
         amount: rentalRate(car) * rentalDays,
       })),
   ];
+  const saveProfile = async (event: React.SyntheticEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (!user) return;
+    const data = new FormData(event.currentTarget);
+    const nextUser: UserAccount = {
+      name: formValue(data, 'profileName', user.name),
+      email: user.email,
+      phone: formValue(data, 'profilePhone'),
+      country: formValue(data, 'profileCountry'),
+      city: formValue(data, 'profileCity'),
+      preferredContact: formValue(
+        data,
+        'profileContact',
+        'WhatsApp',
+      ) as ContactPreference,
+      preferredLanguage: formValue(data, 'profileLanguage', lang) as Lang,
+    };
+    setProfileSaving(true);
+    setProfileSaveFailed(false);
+    setNotice('');
+    try {
+      const response = await fetch('/api/account', {
+        method: 'PUT',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({
+          profile: nextUser,
+          cart,
+          rentalCart,
+          saved,
+        }),
+      });
+      if (!response.ok) throw new Error('Profile update failed');
+      const result = (await response.json()) as { user?: UserAccount };
+      const savedUser = result.user || nextUser;
+      setUser(savedUser);
+      if (savedUser.preferredLanguage)
+        onLanguageChange(savedUser.preferredLanguage);
+      setNotice(flowCopy[savedUser.preferredLanguage || lang].profileSaved);
+    } catch {
+      setProfileSaveFailed(true);
+      setNotice(p.saveError);
+    } finally {
+      setProfileSaving(false);
+    }
+  };
   const submitCheckout = async () => {
     if (!user) {
       goAuth();
@@ -4524,6 +4697,10 @@ function AccountLayer({
               {authMode === 'signin' ? f.signIn : f.create}
               <ArrowRight />
             </Link>
+            <p className="auth-profile-note">
+              <User />
+              <span>{p.authNote}</span>
+            </p>
             <small>{f.continue}</small>
           </div>
         )}
@@ -4694,6 +4871,17 @@ function AccountLayer({
                 <p>{p.welcome}</p>
                 <h2>{user.name}</h2>
                 <small>{user.email}</small>
+                <div className="profile-head-meta">
+                  {user.phone && <span>{user.phone}</span>}
+                  {(user.city || user.country) && (
+                    <span>
+                      <MapPin />
+                      {[user.city, localize(user.country, lang)]
+                        .filter((value) => value && value !== '—')
+                        .join(' · ')}
+                    </span>
+                  )}
+                </div>
               </div>
             </div>
             <nav>
@@ -4734,14 +4922,68 @@ function AccountLayer({
                       <span>{p.parts}</span>
                     </div>
                   </div>
-                  <h4>{p.recent}</h4>
-                  <div className="activity">
-                    <span>
-                      <Check />
-                    </span>
+                  <h4>{p.completion}</h4>
+                  <div
+                    className={`profile-completion${profileComplete ? ' complete' : ''}`}
+                  >
                     <div>
-                      <b>{p.ready}</b>
-                      <p>{p.readyText}</p>
+                      <span>{profileComplete ? <Check /> : <User />}</span>
+                      <div>
+                        <b>
+                          {profileComplete ? p.complete : p.completion} ·{' '}
+                          {completion}%
+                        </b>
+                        <p>
+                          {profileComplete ? p.completeText : p.incompleteText}
+                        </p>
+                      </div>
+                      {!profileComplete && (
+                        <button onClick={() => setProfileTab('settings')}>
+                          {p.completeAction}
+                          <ArrowRight />
+                        </button>
+                      )}
+                    </div>
+                    <progress
+                      className="profile-progress"
+                      aria-label={p.completion}
+                      max={100}
+                      value={completion}
+                    />
+                  </div>
+                  <h4>{p.details}</h4>
+                  <div className="profile-detail-grid">
+                    <div>
+                      <span>{p.phone}</span>
+                      <b>{user.phone || p.notProvided}</b>
+                    </div>
+                    <div>
+                      <span>
+                        {p.city} · {p.country}
+                      </span>
+                      <b>
+                        {user.city || user.country
+                          ? [user.city, localize(user.country, lang)]
+                              .filter((value) => value && value !== '—')
+                              .join(' · ')
+                          : p.notProvided}
+                      </b>
+                    </div>
+                    <div>
+                      <span>{p.preferredContact}</span>
+                      <b>
+                        {user.preferredContact
+                          ? contactPreferenceLabels[lang][user.preferredContact]
+                          : p.notProvided}
+                      </b>
+                    </div>
+                    <div>
+                      <span>{p.preferredLanguage}</span>
+                      <b>
+                        {user.preferredLanguage
+                          ? languageLabels[lang][user.preferredLanguage]
+                          : p.notProvided}
+                      </b>
                     </div>
                   </div>
                 </>
@@ -4769,38 +5011,126 @@ function AccountLayer({
               {profileTab === 'settings' && (
                 <form
                   className="profile-settings-form"
-                  onSubmit={(event) => {
-                    event.preventDefault();
-                    const data = new FormData(event.currentTarget);
-                    setUser({
-                      name: formValue(data, 'profileName', user.name),
-                      email: formValue(data, 'profileEmail', user.email),
-                    });
-                    setNotice(f.profileSaved);
-                  }}
+                  onSubmit={(event) => void saveProfile(event)}
                 >
-                  <h3>{p.settings}</h3>
-                  <label>
-                    {f.name}
-                    <input
-                      name="profileName"
-                      defaultValue={user.name}
-                      required
-                    />
-                  </label>
-                  <label>
-                    {f.email}
-                    <input
-                      name="profileEmail"
-                      type="email"
-                      defaultValue={user.email}
-                      readOnly
-                    />
-                  </label>
-                  <button className="save-profile">{p.save}</button>
+                  <div className="profile-form-intro">
+                    <h3>{p.settings}</h3>
+                    <p>{p.settingsText}</p>
+                  </div>
+                  <div className="profile-form-grid">
+                    <label>
+                      {f.name}
+                      <input
+                        name="profileName"
+                        defaultValue={user.name}
+                        autoComplete="name"
+                        maxLength={100}
+                        required
+                      />
+                    </label>
+                    <label>
+                      {f.email}
+                      <input
+                        name="profileEmail"
+                        type="email"
+                        defaultValue={user.email}
+                        autoComplete="email"
+                        readOnly
+                      />
+                      <small>{p.emailManaged}</small>
+                    </label>
+                    <label>
+                      {p.phone}
+                      <input
+                        name="profilePhone"
+                        type="tel"
+                        defaultValue={user.phone || ''}
+                        autoComplete="tel"
+                        minLength={7}
+                        maxLength={40}
+                        placeholder="+242 06 000 0000"
+                        required
+                      />
+                    </label>
+                    <label>
+                      {p.country}
+                      <select
+                        name="profileCountry"
+                        defaultValue={user.country || ''}
+                        required
+                      >
+                        <option value="" disabled>
+                          {p.chooseCountry}
+                        </option>
+                        {accountMarkets.map((market) => (
+                          <option value={market} key={market}>
+                            {market === 'Angola'
+                              ? `${localize(market, lang)} — Cabinda`
+                              : localize(market, lang)}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                    <label>
+                      {p.city}
+                      <input
+                        name="profileCity"
+                        defaultValue={user.city || ''}
+                        autoComplete="address-level2"
+                        list="profile-city-suggestions"
+                        maxLength={80}
+                        required
+                      />
+                      <datalist id="profile-city-suggestions">
+                        {Object.values(citiesByCountry)
+                          .flat()
+                          .map((city) => (
+                            <option key={city} value={city}>
+                              {city}
+                            </option>
+                          ))}
+                      </datalist>
+                    </label>
+                    <label>
+                      {p.preferredContact}
+                      <select
+                        name="profileContact"
+                        defaultValue={user.preferredContact || 'WhatsApp'}
+                        required
+                      >
+                        {(
+                          ['WhatsApp', 'Phone', 'Email'] as ContactPreference[]
+                        ).map((contact) => (
+                          <option key={contact} value={contact}>
+                            {contactPreferenceLabels[lang][contact]}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                    <label>
+                      {p.preferredLanguage}
+                      <select
+                        name="profileLanguage"
+                        defaultValue={user.preferredLanguage || lang}
+                        required
+                      >
+                        {(['en', 'fr', 'es'] as Lang[]).map((language) => (
+                          <option key={language} value={language}>
+                            {languageLabels[lang][language]}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                  </div>
+                  <button className="save-profile" disabled={profileSaving}>
+                    {profileSaving ? p.saving : p.save}
+                  </button>
                   {notice && (
-                    <p className="form-notice" aria-live="polite">
-                      <Check />
+                    <p
+                      className={`form-notice${profileSaveFailed ? ' error' : ''}`}
+                      aria-live="polite"
+                    >
+                      {!profileSaveFailed && <Check />}
                       {notice}
                     </p>
                   )}
@@ -4883,6 +5213,7 @@ function ProfileOrders({
 }
 function VehicleDetails({
   car,
+  user,
   lang,
   mode,
   close,
@@ -4891,6 +5222,7 @@ function VehicleDetails({
   onInquiry,
 }: {
   car: Car;
+  user: UserAccount | null;
   lang: Lang;
   mode: 'buy' | 'rent' | 'parts';
   close: () => void;
@@ -5160,11 +5492,22 @@ function VehicleDetails({
                   <h3>{labels.contactTitle}</h3>
                   <label>
                     {labels.contactName}
-                    <input name="customer" required />
+                    <input
+                      name="customer"
+                      defaultValue={user?.name || ''}
+                      autoComplete="name"
+                      required
+                    />
                   </label>
                   <label>
                     {labels.contactPhone}
-                    <input name="phone" required type="tel" />
+                    <input
+                      name="phone"
+                      defaultValue={user?.phone || ''}
+                      autoComplete="tel"
+                      required
+                      type="tel"
+                    />
                   </label>
                   <label>
                     {labels.contactMessage}
