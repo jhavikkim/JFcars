@@ -1178,6 +1178,68 @@ const marketCopy = {
     tagline: 'Conduce feliz.',
   },
 } as const;
+const footerCopy = {
+  en: {
+    summary: 'Buy, rent and request car parts across Central Africa.',
+    markets:
+      'Our five markets: Republic of the Congo, Cameroon, Gabon, Angola (Cabinda) and DR Congo.',
+    explore: 'Explore',
+    buy: 'Buy a car',
+    rent: 'Rent a car',
+    parts: 'Request a part',
+    gallery: 'Gallery',
+    accountHelp: 'Account & help',
+    account: 'My account',
+    cartRequests: 'Cart & requests',
+    help: 'Help',
+    legal: 'Legal',
+    privacy: 'Privacy',
+    terms: 'Marketplace terms',
+    notice:
+      'Purchase and rental requests require seller confirmation. JFcars does not process payments on this website; payment is arranged directly with the seller. JFcars does not issue refunds.',
+    copyright: 'All rights reserved.',
+  },
+  fr: {
+    summary: 'Achetez, louez et demandez des pièces auto en Afrique centrale.',
+    markets:
+      'Nos cinq marchés : République du Congo, Cameroun, Gabon, Angola (Cabinda) et RD Congo.',
+    explore: 'Découvrir',
+    buy: 'Acheter une voiture',
+    rent: 'Louer une voiture',
+    parts: 'Demander une pièce',
+    gallery: 'Galerie',
+    accountHelp: 'Compte et assistance',
+    account: 'Mon compte',
+    cartRequests: 'Panier et demandes',
+    help: 'Aide',
+    legal: 'Informations légales',
+    privacy: 'Confidentialité',
+    terms: 'Conditions de la place de marché',
+    notice:
+      'Les demandes d’achat et de location nécessitent la confirmation du vendeur. JFcars ne traite aucun paiement sur ce site ; le paiement est organisé directement avec le vendeur. JFcars n’effectue aucun remboursement.',
+    copyright: 'Tous droits réservés.',
+  },
+  es: {
+    summary: 'Compra, alquila y solicita repuestos en África Central.',
+    markets:
+      'Nuestros cinco mercados: República del Congo, Camerún, Gabón, Angola (Cabinda) y RD del Congo.',
+    explore: 'Explorar',
+    buy: 'Comprar un coche',
+    rent: 'Alquilar un coche',
+    parts: 'Solicitar un repuesto',
+    gallery: 'Galería',
+    accountHelp: 'Cuenta y ayuda',
+    account: 'Mi cuenta',
+    cartRequests: 'Carrito y solicitudes',
+    help: 'Ayuda',
+    legal: 'Legal',
+    privacy: 'Privacidad',
+    terms: 'Condiciones del mercado',
+    notice:
+      'Las solicitudes de compra y alquiler requieren la confirmación del vendedor. JFcars no procesa pagos en este sitio; el pago se organiza directamente con el vendedor. JFcars no realiza reembolsos.',
+    copyright: 'Todos los derechos reservados.',
+  },
+} as const;
 const flowCopy = {
   en: {
     eyebrow: 'Central Africa’s trusted car market.',
@@ -3320,7 +3382,11 @@ export default function Home() {
       )}
       {selectedCar && (
         <VehicleDetails
+          key={`${mode}-${selectedCar.id}`}
           car={selectedCar}
+          inventory={modeInventory.filter(
+            (candidate) => !candidate.hidden && candidate.available !== false,
+          )}
           user={user}
           lang={lang}
           mode={mode}
@@ -3328,6 +3394,7 @@ export default function Home() {
             selectedCar.id,
           )}
           close={() => setSelectedCar(null)}
+          selectVehicle={(candidate) => setSelectedCar(candidate)}
           add={() =>
             mode === 'rent'
               ? setRentalCart((s) =>
@@ -3438,22 +3505,66 @@ export default function Home() {
           close={() => setInfoTopic(null)}
         />
       )}
-      <footer>
-        <button
-          className="logo"
-          onClick={() => {
-            setGalleryFocus(false);
-            setHeroVisible(true);
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-          }}
-        >
-          <span>JF</span>cars<i>.</i>
-        </button>
-        <p>{m.tagline} © 2026 JFcars</p>
-        <div>
-          <button onClick={() => setInfoTopic('help')}>{m.help}</button>
-          <button onClick={() => setInfoTopic('privacy')}>{m.privacy}</button>
-          <button onClick={() => setInfoTopic('terms')}>{m.terms}</button>
+      <footer className="site-footer">
+        <div className="footer-main">
+          <section className="footer-brand">
+            <button
+              className="logo"
+              onClick={() => {
+                setGalleryFocus(false);
+                setHeroVisible(true);
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+              }}
+              aria-label="JFcars"
+            >
+              <span>JF</span>cars<i>.</i>
+            </button>
+            <p>{footerCopy[lang].summary}</p>
+            <div className="footer-markets">
+              <MapPin />
+              <span>{footerCopy[lang].markets}</span>
+            </div>
+          </section>
+          <nav aria-label={footerCopy[lang].explore}>
+            <h2>{footerCopy[lang].explore}</h2>
+            <button onClick={() => headerNavigate('buy')}>
+              {footerCopy[lang].buy}
+            </button>
+            <button onClick={() => headerNavigate('rent')}>
+              {footerCopy[lang].rent}
+            </button>
+            <button onClick={() => headerNavigate('parts')}>
+              {footerCopy[lang].parts}
+            </button>
+            <button onClick={galleryNavigate}>
+              {footerCopy[lang].gallery}
+            </button>
+          </nav>
+          <nav aria-label={footerCopy[lang].accountHelp}>
+            <h2>{footerCopy[lang].accountHelp}</h2>
+            <button onClick={() => setPanel(user ? 'profile' : 'auth')}>
+              {footerCopy[lang].account}
+            </button>
+            <button onClick={() => setPanel('cart')}>
+              {footerCopy[lang].cartRequests}
+            </button>
+            <button onClick={() => setInfoTopic('help')}>
+              {footerCopy[lang].help}
+            </button>
+          </nav>
+          <nav aria-label={footerCopy[lang].legal}>
+            <h2>{footerCopy[lang].legal}</h2>
+            <button onClick={() => setInfoTopic('privacy')}>
+              {footerCopy[lang].privacy}
+            </button>
+            <button onClick={() => setInfoTopic('terms')}>
+              {footerCopy[lang].terms}
+            </button>
+          </nav>
+        </div>
+        <div className="footer-bottom">
+          <p>{footerCopy[lang].notice}</p>
+          <span>© 2026 JFcars. {footerCopy[lang].copyright}</span>
         </div>
       </footer>
     </main>
@@ -5213,26 +5324,32 @@ function ProfileOrders({
 }
 function VehicleDetails({
   car,
+  inventory,
   user,
   lang,
   mode,
   close,
+  selectVehicle,
   add,
   inCart,
   onInquiry,
 }: {
   car: Car;
+  inventory: Car[];
   user: UserAccount | null;
   lang: Lang;
   mode: 'buy' | 'rent' | 'parts';
   close: () => void;
+  selectVehicle: (car: Car) => void;
   add: () => void;
   inCart: boolean;
   onInquiry: (inquiry: SellerInquiry) => Promise<boolean>;
 }) {
   const u = ui[lang];
   const m = marketCopy[lang];
-  const images = car.images?.length ? car.images : [car.image];
+  const images = Array.from(
+    new Set([car.image, ...(car.images || [])].filter(Boolean)),
+  );
   const [photoView, setPhotoView] = useState(0);
   const [added, setAdded] = useState(inCart);
   const [contactOpen, setContactOpen] = useState(false);
@@ -5261,6 +5378,13 @@ function VehicleDetails({
       sellerType: 'Seller',
       price: 'Price',
       desc: 'A vehicle listing with clear seller-provided details and support from our regional team.',
+      vehiclePhotos: 'Vehicle photos',
+      similar: 'Similar vehicles in the store',
+      similarText: 'More available vehicles that closely match this listing.',
+      mightLike: 'You might like',
+      mightLikeText:
+        'Other available vehicles selected by body, fuel and price.',
+      viewVehicle: 'View vehicle',
       gallery: ['Exterior', 'Cabin', 'Detail'],
       viewAll: 'View all photos',
       photos: 'photos',
@@ -5275,7 +5399,14 @@ function VehicleDetails({
       airConditioning: 'Air conditioning',
       bluetooth: 'Bluetooth',
       parkingCamera: 'Parking camera',
-      sections: ['Overview', 'Equipment', 'Seller'],
+      sections: [
+        'Photos',
+        'Overview',
+        'Equipment',
+        'Seller',
+        'Similar',
+        'For you',
+      ],
     },
     fr: {
       year: 'Année',
@@ -5292,6 +5423,13 @@ function VehicleDetails({
       sellerType: 'Vendeur',
       price: 'Prix',
       desc: 'Une annonce automobile avec des informations claires fournies par le vendeur et l’accompagnement de notre équipe régionale.',
+      vehiclePhotos: 'Photos du véhicule',
+      similar: 'Véhicules similaires en stock',
+      similarText: 'D’autres véhicules disponibles proches de cette annonce.',
+      mightLike: 'Vous pourriez aimer',
+      mightLikeText:
+        'D’autres véhicules disponibles selon la carrosserie, l’énergie et le prix.',
+      viewVehicle: 'Voir le véhicule',
       gallery: ['Extérieur', 'Habitacle', 'Détail'],
       viewAll: 'Voir toutes les photos',
       photos: 'photos',
@@ -5306,7 +5444,14 @@ function VehicleDetails({
       airConditioning: 'Climatisation',
       bluetooth: 'Bluetooth',
       parkingCamera: 'Caméra de recul',
-      sections: ['Aperçu', 'Équipements', 'Vendeur'],
+      sections: [
+        'Photos',
+        'Aperçu',
+        'Équipements',
+        'Vendeur',
+        'Similaires',
+        'Pour vous',
+      ],
     },
     es: {
       year: 'Año',
@@ -5323,6 +5468,13 @@ function VehicleDetails({
       sellerType: 'Vendedor',
       price: 'Precio',
       desc: 'Un anuncio de vehículo con información clara del vendedor y asistencia de nuestro equipo regional.',
+      vehiclePhotos: 'Fotos del vehículo',
+      similar: 'Vehículos similares en la tienda',
+      similarText: 'Más vehículos disponibles similares a este anuncio.',
+      mightLike: 'También te puede gustar',
+      mightLikeText:
+        'Otros vehículos disponibles según carrocería, combustible y precio.',
+      viewVehicle: 'Ver vehículo',
       gallery: ['Exterior', 'Habitáculo', 'Detalle'],
       viewAll: 'Ver todas las fotos',
       photos: 'fotos',
@@ -5337,9 +5489,64 @@ function VehicleDetails({
       airConditioning: 'Aire acondicionado',
       bluetooth: 'Bluetooth',
       parkingCamera: 'Cámara de aparcamiento',
-      sections: ['Resumen', 'Equipamiento', 'Vendedor'],
+      sections: [
+        'Fotos',
+        'Resumen',
+        'Equipamiento',
+        'Vendedor',
+        'Similares',
+        'Para ti',
+      ],
     },
   }[lang];
+  const recommendations = useMemo(() => {
+    const unique = new Map<number, Car>();
+    inventory.forEach((candidate) => {
+      if (
+        candidate.id !== car.id &&
+        !candidate.hidden &&
+        candidate.available !== false
+      )
+        unique.set(candidate.id, candidate);
+    });
+    const pool = Array.from(unique.values());
+    const priceOf = (candidate: Car) =>
+      mode === 'rent' ? rentalRate(candidate) : candidate.price;
+    const currentPrice = Math.max(priceOf(car), 1);
+    const priceDistance = (candidate: Car) =>
+      Math.abs(priceOf(candidate) - currentPrice) / currentPrice;
+    const similarScore = (candidate: Car) =>
+      (canonicalBrandName(candidate.make) === canonicalBrandName(car.make)
+        ? 8
+        : 0) +
+      (candidate.body === car.body ? 4 : 0) +
+      (candidate.fuel === car.fuel ? 2 : 0) +
+      ((candidate.origin || 'local') === (car.origin || 'local') ? 1 : 0) +
+      Math.max(0, 2 - priceDistance(candidate) * 4);
+    const ranked = [...pool].sort(
+      (a, b) =>
+        similarScore(b) - similarScore(a) ||
+        priceDistance(a) - priceDistance(b),
+    );
+    const similarCount = Math.min(3, Math.max(1, Math.ceil(pool.length / 2)));
+    const similar = ranked.slice(0, similarCount);
+    const used = new Set(similar.map((candidate) => candidate.id));
+    const mightLikeScore = (candidate: Car) =>
+      (candidate.body === car.body ? 4 : 0) +
+      (candidate.fuel === car.fuel ? 3 : 0) +
+      ((candidate.origin || 'local') === (car.origin || 'local') ? 2 : 0) +
+      (candidate.verified ? 1 : 0) +
+      Math.max(0, 2 - priceDistance(candidate) * 3);
+    const mightLike = ranked
+      .filter((candidate) => !used.has(candidate.id))
+      .sort(
+        (a, b) =>
+          mightLikeScore(b) - mightLikeScore(a) ||
+          priceDistance(a) - priceDistance(b),
+      )
+      .slice(0, 3);
+    return { similar, mightLike };
+  }, [car, inventory, mode]);
   const specs = [
     [labels.year, car.year],
     [labels.mileage, `${numberFor(car.km, lang)} km`],
@@ -5363,6 +5570,18 @@ function VehicleDetails({
     ],
     [labels.sellerType, localize(car.sellerType || 'Dealer', lang)],
   ];
+  const detailSections = [
+    [labels.sections[0], 'detail-photos'],
+    [labels.sections[1], 'detail-overview'],
+    [labels.sections[2], 'detail-equipment'],
+    [labels.sections[3], 'detail-seller'],
+    ...(recommendations.similar.length
+      ? [[labels.sections[4], 'detail-similar']]
+      : []),
+    ...(recommendations.mightLike.length
+      ? [[labels.sections[5], 'detail-for-you']]
+      : []),
+  ];
   return (
     <div
       className="layer vehicle-layer"
@@ -5377,24 +5596,35 @@ function VehicleDetails({
         <button className="detail-close" onClick={close} aria-label={u.close}>
           <X />
         </button>
-        <div className="detail-gallery">
-          <Image
-            src={images[photoView]}
-            alt={`${car.make} ${car.model} — ${labels.gallery[photoView] || labels.photos}`}
-            width={1400}
-            height={900}
-            unoptimized
-          />
-          <button
-            className="view-all-photos"
-            onClick={() => setViewerOpen(true)}
-          >
-            {labels.viewAll} · {images.length} {labels.photos}
-          </button>
-          <div>
+        <div className="detail-gallery" id="detail-photos">
+          <div className="detail-gallery-heading">
+            <h3>
+              <Images />
+              {labels.vehiclePhotos}
+            </h3>
+            <span>
+              {images.length} {labels.photos}
+            </span>
+          </div>
+          <div className="detail-gallery-stage">
+            <Image
+              src={images[photoView]}
+              alt={`${car.make} ${car.model} — ${labels.gallery[photoView] || labels.photos}`}
+              width={1400}
+              height={900}
+              unoptimized
+            />
+            <button
+              className="view-all-photos"
+              onClick={() => setViewerOpen(true)}
+            >
+              {labels.viewAll} · {images.length} {labels.photos}
+            </button>
+          </div>
+          <div className="detail-thumbnails">
             {images.map((image, i) => (
               <button
-                key={image}
+                key={`${image}-${i}`}
                 className={photoView === i ? 'active' : ''}
                 onClick={() => setPhotoView(i)}
               >
@@ -5541,18 +5771,16 @@ function VehicleDetails({
           )}
         </div>
         <nav className="detail-nav">
-          {labels.sections.map((x, i) => (
+          {detailSections.map(([label, sectionId]) => (
             <button
-              key={x}
+              key={sectionId}
               onClick={() =>
                 document
-                  .getElementById(
-                    ['detail-overview', 'detail-equipment', 'detail-seller'][i],
-                  )
+                  .getElementById(sectionId)
                   ?.scrollIntoView({ behavior: 'smooth', block: 'center' })
               }
             >
-              {x}
+              {label}
             </button>
           ))}
         </nav>
@@ -5600,6 +5828,49 @@ function VehicleDetails({
           </div>
           <b>{carPlace(car, lang)}</b>
         </div>
+        {recommendations.similar.length > 0 && (
+          <section className="detail-recommendations" id="detail-similar">
+            <header>
+              <h3>{labels.similar}</h3>
+              <span>{labels.similarText}</span>
+            </header>
+            <div className="detail-recommendation-grid">
+              {recommendations.similar.map((candidate) => (
+                <VehicleRecommendationCard
+                  key={candidate.id}
+                  car={candidate}
+                  lang={lang}
+                  mode={mode}
+                  action={labels.viewVehicle}
+                  onSelect={() => selectVehicle(candidate)}
+                />
+              ))}
+            </div>
+          </section>
+        )}
+        {recommendations.mightLike.length > 0 && (
+          <section
+            className="detail-recommendations alternate"
+            id="detail-for-you"
+          >
+            <header>
+              <h3>{labels.mightLike}</h3>
+              <span>{labels.mightLikeText}</span>
+            </header>
+            <div className="detail-recommendation-grid">
+              {recommendations.mightLike.map((candidate) => (
+                <VehicleRecommendationCard
+                  key={candidate.id}
+                  car={candidate}
+                  lang={lang}
+                  mode={mode}
+                  action={labels.viewVehicle}
+                  onSelect={() => selectVehicle(candidate)}
+                />
+              ))}
+            </div>
+          </section>
+        )}
       </dialog>
       {viewerOpen && (
         <dialog open className="photo-viewer" aria-label={labels.viewAll}>
@@ -5655,7 +5926,7 @@ function VehicleDetails({
           <div>
             {images.map((image, i) => (
               <button
-                key={image}
+                key={`${image}-${i}`}
                 className={photoView === i ? 'active' : ''}
                 onClick={() => setPhotoView(i)}
               >
@@ -5672,6 +5943,54 @@ function VehicleDetails({
         </dialog>
       )}
     </div>
+  );
+}
+function VehicleRecommendationCard({
+  car,
+  lang,
+  mode,
+  action,
+  onSelect,
+}: {
+  car: Car;
+  lang: Lang;
+  mode: 'buy' | 'rent' | 'parts';
+  action: string;
+  onSelect: () => void;
+}) {
+  return (
+    <article className="detail-recommendation-card">
+      <button className="recommendation-photo" onClick={onSelect}>
+        <Image
+          src={car.image}
+          alt={`${car.make} ${car.model}`}
+          width={720}
+          height={460}
+          unoptimized
+        />
+      </button>
+      <div>
+        <p>
+          {car.year} · {localize(car.fuel, lang)}
+        </p>
+        <h4>
+          {car.make} {car.model}
+        </h4>
+        <span>
+          <MapPin />
+          {carPlace(car, lang)}
+        </span>
+        <strong>
+          {mode === 'rent'
+            ? `${money(rentalRate(car), lang)}/${flowCopy[lang].day}`
+            : money(car.price, lang)}
+        </strong>
+        <button className="recommendation-action" onClick={onSelect}>
+          {action}
+          <ArrowRight />
+        </button>
+      </div>
+    </article>
   );
 }
 function ComparePanel({
