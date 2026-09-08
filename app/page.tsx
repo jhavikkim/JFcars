@@ -3,6 +3,13 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import {
+  galleryStatuses,
+  type GalleryItemRecord,
+  type GalleryStatus,
+  isSafeImageSource,
+  normalizeGalleryRecords,
+} from '@/lib/storefront-content';
+import {
   type ReactNode,
   useCallback,
   useEffect,
@@ -110,11 +117,7 @@ type SellRequest = {
   status: 'Pending' | 'Accepted' | 'Rejected';
   createdAt?: string;
 };
-type GalleryItem = {
-  id: string;
-  image: string;
-  captions: Partial<Record<Lang, string>>;
-};
+type GalleryItem = GalleryItemRecord;
 type StorefrontLocaleContent = {
   headline: string;
   description: string;
@@ -240,42 +243,81 @@ const copy = {
 const galleryCopy = {
   en: {
     nav: 'Gallery',
-    eyebrow: 'JFcars in action',
-    title: 'From the port to our local store.',
+    eyebrow: 'Shipment & stock updates',
+    title: 'From preparation to arrival.',
     description:
-      'See how vehicles are handled on arrival and the everyday parts we keep close to our customers.',
+      'Follow goods ready to load, containers ready to ship, items in transit, arrivals and parts in our local store through photos and notes from our team.',
     open: 'Open photo',
     close: 'Close gallery',
     previous: 'Previous gallery photo',
     next: 'Next gallery photo',
     photos: 'photos',
     untitled: 'JFcars gallery photo',
+    note: 'Team update',
+    location: 'Location',
+    date: 'Updated',
+    reference: 'Shipment',
+    process: 'Shipment stages',
+    statuses: {
+      ready_to_load: 'Ready to load',
+      loaded: 'Container loaded',
+      ready_to_ship: 'Ready to ship',
+      in_transit: 'In transit',
+      arrived_unloaded: 'Arrival & unloading complete',
+      in_store: 'Available in local store',
+    },
   },
   fr: {
     nav: 'Galerie',
-    eyebrow: 'JFcars sur le terrain',
-    title: 'Du port à notre magasin local.',
+    eyebrow: 'Suivi des expéditions et du stock',
+    title: 'De la préparation à l’arrivée.',
     description:
-      'Découvrez la prise en charge des véhicules à leur arrivée et les pièces courantes disponibles près de nos clients.',
+      'Suivez en photos et avec les notes de notre équipe les biens prêts au chargement, les conteneurs prêts à partir, les expéditions en transit, les arrivées et les pièces en magasin.',
     open: 'Ouvrir la photo',
     close: 'Fermer la galerie',
     previous: 'Photo précédente de la galerie',
     next: 'Photo suivante de la galerie',
     photos: 'photos',
     untitled: 'Photo de la galerie JFcars',
+    note: 'Note de l’équipe',
+    location: 'Lieu',
+    date: 'Mise à jour',
+    reference: 'Expédition',
+    process: 'Étapes de l’expédition',
+    statuses: {
+      ready_to_load: 'Prêt au chargement',
+      loaded: 'Conteneur chargé',
+      ready_to_ship: 'Prêt à expédier',
+      in_transit: 'En transit',
+      arrived_unloaded: 'Arrivée et déchargement terminés',
+      in_store: 'Disponible au magasin local',
+    },
   },
   es: {
     nav: 'Galería',
-    eyebrow: 'JFcars en acción',
-    title: 'Del puerto a nuestra tienda local.',
+    eyebrow: 'Envíos y existencias',
+    title: 'De la preparación a la llegada.',
     description:
-      'Mira cómo cuidamos los vehículos a su llegada y los repuestos habituales que mantenemos cerca de nuestros clientes.',
+      'Sigue con fotos y notas de nuestro equipo los bienes listos para cargar, los contenedores listos para salir, los envíos en tránsito, las llegadas y los repuestos en tienda.',
     open: 'Abrir foto',
     close: 'Cerrar galería',
     previous: 'Foto anterior de la galería',
     next: 'Foto siguiente de la galería',
     photos: 'fotos',
     untitled: 'Foto de la galería JFcars',
+    note: 'Nota del equipo',
+    location: 'Ubicación',
+    date: 'Actualizado',
+    reference: 'Envío',
+    process: 'Etapas del envío',
+    statuses: {
+      ready_to_load: 'Listo para cargar',
+      loaded: 'Contenedor cargado',
+      ready_to_ship: 'Listo para enviar',
+      in_transit: 'En tránsito',
+      arrived_unloaded: 'Llegada y descarga completadas',
+      in_store: 'Disponible en la tienda local',
+    },
   },
 } as const;
 const defaultGalleryItems: GalleryItem[] = [
@@ -287,6 +329,15 @@ const defaultGalleryItems: GalleryItem[] = [
       fr: 'Véhicules sécurisés pour l’expédition',
       es: 'Vehículos asegurados para el envío',
     },
+    comments: {
+      en: 'Vehicles are checked, photographed and lined up before container loading. The team posts a new note when loading is complete.',
+      fr: 'Les véhicules sont contrôlés, photographiés et alignés avant le chargement du conteneur. L’équipe publie une nouvelle note une fois le chargement terminé.',
+      es: 'Los vehículos se revisan, fotografían y preparan antes de cargarlos en el contenedor. El equipo publica una nueva nota al terminar la carga.',
+    },
+    status: 'ready_to_load',
+    date: '',
+    location: 'Europe',
+    reference: 'JF-LOAD',
   },
   {
     id: 'shipment-unloading',
@@ -296,6 +347,15 @@ const defaultGalleryItems: GalleryItem[] = [
       fr: 'Déchargement soigné à l’arrivée',
       es: 'Descarga cuidadosa a la llegada',
     },
+    comments: {
+      en: 'Arrival photos document unloading and the handover to our regional operations team.',
+      fr: 'Les photos d’arrivée documentent le déchargement et la remise à notre équipe régionale.',
+      es: 'Las fotos de llegada documentan la descarga y la entrega a nuestro equipo regional.',
+    },
+    status: 'arrived_unloaded',
+    date: '',
+    location: 'Pointe-Noire',
+    reference: 'JF-ARRIVAL',
   },
   {
     id: 'local-parts-store',
@@ -305,25 +365,30 @@ const defaultGalleryItems: GalleryItem[] = [
       fr: 'Pièces disponibles dans notre magasin local',
       es: 'Repuestos disponibles en nuestra tienda local',
     },
+    comments: {
+      en: 'Parts held locally are photographed with a short availability and condition note.',
+      fr: 'Les pièces disponibles localement sont photographiées avec une courte note sur leur disponibilité et leur état.',
+      es: 'Los repuestos disponibles localmente se fotografían con una breve nota sobre su disponibilidad y estado.',
+    },
+    status: 'in_store',
+    date: '',
+    location: 'JFcars Store',
+    reference: 'JF-STOCK',
   },
 ];
 const normalizeGallery = (items: GalleryItem[] | undefined) => {
-  if (!Array.isArray(items)) return defaultGalleryItems;
-  const valid = items
-    .filter(
-      (item) =>
-        item &&
-        typeof item.id === 'string' &&
-        typeof item.image === 'string' &&
-        (item.image.startsWith('/') || item.image.startsWith('https://')),
-    )
-    .slice(0, 8)
-    .map((item) => ({
-      id: item.id,
-      image: item.image,
-      captions:
-        item.captions && typeof item.captions === 'object' ? item.captions : {},
-    }));
+  const valid = normalizeGalleryRecords(items, 8).map((item) => {
+    const fallback = defaultGalleryItems.find((entry) => entry.id === item.id);
+    return {
+      ...fallback,
+      ...item,
+      captions: { ...fallback?.captions, ...item.captions },
+      comments: { ...fallback?.comments, ...item.comments },
+      location: item.location || fallback?.location || '',
+      reference: item.reference || fallback?.reference || '',
+      status: item.status || fallback?.status || 'ready_to_load',
+    };
+  });
   return valid.length ? valid : defaultGalleryItems;
 };
 const galleryExtras = [
@@ -3831,6 +3896,15 @@ function MainGallery({
   if (!current) return null;
   const caption = (item: GalleryItem) =>
     item.captions[lang] || item.captions.en || labels.untitled;
+  const comment = (item: GalleryItem) =>
+    item.comments[lang] || item.comments.en || caption(item);
+  const formatDate = (value: string) =>
+    value
+      ? new Intl.DateTimeFormat(
+          lang === 'fr' ? 'fr-FR' : lang === 'es' ? 'es-ES' : 'en-GB',
+          { dateStyle: 'medium', timeZone: 'UTC' },
+        ).format(new Date(`${value}T12:00:00Z`))
+      : '';
   const move = (direction: number) =>
     setActive((index) => (index + direction + items.length) % items.length);
   return (
@@ -3868,6 +3942,21 @@ function MainGallery({
           </button>
         </div>
       </header>
+      <ol className="gallery-stage-key" aria-label={labels.process}>
+        {galleryStatuses
+          .filter((status) => status !== 'in_store')
+          .map((status, index) => (
+            <li
+              key={status}
+              className={
+                items.some((item) => item.status === status) ? 'has-update' : ''
+              }
+            >
+              <span>{index + 1}</span>
+              <b>{labels.statuses[status]}</b>
+            </li>
+          ))}
+      </ol>
       <div className="main-gallery-view">
         <button
           className="main-gallery-feature"
@@ -3883,34 +3972,79 @@ function MainGallery({
             unoptimized
           />
           <span>
-            <b>{caption(current)}</b>
+            <span>
+              <small className={`gallery-status status-${current.status}`}>
+                {labels.statuses[current.status]}
+              </small>
+              <b>{caption(current)}</b>
+            </span>
             <i>
               <Maximize2 /> {labels.open}
             </i>
           </span>
         </button>
-        <fieldset className="main-gallery-strip" aria-label={labels.nav}>
-          {items.map((item, index) => (
-            <button
-              key={item.id}
-              aria-pressed={activeIndex === index}
-              className={activeIndex === index ? 'active' : ''}
-              onClick={() => setActive(index)}
-            >
-              <Image
-                src={item.image}
-                alt=""
-                width={420}
-                height={280}
-                unoptimized
-              />
-              <span>
-                <small>{String(index + 1).padStart(2, '0')}</small>
-                <b>{caption(item)}</b>
+        <div className="main-gallery-sidebar">
+          <article className="gallery-update-note" aria-live="polite">
+            <div>
+              <small>{labels.note}</small>
+              <span className={`gallery-status status-${current.status}`}>
+                {labels.statuses[current.status]}
               </span>
-            </button>
-          ))}
-        </fieldset>
+            </div>
+            <p>{comment(current)}</p>
+            {(current.reference || current.location || current.date) && (
+              <dl>
+                {current.reference && (
+                  <div>
+                    <dt>{labels.reference}</dt>
+                    <dd>{current.reference}</dd>
+                  </div>
+                )}
+                {current.location && (
+                  <div>
+                    <dt>{labels.location}</dt>
+                    <dd>
+                      <MapPin /> {current.location}
+                    </dd>
+                  </div>
+                )}
+                {current.date && (
+                  <div>
+                    <dt>{labels.date}</dt>
+                    <dd>
+                      <CalendarDays />
+                      <time dateTime={current.date}>
+                        {formatDate(current.date)}
+                      </time>
+                    </dd>
+                  </div>
+                )}
+              </dl>
+            )}
+          </article>
+          <fieldset className="main-gallery-strip" aria-label={labels.nav}>
+            {items.map((item, index) => (
+              <button
+                key={item.id}
+                aria-pressed={activeIndex === index}
+                className={activeIndex === index ? 'active' : ''}
+                onClick={() => setActive(index)}
+              >
+                <Image
+                  src={item.image}
+                  alt=""
+                  width={420}
+                  height={280}
+                  unoptimized
+                />
+                <span>
+                  <small>{labels.statuses[item.status]}</small>
+                  <b>{caption(item)}</b>
+                </span>
+              </button>
+            ))}
+          </fieldset>
+        </div>
       </div>
       {viewerOpen && (
         <GalleryViewer
@@ -3942,6 +4076,14 @@ function GalleryViewer({
   const item = items[active] || items[0];
   const caption = (entry: GalleryItem) =>
     entry.captions[lang] || entry.captions.en || labels.untitled;
+  const comment = (entry: GalleryItem) =>
+    entry.comments[lang] || entry.comments.en || caption(entry);
+  const formattedDate = item.date
+    ? new Intl.DateTimeFormat(
+        lang === 'fr' ? 'fr-FR' : lang === 'es' ? 'es-ES' : 'en-GB',
+        { dateStyle: 'medium', timeZone: 'UTC' },
+      ).format(new Date(`${item.date}T12:00:00Z`))
+    : '';
   const move = (direction: number) =>
     setActive((active + direction + items.length) % items.length);
   useDialog(close);
@@ -3980,7 +4122,20 @@ function GalleryViewer({
             unoptimized
           />
           <figcaption>
-            <span>{caption(item)}</span>
+            <span className="viewer-copy">
+              <small className={`gallery-status status-${item.status}`}>
+                {labels.statuses[item.status]}
+              </small>
+              <strong>{caption(item)}</strong>
+              <span>{comment(item)}</span>
+              {(item.reference || item.location || formattedDate) && (
+                <em>
+                  {[item.reference, item.location, formattedDate]
+                    .filter(Boolean)
+                    .join(' · ')}
+                </em>
+              )}
+            </span>
             <b>
               {active + 1} / {items.length}
             </b>
@@ -6468,16 +6623,18 @@ function AdminPanel({
     Array.isArray(contentDraft.gallery) && contentDraft.gallery.length
       ? contentDraft.gallery
       : defaultGalleryItems;
-  const updateGalleryImage = (index: number, image: string) =>
+  const updateGalleryDetails = (index: number, details: Partial<GalleryItem>) =>
     setContentDraft((current) => ({
       ...current,
       gallery: (Array.isArray(current.gallery) && current.gallery.length
         ? current.gallery
         : defaultGalleryItems
       ).map((item, itemIndex) =>
-        itemIndex === index ? { ...item, image } : item,
+        itemIndex === index ? { ...item, ...details } : item,
       ),
     }));
+  const updateGalleryImage = (index: number, image: string) =>
+    updateGalleryDetails(index, { image });
   const updateGalleryCaption = (index: number, caption: string) =>
     setContentDraft((current) => ({
       ...current,
@@ -6489,6 +6646,21 @@ function AdminPanel({
           ? {
               ...item,
               captions: { ...item.captions, [contentLocale]: caption },
+            }
+          : item,
+      ),
+    }));
+  const updateGalleryComment = (index: number, comment: string) =>
+    setContentDraft((current) => ({
+      ...current,
+      gallery: (Array.isArray(current.gallery) && current.gallery.length
+        ? current.gallery
+        : defaultGalleryItems
+      ).map((item, itemIndex) =>
+        itemIndex === index
+          ? {
+              ...item,
+              comments: { ...item.comments, [contentLocale]: comment },
             }
           : item,
       ),
@@ -6509,6 +6681,15 @@ function AdminPanel({
             fr: 'Nouvelle photo de la galerie',
             es: 'Nueva foto de la galería',
           },
+          comments: {
+            en: 'Add an operations note for this update.',
+            fr: 'Ajoutez une note opérationnelle pour cette mise à jour.',
+            es: 'Añade una nota operativa para esta actualización.',
+          },
+          status: 'ready_to_load',
+          date: new Date().toISOString().slice(0, 10),
+          location: '',
+          reference: '',
         },
       ],
     }));
@@ -7156,9 +7337,10 @@ function AdminPanel({
                 </label>
                 <div className="content-section-title">
                   <div>
-                    <h4>Main photo gallery</h4>
+                    <h4>Shipment and stock gallery</h4>
                     <p>
-                      Edit the gallery heading, captions, order, and image URLs.
+                      Add shipment stages, dates, locations and multilingual
+                      team notes. Do not include customer information.
                     </p>
                   </div>
                   <span>{galleryDraft.length} / 8 photos</span>
@@ -7213,9 +7395,7 @@ function AdminPanel({
                 </label>
                 <div className="gallery-admin-list">
                   {galleryDraft.map((item, index) => {
-                    const imageReady =
-                      item.image.startsWith('/') ||
-                      item.image.startsWith('https://');
+                    const imageReady = isSafeImageSource(item.image);
                     return (
                       <article key={item.id}>
                         {imageReady ? (
@@ -7230,7 +7410,64 @@ function AdminPanel({
                           <span>Photo URL required</span>
                         )}
                         <div>
-                          <b>Photo {index + 1}</b>
+                          <b>Update {index + 1}</b>
+                          <div className="gallery-admin-meta">
+                            <label>
+                              Shipment stage
+                              <select
+                                value={item.status}
+                                onChange={(event) =>
+                                  updateGalleryDetails(index, {
+                                    status: event.target.value as GalleryStatus,
+                                  })
+                                }
+                              >
+                                {galleryStatuses.map((status) => (
+                                  <option key={status} value={status}>
+                                    {galleryCopy.en.statuses[status]}
+                                  </option>
+                                ))}
+                              </select>
+                            </label>
+                            <label>
+                              Update date
+                              <input
+                                type="date"
+                                value={item.date}
+                                onChange={(event) =>
+                                  updateGalleryDetails(index, {
+                                    date: event.target.value,
+                                  })
+                                }
+                              />
+                            </label>
+                            <label>
+                              Location
+                              <input
+                                value={item.location}
+                                maxLength={100}
+                                placeholder="e.g. Port of Pointe-Noire"
+                                onChange={(event) =>
+                                  updateGalleryDetails(index, {
+                                    location: event.target.value,
+                                  })
+                                }
+                              />
+                            </label>
+                            <label>
+                              Shipment / batch reference
+                              <input
+                                value={item.reference}
+                                maxLength={100}
+                                placeholder="e.g. JF-SEP-01"
+                                onChange={(event) =>
+                                  updateGalleryDetails(index, {
+                                    reference: event.target.value,
+                                  })
+                                }
+                              />
+                            </label>
+                          </div>
                           <label>
                             Image URL or /public path
                             <input
@@ -7241,11 +7478,23 @@ function AdminPanel({
                             />
                           </label>
                           <label>
-                            {contentLocale.toUpperCase()} caption
+                            {contentLocale.toUpperCase()} photo title
                             <input
                               value={item.captions[contentLocale] || ''}
+                              maxLength={140}
                               onChange={(event) =>
                                 updateGalleryCaption(index, event.target.value)
+                              }
+                            />
+                          </label>
+                          <label>
+                            {contentLocale.toUpperCase()} team comment
+                            <textarea
+                              value={item.comments[contentLocale] || ''}
+                              maxLength={600}
+                              rows={3}
+                              onChange={(event) =>
+                                updateGalleryComment(index, event.target.value)
                               }
                             />
                           </label>
@@ -7268,7 +7517,7 @@ function AdminPanel({
                   disabled={galleryDraft.length >= 8}
                   onClick={addGalleryPhoto}
                 >
-                  <Plus /> Add gallery photo
+                  <Plus /> Add shipment or stock update
                 </button>
                 <label>
                   Announcement

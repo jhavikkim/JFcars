@@ -1445,6 +1445,57 @@ footer div a {
 .main-gallery-controls svg {
   width: 19px;
 }
+.gallery-stage-key {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(120px, 1fr));
+  margin: 0 0 18px;
+  padding: 0;
+  overflow-x: auto;
+  list-style: none;
+  scrollbar-width: thin;
+}
+.gallery-stage-key li {
+  position: relative;
+  min-width: 120px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px 8px 0;
+  color: #87968f;
+}
+.gallery-stage-key li:not(:last-child):after {
+  content: '';
+  position: absolute;
+  right: 10px;
+  width: 20px;
+  height: 1px;
+  background: #dbe2dc;
+}
+.gallery-stage-key li > span {
+  width: 25px;
+  height: 25px;
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  border: 1px solid #ced8d3;
+  border-radius: 50%;
+  background: white;
+  font-size: 9px;
+  font-weight: 900;
+}
+.gallery-stage-key li > b {
+  max-width: 125px;
+  font-size: 9px;
+  line-height: 1.25;
+}
+.gallery-stage-key li.has-update {
+  color: var(--forest);
+}
+.gallery-stage-key li.has-update > span {
+  border-color: var(--forest);
+  background: var(--forest);
+  color: white;
+}
 .main-gallery-view {
   display: grid;
   grid-template-columns: minmax(0, 1.7fr) minmax(280px, 0.62fr);
@@ -1486,6 +1537,11 @@ footer div a {
   justify-content: space-between;
   gap: 20px;
 }
+.main-gallery-feature > span > span {
+  display: grid;
+  justify-items: start;
+  gap: 9px;
+}
 .main-gallery-feature > span b {
   max-width: 620px;
   font-family: Georgia, serif;
@@ -1513,14 +1569,116 @@ footer div a {
 .main-gallery-feature:hover > img {
   transform: scale(1.015);
 }
+.gallery-status {
+  width: fit-content;
+  display: inline-flex;
+  align-items: center;
+  min-height: 25px;
+  padding: 5px 9px;
+  border-radius: 999px;
+  background: #fff4df;
+  color: #754d13;
+  font-size: 9px;
+  font-style: normal;
+  font-weight: 900;
+  letter-spacing: 0.035em;
+  line-height: 1.2;
+  text-transform: uppercase;
+}
+.gallery-status.status-ready_to_load {
+  background: #ffe0d4;
+  color: #9b3c28;
+}
+.gallery-status.status-loaded,
+.gallery-status.status-ready_to_ship {
+  background: #f7dfa0;
+  color: #644711;
+}
+.gallery-status.status-in_transit {
+  background: #dcecf3;
+  color: #255c70;
+}
+.gallery-status.status-arrived_unloaded,
+.gallery-status.status-in_store {
+  background: #dceee4;
+  color: #236147;
+}
+.main-gallery-sidebar {
+  min-width: 0;
+  min-height: 560px;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  gap: 12px;
+}
+.gallery-update-note {
+  padding: 18px;
+  border: 1px solid #e6ddcb;
+  border-radius: 17px;
+  background: #faf4e8;
+}
+.gallery-update-note > div:first-child {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+.gallery-update-note > div:first-child > small {
+  color: var(--earth);
+  font-size: 9px;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.gallery-update-note > p {
+  margin: 16px 0;
+  color: #334f48;
+  font-family: Georgia, serif;
+  font-size: 17px;
+  line-height: 1.45;
+}
+.gallery-update-note dl {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin: 0;
+  padding-top: 14px;
+  border-top: 1px solid #e4d7c1;
+}
+.gallery-update-note dl > div:last-child:nth-child(odd) {
+  grid-column: 1 / -1;
+}
+.gallery-update-note dt {
+  margin-bottom: 3px;
+  color: #89795f;
+  font-size: 8px;
+  font-weight: 850;
+  text-transform: uppercase;
+}
+.gallery-update-note dd {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin: 0;
+  color: var(--forest);
+  font-size: 10px;
+  font-weight: 800;
+}
+.gallery-update-note dd svg {
+  width: 12px;
+  height: 12px;
+  color: var(--coral);
+}
 .main-gallery-strip {
   display: grid;
-  grid-template-rows: repeat(3, minmax(0, 1fr));
+  grid-auto-rows: minmax(92px, 1fr);
   gap: 10px;
   min-width: 0;
   margin: 0;
-  padding: 0;
+  padding: 0 4px 0 0;
   border: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
 }
 .main-gallery-strip > button {
   position: relative;
@@ -1580,6 +1738,30 @@ footer div a {
 .site-photo-viewer figcaption {
   font-size: 14px;
 }
+.site-photo-viewer .viewer-copy {
+  min-width: 0;
+  display: grid;
+  justify-items: start;
+  gap: 5px;
+}
+.site-photo-viewer .viewer-copy strong {
+  font-family: Georgia, serif;
+  font-size: 16px;
+  font-weight: 500;
+}
+.site-photo-viewer .viewer-copy > span {
+  max-width: 780px;
+  max-height: 4.5em;
+  overflow-y: auto;
+  color: #d9e4df;
+  font-size: 11px;
+  line-height: 1.45;
+}
+.site-photo-viewer .viewer-copy em {
+  color: #b9cbc4;
+  font-size: 9px;
+  font-style: normal;
+}
 .site-photo-viewer .viewer-arrow:disabled {
   opacity: 0.35;
 }
@@ -1628,7 +1810,7 @@ footer div a {
 .gallery-admin-list article {
   display: grid;
   grid-template-columns: 130px minmax(0, 1fr) 38px;
-  align-items: center;
+  align-items: start;
   gap: 14px;
   padding: 10px;
   border: 1px solid var(--line);
@@ -1665,6 +1847,15 @@ footer div a {
   width: 100%;
   padding: 8px;
 }
+.gallery-admin-list textarea,
+.gallery-admin-list select {
+  width: 100%;
+}
+.gallery-admin-meta {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0 10px;
+}
 .gallery-admin-list article > button {
   width: 36px;
   height: 36px;
@@ -1694,15 +1885,24 @@ footer div a {
 }
 
 @media (max-width: 900px) {
+  .gallery-stage-key {
+    grid-template-columns: repeat(5, minmax(145px, 1fr));
+  }
   .main-gallery-view {
     grid-template-columns: 1fr;
   }
   .main-gallery-feature {
     min-height: 470px;
   }
+  .main-gallery-sidebar {
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+  }
   .main-gallery-strip {
     display: flex;
     overflow-x: auto;
+    overflow-y: hidden;
     scroll-snap-type: x mandatory;
     padding-bottom: 5px;
   }
@@ -1744,6 +1944,12 @@ footer div a {
   .main-gallery-feature > span b {
     font-size: 23px;
   }
+  .gallery-update-note {
+    padding: 16px;
+  }
+  .gallery-update-note > p {
+    font-size: 16px;
+  }
   .main-gallery-feature > span i {
     width: 44px;
     height: 44px;
@@ -1763,6 +1969,9 @@ footer div a {
   .gallery-admin-list article > span {
     width: 92px;
     height: 76px;
+  }
+  .gallery-admin-meta {
+    grid-template-columns: 1fr;
   }
 }
 

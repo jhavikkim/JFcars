@@ -5,6 +5,7 @@ import {
   parseJson,
   requestUser,
 } from '@/lib/site-db';
+import { normalizeGalleryRecords } from '@/lib/storefront-content';
 
 export const dynamic = 'force-dynamic';
 
@@ -416,10 +417,29 @@ export async function POST(request: Request) {
           { error: 'Inventory contains an invalid location or rental setup' },
           { status: 400 },
         );
-      const storefrontContent =
-        body.storefrontContent && typeof body.storefrontContent === 'object'
-          ? body.storefrontContent
+      const rawStorefrontContent =
+        body.storefrontContent &&
+        typeof body.storefrontContent === 'object' &&
+        !Array.isArray(body.storefrontContent)
+          ? (body.storefrontContent as Record<string, unknown>)
           : {};
+      const storefrontContent = { ...rawStorefrontContent };
+      if ('gallery' in rawStorefrontContent) {
+        const gallery = normalizeGalleryRecords(
+          rawStorefrontContent.gallery,
+          8,
+        );
+        if (
+          !Array.isArray(rawStorefrontContent.gallery) ||
+          gallery.length === 0 ||
+          gallery.length !== rawStorefrontContent.gallery.length
+        )
+          return json(
+            { error: 'Storefront gallery contains invalid content' },
+            { status: 400 },
+          );
+        storefrontContent.gallery = gallery;
+      }
       const serializedInventory = JSON.stringify(inventory);
       const serializedContent = JSON.stringify(storefrontContent);
       if (
