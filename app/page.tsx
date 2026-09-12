@@ -265,6 +265,7 @@ const galleryCopy = {
     reference: 'Shipment / batch',
     process: 'Shipment update categories',
     empty: 'No photo update has been posted for this stage yet.',
+    loadMore: 'Show more photos',
     sections: {
       all: 'Photo gallery',
       ready_to_ship: 'Ready to ship',
@@ -300,6 +301,7 @@ const galleryCopy = {
     process: 'Rubriques de suivi des expéditions',
     empty:
       'Aucune mise à jour photo n’a encore été publiée pour cette étape.',
+    loadMore: 'Afficher plus de photos',
     sections: {
       all: 'Galerie photos',
       ready_to_ship: 'Prêt à expédier',
@@ -335,6 +337,7 @@ const galleryCopy = {
     process: 'Categorías de seguimiento de envíos',
     empty:
       'Todavía no se ha publicado ninguna actualización con fotos para esta etapa.',
+    loadMore: 'Mostrar más fotos',
     sections: {
       all: 'Galería de fotos',
       ready_to_ship: 'Listo para enviar',
@@ -2688,6 +2691,12 @@ export default function Home() {
           >
             {galleryCopy[lang].nav}
           </button>
+          <button onClick={() => setInfoTopic('about')}>
+            {footerCopy[lang].about}
+          </button>
+          <button onClick={() => setInfoTopic('contact')}>
+            {footerCopy[lang].contact}
+          </button>
           {isAdmin && (
             <button
               onClick={() => {
@@ -2782,6 +2791,22 @@ export default function Home() {
             {u.parts}
           </button>
           <button onClick={galleryNavigate}>{galleryCopy[lang].nav}</button>
+          <button
+            onClick={() => {
+              setInfoTopic('about');
+              setMobileMenu(false);
+            }}
+          >
+            {footerCopy[lang].about}
+          </button>
+          <button
+            onClick={() => {
+              setInfoTopic('contact');
+              setMobileMenu(false);
+            }}
+          >
+            {footerCopy[lang].contact}
+          </button>
           {isAdmin && (
             <button
               onClick={() => {
@@ -2796,6 +2821,8 @@ export default function Home() {
           )}
         </nav>
       )}
+      {!galleryFocus && (
+        <>
       {heroVisible && (
         <section className="hero">
           <div className="hero-copy">
@@ -3743,7 +3770,9 @@ export default function Home() {
           </div>
         </section>
       )}
-      <MainGallery
+        </>
+      )}
+      {galleryFocus && <MainGallery
         lang={lang}
         items={galleryItems}
         title={storefrontContent[lang]?.galleryTitle || galleryCopy[lang].title}
@@ -3751,7 +3780,7 @@ export default function Home() {
           storefrontContent[lang]?.galleryDescription ||
           galleryCopy[lang].description
         }
-      />
+      />}
       {VEHICLE_SELLING_ENABLED && (
         <section className="sell-band">
           <div>
@@ -3965,6 +3994,12 @@ export default function Home() {
             <button onClick={galleryNavigate}>
               {footerCopy[lang].gallery}
             </button>
+            <button onClick={() => setInfoTopic('about')}>
+              {footerCopy[lang].about}
+            </button>
+            <button onClick={() => setInfoTopic('contact')}>
+              {footerCopy[lang].contact}
+            </button>
           </nav>
           <nav aria-label={footerCopy[lang].accountHelp}>
             <h2>{footerCopy[lang].accountHelp}</h2>
@@ -4070,6 +4105,7 @@ function MainGallery({
   const [activeSection, setActiveSection] =
     useState<GallerySection>('all');
   const [active, setActive] = useState(0);
+  const [visibleCount, setVisibleCount] = useState(12);
   const [viewerOpen, setViewerOpen] = useState(false);
   const closeViewer = useCallback(() => setViewerOpen(false), []);
   const section =
@@ -4078,6 +4114,7 @@ function MainGallery({
   const visibleItems = items.filter((item) =>
     section.statuses.includes(item.status),
   );
+  const displayedItems = visibleItems.slice(0, visibleCount);
   const caption = (item: GalleryItem) =>
     item.captions[lang] || item.captions.en || labels.untitled;
   const comment = (item: GalleryItem) =>
@@ -4092,6 +4129,7 @@ function MainGallery({
   const selectSection = (next: GallerySection) => {
     setActiveSection(next);
     setActive(0);
+    setVisibleCount(12);
     setViewerOpen(false);
   };
   return (
@@ -4133,7 +4171,7 @@ function MainGallery({
       </nav>
       {visibleItems.length ? (
         <div className="gallery-photo-grid">
-          {visibleItems.map((item, index) => (
+          {displayedItems.map((item, index) => (
             <article className="gallery-photo-card" key={item.id}>
               <button
                 className="gallery-photo-open"
@@ -4174,6 +4212,16 @@ function MainGallery({
           <h3>{labels.sections[activeSection]}</h3>
           <p>{labels.empty}</p>
         </div>
+      )}
+      {visibleItems.length > visibleCount && (
+        <button
+          type="button"
+          className="gallery-load-more"
+          onClick={() => setVisibleCount((count) => count + 12)}
+        >
+          {labels.loadMore}
+          <span>{Math.min(12, visibleItems.length - visibleCount)}</span>
+        </button>
       )}
       {viewerOpen && visibleItems.length > 0 && (
         <GalleryViewer
@@ -4307,11 +4355,13 @@ function InfoPanel({
   close,
 }: {
   lang: Lang;
-  topic: 'help' | 'privacy' | 'terms';
+  topic: 'about' | 'contact' | 'help' | 'privacy' | 'terms';
   close: () => void;
 }) {
   const f = flowCopy[lang];
   const content = {
+    about: [f.aboutTitle, f.aboutText],
+    contact: [f.contactTitle, f.contactText],
     help: [f.helpTitle, f.helpText],
     privacy: [f.privacyTitle, f.privacyText],
     terms: [f.termsTitle, f.termsText],

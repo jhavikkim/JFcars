@@ -8,7 +8,7 @@ export const galleryStatuses = [
   'in_store',
 ] as const;
 
-export const galleryItemLimit = 36;
+export const galleryItemLimit = 500;
 
 export type GalleryStatus = (typeof galleryStatuses)[number];
 export type StorefrontLang = 'en' | 'fr' | 'es';
