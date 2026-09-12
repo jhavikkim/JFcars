@@ -1821,6 +1821,9 @@ export default function Home() {
     [mode, setMode] = useState<'buy' | 'rent' | 'parts'>('buy'),
     [heroVisible, setHeroVisible] = useState(true),
     [galleryFocus, setGalleryFocus] = useState(false),
+    [sitePage, setSitePage] = useState<
+      'market' | 'gallery' | 'about' | 'contact'
+    >('market'),
     [brand, setBrand] = useState('All'),
     [model, setModel] = useState('All'),
     [panel, setPanel] = useState<'auth' | 'cart' | 'profile' | 'admin' | null>(
@@ -2497,12 +2500,20 @@ export default function Home() {
     );
   };
   const headerNavigate = (next: 'buy' | 'rent' | 'parts') => {
+    setSitePage('market');
     selectMode(next);
     scrollToSection('inventory');
   };
   const galleryNavigate = () => {
+    setSitePage('gallery');
     setGalleryFocus(true);
     scrollToSection('gallery');
+  };
+  const informationNavigate = (page: 'about' | 'contact') => {
+    setSitePage(page);
+    setGalleryFocus(false);
+    setMobileMenu(false);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
   const reset = () => {
     setPage(1);
@@ -2659,6 +2670,7 @@ export default function Home() {
         <button
           className="logo"
           onClick={() => {
+            setSitePage('market');
             setHeroVisible(true);
             setGalleryFocus(false);
             window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -2668,33 +2680,39 @@ export default function Home() {
         </button>
         <nav>
           <button
-            className={mode === 'buy' && !galleryFocus ? 'active' : ''}
+            className={mode === 'buy' && sitePage === 'market' ? 'active' : ''}
             onClick={() => headerNavigate('buy')}
           >
             {u.buyCar}
           </button>
           <button
-            className={mode === 'rent' && !galleryFocus ? 'active' : ''}
+            className={mode === 'rent' && sitePage === 'market' ? 'active' : ''}
             onClick={() => headerNavigate('rent')}
           >
             {u.rentCar}
           </button>
           <button
-            className={mode === 'parts' && !galleryFocus ? 'active' : ''}
+            className={mode === 'parts' && sitePage === 'market' ? 'active' : ''}
             onClick={() => headerNavigate('parts')}
           >
             {u.parts}
           </button>
           <button
-            className={galleryFocus ? 'active' : ''}
+            className={sitePage === 'gallery' ? 'active' : ''}
             onClick={galleryNavigate}
           >
             {galleryCopy[lang].nav}
           </button>
-          <button onClick={() => setInfoTopic('about')}>
+          <button
+            className={sitePage === 'about' ? 'active' : ''}
+            onClick={() => informationNavigate('about')}
+          >
             {footerCopy[lang].about}
           </button>
-          <button onClick={() => setInfoTopic('contact')}>
+          <button
+            className={sitePage === 'contact' ? 'active' : ''}
+            onClick={() => informationNavigate('contact')}
+          >
             {footerCopy[lang].contact}
           </button>
           {isAdmin && (
@@ -2793,16 +2811,14 @@ export default function Home() {
           <button onClick={galleryNavigate}>{galleryCopy[lang].nav}</button>
           <button
             onClick={() => {
-              setInfoTopic('about');
-              setMobileMenu(false);
+              informationNavigate('about');
             }}
           >
             {footerCopy[lang].about}
           </button>
           <button
             onClick={() => {
-              setInfoTopic('contact');
-              setMobileMenu(false);
+              informationNavigate('contact');
             }}
           >
             {footerCopy[lang].contact}
@@ -2821,7 +2837,7 @@ export default function Home() {
           )}
         </nav>
       )}
-      {!galleryFocus && (
+      {sitePage === 'market' && (
         <>
       {heroVisible && (
         <section className="hero">
@@ -3772,7 +3788,7 @@ export default function Home() {
       )}
         </>
       )}
-      {galleryFocus && <MainGallery
+      {sitePage === 'gallery' && <MainGallery
         lang={lang}
         items={galleryItems}
         title={storefrontContent[lang]?.galleryTitle || galleryCopy[lang].title}
@@ -3781,6 +3797,9 @@ export default function Home() {
           galleryCopy[lang].description
         }
       />}
+      {(sitePage === 'about' || sitePage === 'contact') && (
+        <InformationPage lang={lang} page={sitePage} />
+      )}
       {VEHICLE_SELLING_ENABLED && (
         <section className="sell-band">
           <div>
@@ -3994,10 +4013,10 @@ export default function Home() {
             <button onClick={galleryNavigate}>
               {footerCopy[lang].gallery}
             </button>
-            <button onClick={() => setInfoTopic('about')}>
+            <button onClick={() => informationNavigate('about')}>
               {footerCopy[lang].about}
             </button>
-            <button onClick={() => setInfoTopic('contact')}>
+            <button onClick={() => informationNavigate('contact')}>
               {footerCopy[lang].contact}
             </button>
           </nav>
@@ -4087,6 +4106,100 @@ function HeroVideo({
         {playing ? <Pause /> : <Play />}
       </button>
     </>
+  );
+}
+
+function InformationPage({
+  lang,
+  page,
+}: {
+  lang: Lang;
+  page: 'about' | 'contact';
+}) {
+  const [sent, setSent] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState(false);
+  const words = {
+    en: {
+      aboutKicker: 'Built for Central African roads',
+      aboutTitle: 'Buying a car should feel personal.',
+      aboutIntro: 'JFcars brings vehicles, parts and real shipment updates into one trusted place—with people on the ground to help at every step.',
+      storyTitle: 'A marketplace with a human connection',
+      story: 'We created JFcars to make distance feel smaller. Buyers can see clear vehicle details, follow real shipping photos and speak directly with people who understand their market.',
+      values: [['Clear from the start', 'Honest details, visible availability and no hidden online payment step.'], ['Local understanding', 'Support shaped around the roads, cities and needs of each market.'], ['Updates you can see', 'Real photos from preparation, loading, transit and arrival.']],
+      markets: 'Serving five regional markets',
+      marketList: 'Republic of the Congo · Cameroon · Gabon · Cabinda · DR Congo',
+      contactKicker: 'Talk to a real person',
+      contactTitle: 'How can we help?',
+      contactIntro: 'Questions about a vehicle, a part or a shipment? Send the team a message and include as much detail as you can.',
+      name: 'Your name', contact: 'Phone, WhatsApp or email', message: 'Your message', send: 'Send to JFcars', sending: 'Sending…', success: 'Thank you. The JFcars team has received your message.', error: 'We could not send your message. Please try again.', response: 'We usually respond within one business day.', regional: 'Regional support', regionalText: 'Tell us your country and city so the right team can respond.', vehicle: 'Vehicle questions', vehicleText: 'Include the make, model or listing name when possible.', shipment: 'Shipment updates', shipmentText: 'Include your shipment or batch reference if you have one.',
+    },
+    fr: {
+      aboutKicker: 'Pensé pour les routes d’Afrique centrale',
+      aboutTitle: 'Acheter une voiture doit rester humain.',
+      aboutIntro: 'JFcars réunit véhicules, pièces et suivi réel des expéditions dans un espace fiable, avec une équipe locale présente à chaque étape.',
+      storyTitle: 'Une place de marché avec un vrai contact humain',
+      story: 'Nous avons créé JFcars pour réduire les distances. Les acheteurs consultent des informations claires, suivent les expéditions en photos et échangent avec des personnes qui connaissent leur marché.',
+      values: [['Clair dès le départ', 'Des informations honnêtes, une disponibilité visible et aucun paiement caché en ligne.'], ['Une connaissance locale', 'Un accompagnement adapté aux routes, aux villes et aux besoins de chaque marché.'], ['Des nouvelles en images', 'De vraies photos de la préparation, du chargement, du transit et de l’arrivée.']],
+      markets: 'Présents sur cinq marchés régionaux',
+      marketList: 'République du Congo · Cameroun · Gabon · Cabinda · RD Congo',
+      contactKicker: 'Parlez à une vraie personne',
+      contactTitle: 'Comment pouvons-nous vous aider ?',
+      contactIntro: 'Une question sur un véhicule, une pièce ou une expédition ? Envoyez un message à notre équipe avec le plus de détails possible.',
+      name: 'Votre nom', contact: 'Téléphone, WhatsApp ou e-mail', message: 'Votre message', send: 'Envoyer à JFcars', sending: 'Envoi…', success: 'Merci. L’équipe JFcars a bien reçu votre message.', error: 'Votre message n’a pas pu être envoyé. Réessayez.', response: 'Nous répondons généralement sous un jour ouvré.', regional: 'Assistance régionale', regionalText: 'Indiquez votre pays et votre ville pour être orienté vers la bonne équipe.', vehicle: 'Questions sur un véhicule', vehicleText: 'Ajoutez si possible la marque, le modèle ou le nom de l’annonce.', shipment: 'Suivi d’expédition', shipmentText: 'Ajoutez votre référence d’expédition ou de lot si vous en avez une.',
+    },
+    es: {
+      aboutKicker: 'Creado para las carreteras de África Central',
+      aboutTitle: 'Comprar un coche debe sentirse personal.',
+      aboutIntro: 'JFcars reúne vehículos, repuestos y seguimiento real de envíos en un lugar de confianza, con personas locales que ayudan en cada paso.',
+      storyTitle: 'Un mercado con conexión humana',
+      story: 'Creamos JFcars para acortar distancias. Los compradores ven información clara, siguen los envíos con fotos reales y hablan con personas que conocen su mercado.',
+      values: [['Claridad desde el principio', 'Datos honestos, disponibilidad visible y ningún pago oculto en línea.'], ['Conocimiento local', 'Ayuda adaptada a las carreteras, ciudades y necesidades de cada mercado.'], ['Novedades que puedes ver', 'Fotos reales de preparación, carga, tránsito y llegada.']],
+      markets: 'Presentes en cinco mercados regionales',
+      marketList: 'República del Congo · Camerún · Gabón · Cabinda · RD del Congo',
+      contactKicker: 'Habla con una persona real',
+      contactTitle: '¿Cómo podemos ayudarte?',
+      contactIntro: '¿Tienes preguntas sobre un vehículo, un repuesto o un envío? Escribe al equipo con todos los detalles posibles.',
+      name: 'Tu nombre', contact: 'Teléfono, WhatsApp o correo', message: 'Tu mensaje', send: 'Enviar a JFcars', sending: 'Enviando…', success: 'Gracias. El equipo de JFcars ha recibido tu mensaje.', error: 'No pudimos enviar tu mensaje. Inténtalo de nuevo.', response: 'Normalmente respondemos en un día laborable.', regional: 'Asistencia regional', regionalText: 'Indica tu país y ciudad para que responda el equipo adecuado.', vehicle: 'Preguntas sobre vehículos', vehicleText: 'Incluye la marca, el modelo o el nombre del anuncio si es posible.', shipment: 'Seguimiento de envíos', shipmentText: 'Incluye la referencia del envío o lote si la tienes.',
+    },
+  }[lang];
+
+  if (page === 'about') return (
+    <section className="information-page about-page">
+      <div className="information-hero">
+        <div><small>{words.aboutKicker}</small><h1>{words.aboutTitle}</h1><p>{words.aboutIntro}</p></div>
+        <Image src="/jfcars-central-africa-hero.webp" width={1200} height={800} alt="JFcars team with a vehicle" />
+      </div>
+      <div className="about-story"><div><small>JFCARS</small><h2>{words.storyTitle}</h2><p>{words.story}</p></div><aside><b>5</b><span>{words.markets}</span><p>{words.marketList}</p></aside></div>
+      <div className="about-values">{words.values.map(([title, text], index) => <article key={title}><span>{index + 1}</span><h3>{title}</h3><p>{text}</p></article>)}</div>
+    </section>
+  );
+
+  return (
+    <section className="information-page contact-page">
+      <header><small>{words.contactKicker}</small><h1>{words.contactTitle}</h1><p>{words.contactIntro}</p></header>
+      <div className="contact-page-grid">
+        <form onSubmit={async (event) => {
+          event.preventDefault(); setBusy(true); setError(false);
+          const data = new FormData(event.currentTarget);
+          try {
+            const response = await fetch('/api/marketplace', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ action: 'seller-inquiry', payload: { carId: 0, customer: formValue(data, 'name'), phone: formValue(data, 'contact'), message: formValue(data, 'message') } }) });
+            if (!response.ok) throw new Error('send failed');
+            setSent(true); event.currentTarget.reset();
+          } catch { setError(true); } finally { setBusy(false); }
+        }}>
+          {sent ? <div className="contact-page-success"><Check /><h2>{words.success}</h2><p>{words.response}</p><button type="button" onClick={() => setSent(false)}>{words.send}</button></div> : <>
+            <label>{words.name}<input name="name" required autoComplete="name" /></label>
+            <label>{words.contact}<input name="contact" required autoComplete="tel" /></label>
+            <label>{words.message}<textarea name="message" required rows={7} /></label>
+            <button type="submit" disabled={busy}>{busy ? words.sending : words.send}<ArrowRight /></button>
+            {error && <p className="contact-page-error">{words.error}</p>}
+            <small>{words.response}</small>
+          </>}
+        </form>
+        <aside>{[[words.regional, words.regionalText], [words.vehicle, words.vehicleText], [words.shipment, words.shipmentText]].map(([title, text], index) => <article key={title}><span>{index === 0 ? <MapPin /> : index === 1 ? <CarFront /> : <Package />}</span><div><h2>{title}</h2><p>{text}</p></div></article>)}</aside>
+      </div>
+    </section>
   );
 }
 
