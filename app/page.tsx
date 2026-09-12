@@ -2471,28 +2471,35 @@ export default function Home() {
       setImportRegion('Any');
     }
   };
-  const headerNavigate = (next: 'buy' | 'rent' | 'parts') => {
-    selectMode(next);
-    setHeroVisible(false);
-    setTimeout(
-      () =>
-        document
-          .getElementById('inventory')
-          ?.scrollIntoView({ behavior: 'smooth', block: 'start' }),
-      0,
+  const scrollToSection = (id: 'inventory' | 'gallery') => {
+    setHeroVisible(true);
+    setMobileMenu(false);
+    requestAnimationFrame(() =>
+      requestAnimationFrame(() => {
+        const target = document.getElementById(id);
+        if (!target) return;
+        const header = document.querySelector<HTMLElement>('.topbar');
+        const top =
+          window.scrollY +
+          target.getBoundingClientRect().top -
+          (header?.offsetHeight || 0) -
+          14;
+        window.scrollTo({
+          top: Math.max(0, top),
+          behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches
+            ? 'auto'
+            : 'smooth',
+        });
+      }),
     );
   };
+  const headerNavigate = (next: 'buy' | 'rent' | 'parts') => {
+    selectMode(next);
+    scrollToSection('inventory');
+  };
   const galleryNavigate = () => {
-    setHeroVisible(false);
     setGalleryFocus(true);
-    setMobileMenu(false);
-    setTimeout(
-      () =>
-        document
-          .getElementById('gallery')
-          ?.scrollIntoView({ behavior: 'smooth', block: 'start' }),
-      0,
-    );
+    scrollToSection('gallery');
   };
   const reset = () => {
     setPage(1);
@@ -2658,25 +2665,19 @@ export default function Home() {
         </button>
         <nav>
           <button
-            className={
-              mode === 'buy' && !heroVisible && !galleryFocus ? 'active' : ''
-            }
+            className={mode === 'buy' && !galleryFocus ? 'active' : ''}
             onClick={() => headerNavigate('buy')}
           >
             {u.buyCar}
           </button>
           <button
-            className={
-              mode === 'rent' && !heroVisible && !galleryFocus ? 'active' : ''
-            }
+            className={mode === 'rent' && !galleryFocus ? 'active' : ''}
             onClick={() => headerNavigate('rent')}
           >
             {u.rentCar}
           </button>
           <button
-            className={
-              mode === 'parts' && !heroVisible && !galleryFocus ? 'active' : ''
-            }
+            className={mode === 'parts' && !galleryFocus ? 'active' : ''}
             onClick={() => headerNavigate('parts')}
           >
             {u.parts}
