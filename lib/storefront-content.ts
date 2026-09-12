@@ -2,10 +2,13 @@ export const galleryStatuses = [
   'ready_to_load',
   'loaded',
   'ready_to_ship',
+  'shipped_out',
   'in_transit',
   'arrived_unloaded',
   'in_store',
 ] as const;
+
+export const galleryItemLimit = 36;
 
 export type GalleryStatus = (typeof galleryStatuses)[number];
 export type StorefrontLang = 'en' | 'fr' | 'es';
@@ -42,6 +45,8 @@ export function isSafeImageSource(value: unknown): value is string {
   }
 }
 
+export const isSafeMediaSource = isSafeImageSource;
+
 function text(value: unknown, maximum: number) {
   return typeof value === 'string'
     ? Array.from(value)
@@ -66,6 +71,7 @@ function inferredStatus(id: string): GalleryStatus {
   if (id.includes('unload') || id.includes('arrival'))
     return 'arrived_unloaded';
   if (id.includes('part') || id.includes('store')) return 'in_store';
+  if (id.includes('shipped') || id.includes('depart')) return 'shipped_out';
   return 'ready_to_load';
 }
 
@@ -80,7 +86,7 @@ function isIsoDate(value: string) {
   );
 }
 
-export function normalizeGalleryRecords(value: unknown, limit = 8) {
+export function normalizeGalleryRecords(value: unknown, limit = galleryItemLimit) {
   if (!Array.isArray(value)) return [] as GalleryItemRecord[];
   const ids = new Set<string>();
   const records: GalleryItemRecord[] = [];

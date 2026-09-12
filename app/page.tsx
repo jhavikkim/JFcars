@@ -3,10 +3,12 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import {
+  galleryItemLimit,
   galleryStatuses,
   type GalleryItemRecord,
   type GalleryStatus,
   isSafeImageSource,
+  isSafeMediaSource,
   normalizeGalleryRecords,
 } from '@/lib/storefront-content';
 import {
@@ -41,6 +43,8 @@ import {
   Maximize2,
   Menu,
   Package,
+  Pause,
+  Play,
   Plus,
   Search,
   Settings,
@@ -49,6 +53,7 @@ import {
   SlidersHorizontal,
   Sparkles,
   Trash2,
+  Upload,
   User,
   X,
 } from 'lucide-react';
@@ -126,6 +131,7 @@ type StorefrontLocaleContent = {
 };
 type StorefrontContent = Partial<Record<Lang, StorefrontLocaleContent>> & {
   gallery?: GalleryItem[];
+  heroVideo?: string;
 };
 type AuthSession = {
   authenticated: boolean;
@@ -242,11 +248,11 @@ const copy = {
 };
 const galleryCopy = {
   en: {
-    nav: 'Gallery',
-    eyebrow: 'Shipment & stock updates',
-    title: 'From preparation to arrival.',
+    nav: 'Gallery & shipping',
+    eyebrow: 'From our team',
+    title: 'Real photos. Clear shipping updates.',
     description:
-      'Follow goods ready to load, containers ready to ship, items in transit, arrivals and parts in our local store through photos and notes from our team.',
+      'Browse the latest photos from our yard and see what is ready, what leaves next and what is already on the road.',
     open: 'Open photo',
     close: 'Close gallery',
     previous: 'Previous gallery photo',
@@ -256,23 +262,31 @@ const galleryCopy = {
     note: 'Team update',
     location: 'Location',
     date: 'Updated',
-    reference: 'Shipment',
-    process: 'Shipment stages',
-    statuses: {
-      ready_to_load: 'Ready to load',
-      loaded: 'Container loaded',
+    reference: 'Shipment / batch',
+    process: 'Shipment update categories',
+    empty: 'No photo update has been posted for this stage yet.',
+    sections: {
+      all: 'Photo gallery',
       ready_to_ship: 'Ready to ship',
+      preparing: 'Next shipment',
+      in_transit: 'On the road',
+    },
+    statuses: {
+      ready_to_load: 'Preparing to load',
+      loaded: 'Loading complete',
+      ready_to_ship: 'Ready to ship',
+      shipped_out: 'Shipped out',
       in_transit: 'In transit',
-      arrived_unloaded: 'Arrival & unloading complete',
-      in_store: 'Available in local store',
+      arrived_unloaded: 'Arrived & unloaded',
+      in_store: 'In local stock',
     },
   },
   fr: {
-    nav: 'Galerie',
-    eyebrow: 'Suivi des expéditions et du stock',
-    title: 'De la préparation à l’arrivée.',
+    nav: 'Galerie et expéditions',
+    eyebrow: 'Notre équipe sur le terrain',
+    title: 'De vraies photos. Des nouvelles claires.',
     description:
-      'Suivez en photos et avec les notes de notre équipe les biens prêts au chargement, les conteneurs prêts à partir, les expéditions en transit, les arrivées et les pièces en magasin.',
+      'Parcourez les dernières photos de notre parc et voyez ce qui est prêt, ce qui part prochainement et ce qui est déjà en route.',
     open: 'Ouvrir la photo',
     close: 'Fermer la galerie',
     previous: 'Photo précédente de la galerie',
@@ -282,23 +296,32 @@ const galleryCopy = {
     note: 'Note de l’équipe',
     location: 'Lieu',
     date: 'Mise à jour',
-    reference: 'Expédition',
-    process: 'Étapes de l’expédition',
-    statuses: {
-      ready_to_load: 'Prêt au chargement',
-      loaded: 'Conteneur chargé',
+    reference: 'Expédition / lot',
+    process: 'Rubriques de suivi des expéditions',
+    empty:
+      'Aucune mise à jour photo n’a encore été publiée pour cette étape.',
+    sections: {
+      all: 'Galerie photos',
       ready_to_ship: 'Prêt à expédier',
-      in_transit: 'En transit',
-      arrived_unloaded: 'Arrivée et déchargement terminés',
-      in_store: 'Disponible au magasin local',
+      preparing: 'Prochaine expédition',
+      in_transit: 'Déjà en route',
+    },
+    statuses: {
+      ready_to_load: 'Préparation du chargement',
+      loaded: 'Chargement terminé',
+      ready_to_ship: 'Prêt à expédier',
+      shipped_out: 'Expédié',
+      in_transit: 'Expédié / en transit',
+      arrived_unloaded: 'Arrivé et déchargé',
+      in_store: 'En stock local',
     },
   },
   es: {
-    nav: 'Galería',
-    eyebrow: 'Envíos y existencias',
-    title: 'De la preparación a la llegada.',
+    nav: 'Galería y envíos',
+    eyebrow: 'De parte de nuestro equipo',
+    title: 'Fotos reales. Envíos claros.',
     description:
-      'Sigue con fotos y notas de nuestro equipo los bienes listos para cargar, los contenedores listos para salir, los envíos en tránsito, las llegadas y los repuestos en tienda.',
+      'Mira las últimas fotos de nuestro depósito y descubre qué está listo, qué sale próximamente y qué ya está en camino.',
     open: 'Abrir foto',
     close: 'Cerrar galería',
     previous: 'Foto anterior de la galería',
@@ -307,19 +330,47 @@ const galleryCopy = {
     untitled: 'Foto de la galería JFcars',
     note: 'Nota del equipo',
     location: 'Ubicación',
-    date: 'Actualizado',
-    reference: 'Envío',
-    process: 'Etapas del envío',
-    statuses: {
-      ready_to_load: 'Listo para cargar',
-      loaded: 'Contenedor cargado',
+    date: 'Fecha',
+    reference: 'Envío / lote',
+    process: 'Categorías de seguimiento de envíos',
+    empty:
+      'Todavía no se ha publicado ninguna actualización con fotos para esta etapa.',
+    sections: {
+      all: 'Galería de fotos',
       ready_to_ship: 'Listo para enviar',
-      in_transit: 'En tránsito',
-      arrived_unloaded: 'Llegada y descarga completadas',
-      in_store: 'Disponible en la tienda local',
+      preparing: 'Próximo envío',
+      in_transit: 'Ya en camino',
+    },
+    statuses: {
+      ready_to_load: 'Preparando la carga',
+      loaded: 'Carga terminada',
+      ready_to_ship: 'Listo para enviar',
+      shipped_out: 'Enviado',
+      in_transit: 'Enviado / en tránsito',
+      arrived_unloaded: 'Llegado y descargado',
+      in_store: 'En stock local',
     },
   },
 } as const;
+
+type GallerySection =
+  | 'all'
+  | 'preparing'
+  | 'ready_to_ship'
+  | 'in_transit';
+
+const gallerySections: {
+  id: GallerySection;
+  statuses: readonly GalleryStatus[];
+}[] = [
+  { id: 'all', statuses: galleryStatuses },
+  { id: 'ready_to_ship', statuses: ['ready_to_ship', 'in_store'] },
+  { id: 'preparing', statuses: ['ready_to_load', 'loaded'] },
+  { id: 'in_transit', statuses: ['shipped_out', 'in_transit'] },
+];
+
+const defaultHeroVideo =
+  'https://videos.pexels.com/video-files/37074025/15705634_2160_3840_30fps.mp4';
 const defaultGalleryItems: GalleryItem[] = [
   {
     id: 'shipment-loading',
@@ -358,6 +409,24 @@ const defaultGalleryItems: GalleryItem[] = [
     reference: 'JF-ARRIVAL',
   },
   {
+    id: 'shipment-on-the-road',
+    image: '/jfcars-central-africa-hero.webp',
+    captions: {
+      en: 'Vehicle delivery underway',
+      fr: 'Livraison du véhicule en cours',
+      es: 'Entrega del vehículo en curso',
+    },
+    comments: {
+      en: 'This vehicle has left our yard. We will add the arrival photos here as soon as the local team receives it.',
+      fr: 'Ce véhicule a quitté notre parc. Nous ajouterons ici les photos d’arrivée dès sa réception par l’équipe locale.',
+      es: 'Este vehículo ya salió de nuestro depósito. Añadiremos aquí las fotos de llegada en cuanto lo reciba el equipo local.',
+    },
+    status: 'in_transit',
+    date: '',
+    location: 'On the road',
+    reference: 'JF-TRANSIT',
+  },
+  {
     id: 'local-parts-store',
     image: '/jfcars-gallery-parts-store.webp',
     captions: {
@@ -377,7 +446,7 @@ const defaultGalleryItems: GalleryItem[] = [
   },
 ];
 const normalizeGallery = (items: GalleryItem[] | undefined) => {
-  const valid = normalizeGalleryRecords(items, 8).map((item) => {
+  const valid = normalizeGalleryRecords(items, galleryItemLimit).map((item) => {
     const fallback = defaultGalleryItems.find((entry) => entry.id === item.id);
     return {
       ...fallback,
@@ -915,6 +984,8 @@ const accessibilityCopy = {
     previousPhoto: 'Previous photo',
     nextPhoto: 'Next photo',
     heroAlt: 'Customers viewing an SUV at a Central African car market',
+    playHero: 'Play hero video',
+    pauseHero: 'Pause hero video',
   },
   fr: {
     language: 'Langue',
@@ -929,6 +1000,8 @@ const accessibilityCopy = {
     nextPhoto: 'Photo suivante',
     heroAlt:
       'Des clients regardent un SUV sur un marché automobile d’Afrique centrale',
+    playHero: 'Lire la vidéo d’accueil',
+    pauseHero: 'Mettre la vidéo d’accueil en pause',
   },
   es: {
     language: 'Idioma',
@@ -943,6 +1016,8 @@ const accessibilityCopy = {
     nextPhoto: 'Foto siguiente',
     heroAlt:
       'Clientes observando un SUV en un mercado de automóviles de África Central',
+    playHero: 'Reproducir el vídeo de portada',
+    pauseHero: 'Pausar el vídeo de portada',
   },
 } as const;
 const formValue = (data: FormData, key: string, fallback = '') => {
@@ -1269,7 +1344,9 @@ const footerCopy = {
     buy: 'Buy a car',
     rent: 'Rent a car',
     parts: 'Request a part',
-    gallery: 'Gallery',
+    gallery: 'Shipments',
+    about: 'About us',
+    contact: 'Contact us',
     accountHelp: 'Account & help',
     account: 'My account',
     cartRequests: 'Cart & requests',
@@ -1289,7 +1366,9 @@ const footerCopy = {
     buy: 'Acheter une voiture',
     rent: 'Louer une voiture',
     parts: 'Demander une pièce',
-    gallery: 'Galerie',
+    gallery: 'Expéditions',
+    about: 'À propos',
+    contact: 'Nous contacter',
     accountHelp: 'Compte et assistance',
     account: 'Mon compte',
     cartRequests: 'Panier et demandes',
@@ -1309,7 +1388,9 @@ const footerCopy = {
     buy: 'Comprar un coche',
     rent: 'Alquilar un coche',
     parts: 'Solicitar un repuesto',
-    gallery: 'Galería',
+    gallery: 'Envíos',
+    about: 'Quiénes somos',
+    contact: 'Contáctanos',
     accountHelp: 'Cuenta y ayuda',
     account: 'Mi cuenta',
     cartRequests: 'Carrito y solicitudes',
@@ -1369,10 +1450,22 @@ const flowCopy = {
     viewDetails: 'View details',
     adminHint: 'Admin access is limited to the verified JFcars owner.',
     helpTitle: 'How can we help?',
+    aboutTitle: 'About JFcars',
+    contactTitle: 'Contact us',
     privacyTitle: 'Privacy at JFcars',
     termsTitle: 'Marketplace terms',
     helpText:
       'Browse, compare, rent or request a part. For transaction support, use the seller form on any listing.',
+    aboutText:
+      'JFcars connects buyers and renters with vehicles, parts and shipment updates across our Central African markets. We focus on clear information, local support and visible logistics from departure to arrival.',
+    contactText:
+      'Tell our team how we can help. For a specific vehicle, include its make or listing name in your message.',
+    contactName: 'Your name',
+    contactWay: 'Phone, WhatsApp or email',
+    contactMessage: 'How can we help?',
+    contactSend: 'Send message',
+    contactSent: 'Thank you. Your message has been sent to the JFcars team.',
+    contactError: 'Your message could not be sent. Please try again.',
     privacyText:
       'Marketplace requests and signed-in profile details—including contact, location and language preferences—are stored securely for service delivery. Device preferences may also be stored locally.',
     termsText:
@@ -1433,10 +1526,22 @@ const flowCopy = {
     viewDetails: 'Voir les détails',
     adminHint: 'L’accès Admin est réservé au propriétaire JFcars vérifié.',
     helpTitle: 'Comment pouvons-nous aider ?',
+    aboutTitle: 'À propos de JFcars',
+    contactTitle: 'Nous contacter',
     privacyTitle: 'Confidentialité chez JFcars',
     termsTitle: 'Conditions de la place de marché',
     helpText:
       'Parcourez, comparez, louez ou demandez une pièce. Pour une transaction, utilisez le formulaire vendeur de l’annonce.',
+    aboutText:
+      'JFcars met en relation les acheteurs et les locataires avec des véhicules, des pièces et le suivi des expéditions sur nos marchés d’Afrique centrale. Nous privilégions des informations claires, un accompagnement local et une logistique visible du départ à l’arrivée.',
+    contactText:
+      'Expliquez à notre équipe comment nous pouvons vous aider. Pour un véhicule précis, indiquez sa marque ou le nom de l’annonce.',
+    contactName: 'Votre nom',
+    contactWay: 'Téléphone, WhatsApp ou e-mail',
+    contactMessage: 'Comment pouvons-nous vous aider ?',
+    contactSend: 'Envoyer le message',
+    contactSent: 'Merci. Votre message a été envoyé à l’équipe JFcars.',
+    contactError: 'Votre message n’a pas pu être envoyé. Réessayez.',
     privacyText:
       'Les demandes et les informations du profil connecté—notamment le contact, la localisation et la langue—sont conservées pour assurer le service. Certaines préférences peuvent aussi être stockées sur cet appareil.',
     termsText:
@@ -1495,10 +1600,22 @@ const flowCopy = {
     adminHint:
       'El acceso Admin está limitado al propietario verificado de JFcars.',
     helpTitle: '¿Cómo podemos ayudarte?',
+    aboutTitle: 'Quiénes somos',
+    contactTitle: 'Contáctanos',
     privacyTitle: 'Privacidad en JFcars',
     termsTitle: 'Términos del mercado',
     helpText:
       'Explora, compara, alquila o solicita una pieza. Para una operación, usa el formulario del vendedor en el anuncio.',
+    aboutText:
+      'JFcars conecta a compradores y arrendatarios con vehículos, repuestos y el seguimiento de envíos en nuestros mercados de África Central. Priorizamos la información clara, la asistencia local y una logística visible desde la salida hasta la llegada.',
+    contactText:
+      'Cuéntale a nuestro equipo cómo podemos ayudarte. Para un vehículo concreto, incluye la marca o el nombre del anuncio.',
+    contactName: 'Tu nombre',
+    contactWay: 'Teléfono, WhatsApp o correo',
+    contactMessage: '¿Cómo podemos ayudarte?',
+    contactSend: 'Enviar mensaje',
+    contactSent: 'Gracias. Tu mensaje ha sido enviado al equipo de JFcars.',
+    contactError: 'No se pudo enviar el mensaje. Inténtalo de nuevo.',
     privacyText:
       'Las solicitudes y los datos del perfil conectado—incluidos contacto, ubicación e idioma—se guardan para prestar el servicio. Algunas preferencias también pueden guardarse en este dispositivo.',
     termsText:
@@ -1722,9 +1839,9 @@ export default function Home() {
     [userOrders, setUserOrders] = useState<OrderRecord[]>([]),
     [orders, setOrders] = useState<OrderRecord[]>([]),
     [sellOpen, setSellOpen] = useState(false),
-    [infoTopic, setInfoTopic] = useState<'help' | 'privacy' | 'terms' | null>(
-      null,
-    ),
+    [infoTopic, setInfoTopic] = useState<
+      'about' | 'contact' | 'help' | 'privacy' | 'terms' | null
+    >(null),
     [persistenceReady, setPersistenceReady] = useState(false);
   const filterPanelRef = useRef<HTMLElement>(null);
   const filterCloseRef = useRef<HTMLButtonElement>(null);
@@ -2735,12 +2852,15 @@ export default function Home() {
             </div>
           </div>
           <div className="hero-art">
-            <Image
-              src="/jfcars-central-africa-hero.webp"
-              alt={a.heroAlt}
-              width={1600}
-              height={900}
-              priority
+            <HeroVideo
+              src={
+                isSafeMediaSource(storefrontContent.heroVideo)
+                  ? storefrontContent.heroVideo
+                  : defaultHeroVideo
+              }
+              poster="/jfcars-central-africa-hero.webp"
+              playLabel={a.playHero}
+              pauseLabel={a.pauseHero}
             />
             <div className="stat">
               <b>5</b>
@@ -3876,6 +3996,64 @@ export default function Home() {
   );
 }
 
+function HeroVideo({
+  src,
+  poster,
+  playLabel,
+  pauseLabel,
+}: {
+  src: string;
+  poster: string;
+  playLabel: string;
+  pauseLabel: string;
+}) {
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const [playing, setPlaying] = useState(true);
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video) return;
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      video.pause();
+      setPlaying(false);
+      return;
+    }
+    void video.play().catch(() => setPlaying(false));
+  }, [src]);
+  const toggle = () => {
+    const video = videoRef.current;
+    if (!video) return;
+    if (video.paused) void video.play().catch(() => setPlaying(false));
+    else video.pause();
+  };
+  return (
+    <>
+      <video
+        ref={videoRef}
+        key={src}
+        autoPlay
+        muted
+        loop
+        playsInline
+        poster={poster}
+        preload="metadata"
+        aria-hidden="true"
+        onPlay={() => setPlaying(true)}
+        onPause={() => setPlaying(false)}
+      >
+        <source src={src} />
+      </video>
+      <button
+        type="button"
+        className="hero-video-toggle"
+        onClick={toggle}
+        aria-label={playing ? pauseLabel : playLabel}
+      >
+        {playing ? <Pause /> : <Play />}
+      </button>
+    </>
+  );
+}
+
 function MainGallery({
   lang,
   items,
@@ -3888,12 +4066,17 @@ function MainGallery({
   description: string;
 }) {
   const labels = galleryCopy[lang];
+  const [activeSection, setActiveSection] =
+    useState<GallerySection>('all');
   const [active, setActive] = useState(0);
   const [viewerOpen, setViewerOpen] = useState(false);
   const closeViewer = useCallback(() => setViewerOpen(false), []);
-  const activeIndex = active < items.length ? active : 0;
-  const current = items[activeIndex] || items[0];
-  if (!current) return null;
+  const section =
+    gallerySections.find((entry) => entry.id === activeSection) ||
+    gallerySections[0];
+  const visibleItems = items.filter((item) =>
+    section.statuses.includes(item.status),
+  );
   const caption = (item: GalleryItem) =>
     item.captions[lang] || item.captions.en || labels.untitled;
   const comment = (item: GalleryItem) =>
@@ -3905,8 +4088,11 @@ function MainGallery({
           { dateStyle: 'medium', timeZone: 'UTC' },
         ).format(new Date(`${value}T12:00:00Z`))
       : '';
-  const move = (direction: number) =>
-    setActive((index) => (index + direction + items.length) % items.length);
+  const selectSection = (next: GallerySection) => {
+    setActiveSection(next);
+    setActive(0);
+    setViewerOpen(false);
+  };
   return (
     <section
       className="main-gallery"
@@ -3921,136 +4107,78 @@ function MainGallery({
           <h2 id="gallery-title">{title}</h2>
           <span>{description}</span>
         </div>
-        <div className="main-gallery-controls">
-          <b aria-live="polite">
-            {String(activeIndex + 1).padStart(2, '0')} /{' '}
-            {String(items.length).padStart(2, '0')}
-          </b>
-          <button
-            onClick={() => move(-1)}
-            aria-label={labels.previous}
-            disabled={items.length < 2}
-          >
-            <ChevronLeft />
-          </button>
-          <button
-            onClick={() => move(1)}
-            aria-label={labels.next}
-            disabled={items.length < 2}
-          >
-            <ChevronRight />
-          </button>
-        </div>
+        <b className="gallery-photo-count" aria-live="polite">
+          {visibleItems.length} {labels.photos}
+        </b>
       </header>
-      <ol className="gallery-stage-key" aria-label={labels.process}>
-        {galleryStatuses
-          .filter((status) => status !== 'in_store')
-          .map((status, index) => (
-            <li
-              key={status}
-              className={
-                items.some((item) => item.status === status) ? 'has-update' : ''
-              }
+      <nav className="gallery-stage-key" aria-label={labels.process}>
+        {gallerySections.map((entry) => {
+          const count = items.filter((item) =>
+            entry.statuses.includes(item.status),
+          ).length;
+          return (
+            <button
+              type="button"
+              key={entry.id}
+              aria-pressed={activeSection === entry.id}
+              className={activeSection === entry.id ? 'active' : ''}
+              onClick={() => selectSection(entry.id)}
             >
-              <span>{index + 1}</span>
-              <b>{labels.statuses[status]}</b>
-            </li>
-          ))}
-      </ol>
-      <div className="main-gallery-view">
-        <button
-          className="main-gallery-feature"
-          onClick={() => setViewerOpen(true)}
-          aria-label={`${labels.open}: ${caption(current)}`}
-        >
-          <Image
-            key={current.image}
-            src={current.image}
-            alt={caption(current)}
-            width={1536}
-            height={1024}
-            unoptimized
-          />
-          <span>
-            <span>
-              <small className={`gallery-status status-${current.status}`}>
-                {labels.statuses[current.status]}
-              </small>
-              <b>{caption(current)}</b>
-            </span>
-            <i>
-              <Maximize2 /> {labels.open}
-            </i>
-          </span>
-        </button>
-        <div className="main-gallery-sidebar">
-          <article className="gallery-update-note" aria-live="polite">
-            <div>
-              <small>{labels.note}</small>
-              <span className={`gallery-status status-${current.status}`}>
-                {labels.statuses[current.status]}
-              </span>
-            </div>
-            <p>{comment(current)}</p>
-            {(current.reference || current.location || current.date) && (
-              <dl>
-                {current.reference && (
-                  <div>
-                    <dt>{labels.reference}</dt>
-                    <dd>{current.reference}</dd>
-                  </div>
-                )}
-                {current.location && (
-                  <div>
-                    <dt>{labels.location}</dt>
-                    <dd>
-                      <MapPin /> {current.location}
-                    </dd>
-                  </div>
-                )}
-                {current.date && (
-                  <div>
-                    <dt>{labels.date}</dt>
-                    <dd>
-                      <CalendarDays />
-                      <time dateTime={current.date}>
-                        {formatDate(current.date)}
-                      </time>
-                    </dd>
-                  </div>
-                )}
-              </dl>
-            )}
-          </article>
-          <fieldset className="main-gallery-strip" aria-label={labels.nav}>
-            {items.map((item, index) => (
+              <span>{count}</span>
+              <b>{labels.sections[entry.id]}</b>
+            </button>
+          );
+        })}
+      </nav>
+      {visibleItems.length ? (
+        <div className="gallery-photo-grid">
+          {visibleItems.map((item, index) => (
+            <article className="gallery-photo-card" key={item.id}>
               <button
-                key={item.id}
-                aria-pressed={activeIndex === index}
-                className={activeIndex === index ? 'active' : ''}
-                onClick={() => setActive(index)}
+                className="gallery-photo-open"
+                onClick={() => {
+                  setActive(index);
+                  setViewerOpen(true);
+                }}
+                aria-label={`${labels.open}: ${caption(item)}`}
               >
                 <Image
                   src={item.image}
-                  alt=""
-                  width={420}
-                  height={280}
+                  alt={caption(item)}
+                  width={900}
+                  height={650}
                   unoptimized
                 />
-                <span>
-                  <small>{labels.statuses[item.status]}</small>
-                  <b>{caption(item)}</b>
-                </span>
+                <span><Maximize2 /> {labels.open}</span>
               </button>
-            ))}
-          </fieldset>
+              <div className="gallery-photo-copy">
+                <span className={`gallery-status status-${item.status}`}>
+                  {labels.statuses[item.status]}
+                </span>
+                <h3>{caption(item)}</h3>
+                <p>{comment(item)}</p>
+                {(item.location || item.date) && (
+                  <small>
+                    {item.location && <span><MapPin /> {item.location}</span>}
+                    {item.date && <span><CalendarDays /> {formatDate(item.date)}</span>}
+                  </small>
+                )}
+              </div>
+            </article>
+          ))}
         </div>
-      </div>
-      {viewerOpen && (
+      ) : (
+        <div className="gallery-empty-stage" aria-live="polite">
+          <Package />
+          <h3>{labels.sections[activeSection]}</h3>
+          <p>{labels.empty}</p>
+        </div>
+      )}
+      {viewerOpen && visibleItems.length > 0 && (
         <GalleryViewer
           lang={lang}
-          items={items}
-          active={activeIndex}
+          items={visibleItems}
+          active={active < visibleItems.length ? active : 0}
           setActive={setActive}
           close={closeViewer}
         />
@@ -6607,7 +6735,15 @@ function AdminPanel({
           galleryCopy.es.description,
       },
       gallery: normalizeGallery(storefrontContent.gallery),
+      heroVideo: isSafeMediaSource(storefrontContent.heroVideo)
+        ? storefrontContent.heroVideo
+        : defaultHeroVideo,
     });
+  const [adminGallerySection, setAdminGallerySection] =
+    useState<GallerySection>('all');
+  const [galleryUploading, setGalleryUploading] = useState(false);
+  const [heroUploading, setHeroUploading] = useState(false);
+  const [mediaUploadError, setMediaUploadError] = useState('');
   const [adminAddCountry, setAdminAddCountry] = useState(
     'Republic of the Congo',
   );
@@ -6623,6 +6759,12 @@ function AdminPanel({
     Array.isArray(contentDraft.gallery) && contentDraft.gallery.length
       ? contentDraft.gallery
       : defaultGalleryItems;
+  const adminSection =
+    gallerySections.find((entry) => entry.id === adminGallerySection) ||
+    gallerySections[0];
+  const visibleGalleryDraft = galleryDraft
+    .map((item, index) => ({ item, index }))
+    .filter(({ item }) => adminSection.statuses.includes(item.status));
   const updateGalleryDetails = (index: number, details: Partial<GalleryItem>) =>
     setContentDraft((current) => ({
       ...current,
@@ -6665,8 +6807,106 @@ function AdminPanel({
           : item,
       ),
     }));
+  const uploadMedia = async (file: File, purpose: 'gallery' | 'hero') => {
+    const data = new FormData();
+    data.set('file', file);
+    data.set('purpose', purpose);
+    const response = await fetch('/api/media', { method: 'POST', body: data });
+    const result = (await response.json()) as { error?: string; url?: string };
+    if (!response.ok || !result.url)
+      throw new Error(result.error || 'Media upload failed');
+    return result.url;
+  };
+  const replaceGalleryPhoto = async (index: number, file: File) => {
+    setGalleryUploading(true);
+    setMediaUploadError('');
+    try {
+      updateGalleryImage(index, await uploadMedia(file, 'gallery'));
+      setContentSaved(false);
+    } catch (error) {
+      setMediaUploadError(
+        error instanceof Error ? error.message : 'Photo upload failed',
+      );
+    } finally {
+      setGalleryUploading(false);
+    }
+  };
+  const uploadGalleryPhotos = async (files: File[]) => {
+    const available = galleryItemLimit - galleryDraft.length;
+    const selected = files.slice(0, Math.max(0, available));
+    if (!selected.length) return;
+    const status =
+      adminGallerySection === 'all'
+        ? 'ready_to_load'
+        : adminSection.statuses[0];
+    setGalleryUploading(true);
+    setMediaUploadError('');
+    try {
+      const uploaded: GalleryItem[] = [];
+      for (const file of selected) {
+        const image = await uploadMedia(file, 'gallery');
+        const fileTitle = file.name
+          .replace(/\.[^.]+$/, '')
+          .replace(/[-_]+/g, ' ')
+          .trim();
+        uploaded.push({
+          id: `gallery-${Date.now()}-${crypto.randomUUID()}`,
+          image,
+          captions: {
+            en: fileTitle || 'Shipment photo update',
+            fr: fileTitle || 'Mise à jour photo de l’expédition',
+            es: fileTitle || 'Actualización fotográfica del envío',
+          },
+          comments: {
+            en: 'Add an operations note for this update.',
+            fr: 'Ajoutez une note opérationnelle pour cette mise à jour.',
+            es: 'Añade una nota operativa para esta actualización.',
+          },
+          status,
+          date: new Date().toISOString().slice(0, 10),
+          location: '',
+          reference: '',
+        });
+      }
+      setContentDraft((current) => ({
+        ...current,
+        gallery: [
+          ...(Array.isArray(current.gallery) && current.gallery.length
+            ? current.gallery
+            : defaultGalleryItems),
+          ...uploaded,
+        ].slice(0, galleryItemLimit),
+      }));
+      setContentSaved(false);
+    } catch (error) {
+      setMediaUploadError(
+        error instanceof Error ? error.message : 'Photo upload failed',
+      );
+    } finally {
+      setGalleryUploading(false);
+    }
+  };
+  const uploadHeroVideo = async (file: File) => {
+    setHeroUploading(true);
+    setMediaUploadError('');
+    try {
+      const heroVideo = await uploadMedia(file, 'hero');
+      setContentDraft((current) => ({ ...current, heroVideo }));
+      setContentSaved(false);
+    } catch (error) {
+      setMediaUploadError(
+        error instanceof Error ? error.message : 'Video upload failed',
+      );
+    } finally {
+      setHeroUploading(false);
+    }
+  };
   const addGalleryPhoto = () => {
-    if (galleryDraft.length >= 8) return;
+    if (galleryDraft.length >= galleryItemLimit) return;
+    const status =
+      adminGallerySection === 'all'
+        ? 'ready_to_load'
+        : adminSection.statuses[0];
     setContentDraft((current) => ({
       ...current,
       gallery: [
@@ -6686,7 +6926,7 @@ function AdminPanel({
             fr: 'Ajoutez une note opérationnelle pour cette mise à jour.',
             es: 'Añade una nota operativa para esta actualización.',
           },
-          status: 'ready_to_load',
+          status,
           date: new Date().toISOString().slice(0, 10),
           location: '',
           reference: '',
@@ -7337,13 +7577,67 @@ function AdminPanel({
                 </label>
                 <div className="content-section-title">
                   <div>
-                    <h4>Shipment and stock gallery</h4>
+                    <h4>Homepage hero video</h4>
                     <p>
-                      Add shipment stages, dates, locations and multilingual
-                      team notes. Do not include customer information.
+                      Upload an MP4 or WebM clip. It plays silently and keeps the
+                      current African-market image as its loading fallback.
                     </p>
                   </div>
-                  <span>{galleryDraft.length} / 8 photos</span>
+                  <span>{heroUploading ? 'Uploading…' : 'Video'}</span>
+                </div>
+                <div className="admin-hero-media">
+                  <video
+                    src={contentDraft.heroVideo || defaultHeroVideo}
+                    poster="/jfcars-central-africa-hero.webp"
+                    muted
+                    loop
+                    playsInline
+                    controls
+                    preload="metadata"
+                  />
+                  <div>
+                    <label className="media-upload-button">
+                      <Upload />
+                      {heroUploading ? 'Uploading video…' : 'Upload hero video'}
+                      <input
+                        type="file"
+                        accept="video/mp4,video/webm"
+                        disabled={heroUploading}
+                        onChange={(event) => {
+                          const file = event.currentTarget.files?.[0];
+                          event.currentTarget.value = '';
+                          if (file) void uploadHeroVideo(file);
+                        }}
+                      />
+                    </label>
+                    <label>
+                      Or use a hosted video URL
+                      <input
+                        value={contentDraft.heroVideo || ''}
+                        placeholder="https://…/hero.mp4"
+                        onChange={(event) => {
+                          setContentDraft({
+                            ...contentDraft,
+                            heroVideo: event.target.value,
+                          });
+                          setContentSaved(false);
+                        }}
+                      />
+                    </label>
+                    <small>Maximum 50 MB. Audio is muted on the homepage.</small>
+                  </div>
+                </div>
+                <div className="content-section-title">
+                  <div>
+                    <h4>Shipment journal</h4>
+                    <p>
+                      Upload real loading, departure, transit, arrival and local
+                      stock photos. Do not include customer information.
+                    </p>
+                  </div>
+                  <span>
+                    {galleryDraft.length} / {galleryItemLimit} photos
+                  </span>
                 </div>
                 <label>
                   Gallery heading
@@ -7393,8 +7687,69 @@ function AdminPanel({
                     }
                   />
                 </label>
+                <nav
+                  className="admin-gallery-tabs"
+                  aria-label="Shipment journal category"
+                >
+                  {gallerySections.map((section) => {
+                    const count = galleryDraft.filter((item) =>
+                      section.statuses.includes(item.status),
+                    ).length;
+                    return (
+                      <button
+                        type="button"
+                        key={section.id}
+                        aria-pressed={adminGallerySection === section.id}
+                        className={
+                          adminGallerySection === section.id ? 'active' : ''
+                        }
+                        onClick={() => setAdminGallerySection(section.id)}
+                      >
+                        {galleryCopy[contentLocale].sections[section.id]}
+                        <span>{count}</span>
+                      </button>
+                    );
+                  })}
+                </nav>
+                <div className="gallery-admin-actions">
+                  <label className="media-upload-button">
+                    <Upload />
+                    {galleryUploading
+                      ? 'Uploading photos…'
+                      : `Upload photos to ${galleryCopy[contentLocale].sections[adminGallerySection]}`}
+                    <input
+                      type="file"
+                      accept="image/jpeg,image/png,image/webp,image/avif"
+                      multiple
+                      disabled={
+                        galleryUploading ||
+                        galleryDraft.length >= galleryItemLimit
+                      }
+                      onChange={(event) => {
+                        const files = Array.from(
+                          event.currentTarget.files || [],
+                        );
+                        event.currentTarget.value = '';
+                        if (files.length) void uploadGalleryPhotos(files);
+                      }}
+                    />
+                  </label>
+                  <button
+                    type="button"
+                    className="gallery-admin-add"
+                    disabled={galleryDraft.length >= galleryItemLimit}
+                    onClick={addGalleryPhoto}
+                  >
+                    <Plus /> Add entry by URL
+                  </button>
+                </div>
+                {mediaUploadError && (
+                  <p className="admin-sync-error" role="alert">
+                    {mediaUploadError}
+                  </p>
+                )}
                 <div className="gallery-admin-list">
-                  {galleryDraft.map((item, index) => {
+                  {visibleGalleryDraft.map(({ item, index }) => {
                     const imageReady = isSafeImageSource(item.image);
                     return (
                       <article key={item.id}>
@@ -7424,7 +7779,7 @@ function AdminPanel({
                               >
                                 {galleryStatuses.map((status) => (
                                   <option key={status} value={status}>
-                                    {galleryCopy.en.statuses[status]}
+                                    {galleryCopy[contentLocale].statuses[status]}
                                   </option>
                                 ))}
                               </select>
@@ -7469,12 +7824,26 @@ function AdminPanel({
                             </label>
                           </div>
                           <label>
-                            Image URL or /public path
+                            Image URL or existing media path
                             <input
                               value={item.image}
                               onChange={(event) =>
                                 updateGalleryImage(index, event.target.value)
                               }
+                            />
+                          </label>
+                          <label className="gallery-replace-upload">
+                            <Upload /> Replace with an uploaded photo
+                            <input
+                              type="file"
+                              accept="image/jpeg,image/png,image/webp,image/avif"
+                              disabled={galleryUploading}
+                              onChange={(event) => {
+                                const file = event.currentTarget.files?.[0];
+                                event.currentTarget.value = '';
+                                if (file)
+                                  void replaceGalleryPhoto(index, file);
+                              }}
                             />
                           </label>
                           <label>
@@ -7510,15 +7879,13 @@ function AdminPanel({
                       </article>
                     );
                   })}
+                  {!visibleGalleryDraft.length && (
+                    <div className="gallery-admin-empty">
+                      <Package />
+                      <p>No photos in this category yet.</p>
+                    </div>
+                  )}
                 </div>
-                <button
-                  type="button"
-                  className="gallery-admin-add"
-                  disabled={galleryDraft.length >= 8}
-                  onClick={addGalleryPhoto}
-                >
-                  <Plus /> Add shipment or stock update
-                </button>
                 <label>
                   Announcement
                   <input
@@ -7527,6 +7894,14 @@ function AdminPanel({
                   />
                 </label>
                 <button
+                  disabled={
+                    galleryUploading ||
+                    heroUploading ||
+                    !isSafeMediaSource(contentDraft.heroVideo) ||
+                    galleryDraft.some(
+                      (item) => !isSafeImageSource(item.image),
+                    )
+                  }
                   onClick={() => {
                     setStorefrontContent(contentDraft);
                     setContentSaved(true);

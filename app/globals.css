@@ -1594,6 +1594,7 @@ footer div a {
   background: #f7dfa0;
   color: #644711;
 }
+.gallery-status.status-shipped_out,
 .gallery-status.status-in_transit {
   background: #dcecf3;
   color: #255c70;
@@ -5550,4 +5551,194 @@ footer .logo {
   .az-grid {
     grid-template-columns: repeat(6, minmax(36px, 1fr));
   }
+}
+
+/* Photo-first shipment board */
+.gallery-photo-count {
+  flex: 0 0 auto;
+  padding: 9px 13px;
+  border-radius: 999px;
+  background: #f2eadb;
+  color: #6b6354;
+  font-size: 12px;
+  font-weight: 750;
+}
+.gallery-stage-key {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+  margin-bottom: 24px;
+  overflow: visible;
+}
+.gallery-stage-key button {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 15px 16px;
+  border: 1px solid #ddd8ca;
+  border-radius: 13px;
+  background: #fffdf8;
+  color: #5f6d67;
+  text-align: left;
+}
+.gallery-stage-key button:hover {
+  border-color: #9dae9f;
+  transform: translateY(-1px);
+}
+.gallery-stage-key button.active {
+  border-color: var(--forest);
+  background: var(--forest);
+  color: #fff;
+  box-shadow: 0 9px 22px #183c361e;
+}
+.gallery-stage-key button > span {
+  width: 29px;
+  height: 29px;
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: #efe8da;
+  color: var(--forest);
+  font-size: 11px;
+  font-weight: 850;
+}
+.gallery-stage-key button.active > span {
+  background: #ffffff1f;
+  color: #fff;
+}
+.gallery-stage-key button > b {
+  font-size: 13px;
+  line-height: 1.2;
+}
+.gallery-photo-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 20px;
+}
+.gallery-photo-card {
+  min-width: 0;
+  overflow: hidden;
+  border: 1px solid #e3ded2;
+  border-radius: 18px;
+  background: #fff;
+  box-shadow: 0 10px 35px #183c360a;
+}
+.gallery-photo-card:first-child:nth-last-child(odd) {
+  grid-column: 1 / -1;
+}
+.gallery-photo-open {
+  position: relative;
+  width: 100%;
+  height: 330px;
+  display: block;
+  padding: 0;
+  overflow: hidden;
+  border: 0;
+  background: #e7e8e1;
+}
+.gallery-photo-card:first-child:nth-last-child(odd) .gallery-photo-open {
+  height: min(52vw, 520px);
+}
+.gallery-photo-open img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform .3s ease;
+}
+.gallery-photo-open:hover img {
+  transform: scale(1.018);
+}
+.gallery-photo-open > span {
+  position: absolute;
+  right: 14px;
+  bottom: 14px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 9px 12px;
+  border-radius: 999px;
+  background: #fffef0e8;
+  color: var(--forest);
+  font-size: 11px;
+  font-weight: 800;
+  backdrop-filter: blur(8px);
+}
+.gallery-photo-open > span svg {
+  width: 14px;
+}
+.gallery-photo-copy {
+  padding: 18px 19px 20px;
+}
+.gallery-photo-copy h3 {
+  margin: 10px 0 7px;
+  color: var(--navy);
+  font-family: Georgia, serif;
+  font-size: 22px;
+  font-weight: 500;
+  line-height: 1.2;
+}
+.gallery-photo-copy p {
+  margin: 0;
+  color: #60716a;
+  font-size: 13px;
+  line-height: 1.55;
+}
+.gallery-photo-copy > small {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid #eee9df;
+  color: #65766e;
+  font-size: 10px;
+  font-weight: 750;
+}
+.gallery-photo-copy > small span {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.gallery-photo-copy > small svg {
+  width: 12px;
+  height: 12px;
+  color: var(--coral);
+}
+.gallery-empty-stage {
+  min-height: 280px;
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  padding: 30px;
+  border: 1px dashed #cfd7ce;
+  border-radius: 18px;
+  background: #faf7ef;
+  text-align: center;
+}
+.gallery-empty-stage svg { color: var(--coral); }
+.gallery-empty-stage h3 { margin: 10px 0 4px; }
+.gallery-empty-stage p { margin: 0; color: var(--muted); }
+
+@media (max-width: 760px) {
+  .gallery-stage-key {
+    display: flex;
+    margin-right: -18px;
+    padding-right: 18px;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+  }
+  .gallery-stage-key button {
+    flex: 0 0 185px;
+    scroll-snap-align: start;
+  }
+  .gallery-photo-grid { grid-template-columns: 1fr; }
+  .gallery-photo-card:first-child:nth-last-child(odd) { grid-column: auto; }
+  .gallery-photo-open,
+  .gallery-photo-card:first-child:nth-last-child(odd) .gallery-photo-open {
+    height: auto;
+    aspect-ratio: 4 / 3;
+  }
+  .gallery-photo-count { display: none; }
 }
