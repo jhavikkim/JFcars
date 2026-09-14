@@ -1193,6 +1193,28 @@ footer div a {
   border: 1px solid #d8ddd7;
   background: #f1f3ef;
 }
+.gallery-mosaic {
+  grid-template-columns: repeat(8, minmax(0, 1fr));
+  grid-template-rows: repeat(2, 210px);
+  grid-auto-rows: 0;
+  overflow: hidden;
+}
+.gallery-mosaic button:nth-child(n) {
+  grid-column: span 2;
+  grid-row: span 1;
+}
+.gallery-mosaic button:first-child {
+  grid-column: span 4;
+  grid-row: span 2;
+}
+.shipment-cover-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-auto-rows: 290px;
+}
+.shipment-cover-grid button:nth-child(n) {
+  grid-column: span 1;
+  grid-row: span 1;
+}
 .gallery-mosaic button,
 .shipment-cover-grid button {
   min-width: 0;
@@ -1237,6 +1259,18 @@ footer div a {
   transform: scale(1.025);
   filter: brightness(.94);
 }
+.gallery-mosaic button:nth-child(n) {
+  grid-column: span 2;
+  grid-row: span 1;
+}
+.gallery-mosaic button:first-child {
+  grid-column: span 4;
+  grid-row: span 2;
+}
+.shipment-cover-grid button:nth-child(n) {
+  grid-column: span 1;
+  grid-row: span 1;
+}
 .viewer-logistics {
   width: 100%;
   display: flex !important;
@@ -1260,6 +1294,8 @@ footer div a {
 @media (max-width: 900px) {
   .gallery-mosaic,
   .shipment-cover-grid { grid-auto-rows: 145px; }
+  .gallery-mosaic { grid-template-rows: repeat(2, 165px); }
+  .shipment-cover-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 @media (max-width: 600px) {
   .gallery-mosaic,
@@ -1268,6 +1304,7 @@ footer div a {
     grid-auto-rows: 150px;
     gap: 5px;
   }
+  .gallery-mosaic { grid-template-rows: repeat(2, 150px); }
   .gallery-mosaic button:nth-child(6n + 1),
   .shipment-cover-grid button:nth-child(6n + 1) {
     grid-column: span 2;
@@ -1277,6 +1314,8 @@ footer div a {
   .shipment-cover-grid button:nth-child(n) { grid-column: span 1; grid-row: span 1; }
   .gallery-mosaic button:nth-child(6n + 1),
   .shipment-cover-grid button:nth-child(6n + 1) { grid-column: span 2; grid-row: span 2; }
+  .gallery-mosaic button:first-child { grid-column: span 2; grid-row: span 1; }
+  .gallery-mosaic button:nth-child(n + 4) { display: none; }
 }
 
 /* Product hardening: active controls, catalog detail and accessible dialogs */

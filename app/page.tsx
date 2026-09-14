@@ -511,6 +511,42 @@ const demoShipments: Array<{
       'https://images.unsplash.com/photo-1549924231-f129b911e442?auto=format&fit=crop&w=1400&q=85',
     ],
   },
+  {
+    id: 'next-suv-batch', reference: 'JF-NEXT-SUV-03', status: 'ready_to_load', location: 'Rotterdam, Netherlands',
+    captions: { en: 'SUV batch awaiting inspection', fr: 'Lot de SUV en attente de contrôle', es: 'Lote de SUV pendiente de inspección' },
+    comments: { en: 'A second group is being checked and documented before its loading slot.', fr: 'Un deuxième lot est contrôlé et documenté avant son créneau de chargement.', es: 'Un segundo lote está siendo revisado y documentado antes de su turno de carga.' },
+    images: ['https://images.unsplash.com/photo-1533473359331-0135ef1b58bf?auto=format&fit=crop&w=1400&q=85', 'https://images.unsplash.com/photo-1551830820-330a71b99659?auto=format&fit=crop&w=1400&q=85'],
+  },
+  {
+    id: 'next-city-cars', reference: 'JF-NEXT-CITY-07', status: 'loaded', location: 'Le Havre, France',
+    captions: { en: 'City cars loaded for the next departure', fr: 'Citadines chargées pour le prochain départ', es: 'Coches urbanos cargados para la próxima salida' },
+    comments: { en: 'Loading is complete. Final shipping documents are now being prepared.', fr: 'Le chargement est terminé. Les derniers documents d’expédition sont en préparation.', es: 'La carga ha terminado. Se están preparando los últimos documentos de envío.' },
+    images: ['https://images.unsplash.com/photo-1605559424843-9e4c228bf1c2?auto=format&fit=crop&w=1400&q=85', 'https://images.unsplash.com/photo-1519641471654-76ce0107ad1b?auto=format&fit=crop&w=1400&q=85'],
+  },
+  {
+    id: 'ready-family-cars', reference: 'JF-READY-FAM-12', status: 'ready_to_ship', location: 'Port of Rotterdam', departureDate: '2026-09-26', eta: '2026-10-21',
+    captions: { en: 'Family vehicles ready to ship', fr: 'Véhicules familiaux prêts à expédier', es: 'Vehículos familiares listos para enviar' },
+    comments: { en: 'Inspection, photos and export paperwork are complete for this batch.', fr: 'Le contrôle, les photos et les documents d’exportation de ce lot sont terminés.', es: 'La inspección, las fotos y la documentación de exportación de este lote están completas.' },
+    images: ['https://images.unsplash.com/photo-1550355291-bbee04a92027?auto=format&fit=crop&w=1400&q=85', 'https://images.unsplash.com/photo-1549317661-bd32c8ce0db2?auto=format&fit=crop&w=1400&q=85'],
+  },
+  {
+    id: 'ready-pickups', reference: 'JF-READY-PU-04', status: 'ready_to_ship', location: 'Antwerp vehicle terminal', departureDate: '2026-09-29', eta: '2026-10-25',
+    captions: { en: 'Pickup vehicles cleared for departure', fr: 'Pick-up autorisés au départ', es: 'Pick-ups autorizados para la salida' },
+    comments: { en: 'This group has been cleared and is waiting in the secure export area.', fr: 'Ce groupe a été autorisé et attend dans la zone d’exportation sécurisée.', es: 'Este grupo ha sido autorizado y espera en la zona segura de exportación.' },
+    images: ['https://images.unsplash.com/photo-1542282088-72c9c27ed0cd?auto=format&fit=crop&w=1400&q=85', 'https://images.unsplash.com/photo-1606664515524-ed2f786a0bd6?auto=format&fit=crop&w=1400&q=85'],
+  },
+  {
+    id: 'road-pointe-noire', reference: 'JF-ROAD-PNR-08', status: 'shipped_out', location: 'Atlantic Ocean · Pointe-Noire', departureDate: '2026-09-08', eta: '2026-09-30',
+    captions: { en: 'Pointe-Noire shipment departed', fr: 'Expédition pour Pointe-Noire partie', es: 'Envío a Pointe-Noire en ruta' },
+    comments: { en: 'The vessel has departed and the shipment is progressing on schedule.', fr: 'Le navire est parti et l’expédition avance selon le calendrier prévu.', es: 'El buque ha partido y el envío avanza según lo previsto.' },
+    images: ['https://images.unsplash.com/photo-1492144534655-ae79c964c9d7?auto=format&fit=crop&w=1400&q=85', 'https://images.unsplash.com/photo-1609521263047-f8f205293f24?auto=format&fit=crop&w=1400&q=85'],
+  },
+  {
+    id: 'road-douala', reference: 'JF-ROAD-DLA-05', status: 'in_transit', location: 'Atlantic Ocean · Douala', departureDate: '2026-09-12', eta: '2026-10-07',
+    captions: { en: 'Douala shipment in transit', fr: 'Expédition pour Douala en transit', es: 'Envío a Douala en tránsito' },
+    comments: { en: 'The carrier has confirmed departure. Port arrival details will follow.', fr: 'Le transporteur a confirmé le départ. Les détails d’arrivée au port suivront.', es: 'El transportista confirmó la salida. Próximamente se publicarán los datos de llegada.' },
+    images: ['https://images.unsplash.com/photo-1618843479313-40f8afb4b4d8?auto=format&fit=crop&w=1400&q=85', 'https://images.unsplash.com/photo-1560958089-b8a1929cea89?auto=format&fit=crop&w=1400&q=85'],
+  },
 ];
 const demoGalleryItems: GalleryItem[] = demoShipments.flatMap((shipment) =>
     shipment.images.map((image, index) => ({
@@ -4302,6 +4338,7 @@ function MainGallery({
     useState<GallerySection>('all');
   const [active, setActive] = useState(0);
   const [visibleCount, setVisibleCount] = useState(12);
+  const [mosaicStart, setMosaicStart] = useState(0);
   const [viewerOpen, setViewerOpen] = useState(false);
   const [viewerItems, setViewerItems] = useState<GalleryItem[]>([]);
   const closeViewer = useCallback(() => setViewerOpen(false), []);
@@ -4320,9 +4357,27 @@ function MainGallery({
       return groups;
     }, new Map<string, GalleryItem[]>()),
   ).map(([reference, photos]) => ({ reference, photos, cover: photos[0] }));
-  const displayedItems = visibleItems.slice(0, visibleCount);
   const displayedAlbums = albums.slice(0, visibleCount);
   const resultCount = activeSection === 'all' ? visibleItems.length : albums.length;
+  const mosaicItems = Array.from(
+    { length: Math.min(5, visibleItems.length) },
+    (_, offset) => {
+      const index = (mosaicStart + offset) % visibleItems.length;
+      return { item: visibleItems[index], index };
+    },
+  );
+  useEffect(() => {
+    if (
+      activeSection !== 'all' ||
+      visibleItems.length <= 5 ||
+      window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    ) return;
+    const timer = window.setInterval(
+      () => setMosaicStart((start) => (start + 1) % visibleItems.length),
+      5500,
+    );
+    return () => window.clearInterval(timer);
+  }, [activeSection, visibleItems.length]);
   const caption = (item: GalleryItem) =>
     item.captions[lang] || item.captions.en || labels.untitled;
   const comment = (item: GalleryItem) =>
@@ -4338,6 +4393,7 @@ function MainGallery({
     setActiveSection(next);
     setActive(0);
     setVisibleCount(12);
+    setMosaicStart(0);
     setViewerOpen(false);
   };
   return (
@@ -4382,7 +4438,7 @@ function MainGallery({
       </nav>
       {visibleItems.length ? activeSection === 'all' ? (
         <div className="gallery-mosaic">
-          {displayedItems.map((item, index) => (
+          {mosaicItems.map(({ item, index }) => (
             <button key={item.id} onClick={() => { setViewerItems(visibleItems); setActive(index); setViewerOpen(true); }} aria-label={`${labels.open}: ${caption(item)}`}>
               <Image src={item.image} alt={caption(item)} width={900} height={650} unoptimized />
             </button>
@@ -4403,7 +4459,7 @@ function MainGallery({
           <p>{labels.empty}</p>
         </div>
       )}
-      {resultCount > visibleCount && (
+      {activeSection !== 'all' && resultCount > visibleCount && (
         <button
           type="button"
           className="gallery-load-more"
