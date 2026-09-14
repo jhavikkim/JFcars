@@ -6025,12 +6025,12 @@ footer .logo {
 @media (max-width: 700px) {
   body { padding-bottom: calc(68px + env(safe-area-inset-bottom)); }
   .topbar {
-    min-height: 62px;
-    height: 62px;
+    min-height: 50px;
+    height: 50px;
     padding: 0 14px;
     border-top-width: 4px;
   }
-  .topbar .logo { font-size: 23px; }
+  .topbar .logo { font-size: 21px; line-height: 1; }
   .topbar .actions { gap: 4px; }
   .topbar .lang svg,
   .topbar .saved span,
@@ -6038,8 +6038,8 @@ footer .logo {
   .topbar .menu { display: none !important; }
   .topbar .lang { padding: 7px 3px; }
   .topbar .saved {
-    width: 42px;
-    height: 42px;
+    width: 36px;
+    height: 36px;
     padding: 0;
     display: grid;
     place-items: center;
