@@ -6147,9 +6147,9 @@ footer .logo {
     border-radius: 0;
     box-shadow: none;
   }
-  .brand-strip button { flex-basis: 84px; min-height: 68px; padding: 6px 5px; gap: 5px; }
+  .brand-strip button { flex-basis: 72px; min-height: 54px; padding: 6px; gap: 0; }
   .brand-strip button img { width: 34px; height: 34px; }
-  .brand-strip button span { font-size: 10px; }
+  .brand-strip button b { display: none; }
   .model-row { display: none; }
   .quick-filters {
     gap: 6px;
