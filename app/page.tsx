@@ -380,7 +380,7 @@ const gallerySections: {
 
 const defaultHeroVideo =
   'https://videos.pexels.com/video-files/37074025/15705634_2160_3840_30fps.mp4';
-const defaultGalleryItems: GalleryItem[] = [
+const coreGalleryItems: GalleryItem[] = [
   {
     id: 'shipment-loading',
     image: '/jfcars-gallery-loading.webp',
@@ -454,6 +454,79 @@ const defaultGalleryItems: GalleryItem[] = [
     reference: 'JF-STOCK',
   },
 ];
+const demoShipments: Array<{
+  id: string;
+  reference: string;
+  status: GalleryStatus;
+  location: string;
+  departureDate?: string;
+  eta?: string;
+  captions: GalleryItem['captions'];
+  comments: GalleryItem['comments'];
+  images: string[];
+}> = [
+  {
+    id: 'next-september',
+    reference: 'JF-NEXT-0926',
+    status: 'ready_to_load',
+    location: 'Antwerp, Belgium',
+    captions: { en: 'Next shipment being prepared', fr: 'Prochaine expédition en préparation', es: 'Próximo envío en preparación' },
+    comments: { en: 'Vehicles have passed the first inspection and are being photographed before loading.', fr: 'Les véhicules ont passé le premier contrôle et sont photographiés avant le chargement.', es: 'Los vehículos pasaron la primera inspección y se están fotografiando antes de la carga.' },
+    images: [
+      'https://images.unsplash.com/photo-1619767886558-efdc259cde1a?auto=format&fit=crop&w=1400&q=85',
+      'https://images.unsplash.com/photo-1555215695-3004980ad54e?auto=format&fit=crop&w=1400&q=85',
+      'https://images.unsplash.com/photo-1503376780353-7e6692767b70?auto=format&fit=crop&w=1400&q=85',
+      'https://images.unsplash.com/photo-1494905998402-395d579af36f?auto=format&fit=crop&w=1400&q=85',
+    ],
+  },
+  {
+    id: 'ready-october',
+    reference: 'JF-READY-1026',
+    status: 'ready_to_ship',
+    location: 'Port of Antwerp',
+    departureDate: '2026-09-22',
+    eta: '2026-10-18',
+    captions: { en: 'Ready for the October sailing', fr: 'Prêt pour le départ d’octobre', es: 'Listo para la salida de octubre' },
+    comments: { en: 'The vehicle set is complete, documented and waiting for its confirmed vessel.', fr: 'Le lot de véhicules est complet, documenté et attend son navire confirmé.', es: 'El lote de vehículos está completo, documentado y espera su buque confirmado.' },
+    images: [
+      'https://images.unsplash.com/photo-1618843479313-40f8afb4b4d8?auto=format&fit=crop&w=1400&q=85',
+      'https://images.unsplash.com/photo-1503736334956-4c8f8e92946d?auto=format&fit=crop&w=1400&q=85',
+      'https://images.unsplash.com/photo-1492144534655-ae79c964c9d7?auto=format&fit=crop&w=1400&q=85',
+      'https://images.unsplash.com/photo-1609521263047-f8f205293f24?auto=format&fit=crop&w=1400&q=85',
+    ],
+  },
+  {
+    id: 'road-september',
+    reference: 'JF-ROAD-0910',
+    status: 'in_transit',
+    location: 'Atlantic route · Pointe-Noire',
+    departureDate: '2026-09-10',
+    eta: '2026-10-02',
+    captions: { en: 'September shipment on the road', fr: 'Expédition de septembre en route', es: 'Envío de septiembre en camino' },
+    comments: { en: 'This shipment has departed. The next update will be posted after the port arrival check.', fr: 'Cette expédition est partie. La prochaine mise à jour sera publiée après le contrôle à l’arrivée au port.', es: 'Este envío ya salió. La próxima actualización se publicará después del control de llegada al puerto.' },
+    images: [
+      'https://images.unsplash.com/photo-1606664515524-ed2f786a0bd6?auto=format&fit=crop&w=1400&q=85',
+      'https://images.unsplash.com/photo-1511919884226-fd3cad34687c?auto=format&fit=crop&w=1400&q=85',
+      'https://images.unsplash.com/photo-1560958089-b8a1929cea89?auto=format&fit=crop&w=1400&q=85',
+      'https://images.unsplash.com/photo-1549924231-f129b911e442?auto=format&fit=crop&w=1400&q=85',
+    ],
+  },
+];
+const demoGalleryItems: GalleryItem[] = demoShipments.flatMap((shipment) =>
+    shipment.images.map((image, index) => ({
+      id: `${shipment.id}-${index + 1}`,
+      image,
+      captions: shipment.captions,
+      comments: shipment.comments,
+      status: shipment.status,
+      date: '2026-09-15',
+      departureDate: shipment.departureDate,
+      eta: shipment.eta,
+      location: shipment.location,
+      reference: shipment.reference,
+    })),
+  );
+const defaultGalleryItems: GalleryItem[] = [...coreGalleryItems, ...demoGalleryItems];
 const normalizeGallery = (items: GalleryItem[] | undefined) => {
   const valid = normalizeGalleryRecords(items, galleryItemLimit).map((item) => {
     const fallback = defaultGalleryItems.find((entry) => entry.id === item.id);
@@ -467,7 +540,11 @@ const normalizeGallery = (items: GalleryItem[] | undefined) => {
       status: item.status || fallback?.status || 'ready_to_load',
     };
   });
-  return valid.length ? valid : defaultGalleryItems;
+  if (!valid.length) return defaultGalleryItems;
+  const hasOnlyOriginalSamples = valid.every((item) =>
+    coreGalleryItems.some((sample) => sample.id === item.id),
+  );
+  return hasOnlyOriginalSamples ? [...valid, ...demoGalleryItems] : valid;
 };
 const galleryExtras = [
   'https://images.unsplash.com/photo-1550355291-bbee04a92027?auto=format&fit=crop&w=1200&q=85',
