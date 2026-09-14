@@ -21,6 +21,8 @@ export type GalleryItemRecord = {
   comments: LocalizedText;
   status: GalleryStatus;
   date: string;
+  departureDate?: string;
+  eta?: string;
   location: string;
   reference: string;
 };
@@ -104,6 +106,10 @@ export function normalizeGalleryRecords(value: unknown, limit = galleryItemLimit
       continue;
     const date = text(item.date, 10);
     if (date && !isIsoDate(date)) continue;
+    const departureDate = text(item.departureDate, 10);
+    const eta = text(item.eta, 10);
+    if (departureDate && !isIsoDate(departureDate)) continue;
+    if (eta && !isIsoDate(eta)) continue;
     ids.add(id);
     records.push({
       id,
@@ -112,6 +118,8 @@ export function normalizeGalleryRecords(value: unknown, limit = galleryItemLimit
       comments: localized(item.comments, 600),
       status: (suppliedStatus as GalleryStatus) || inferredStatus(id),
       date,
+      departureDate,
+      eta,
       location: text(item.location, 100),
       reference: text(item.reference, 100),
     });

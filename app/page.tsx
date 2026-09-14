@@ -262,6 +262,8 @@ const galleryCopy = {
     note: 'Team update',
     location: 'Location',
     date: 'Updated',
+    departure: 'Left on',
+    eta: 'Estimated arrival',
     reference: 'Shipment / batch',
     process: 'Shipment update categories',
     empty: 'No photo update has been posted for this stage yet.',
@@ -297,6 +299,8 @@ const galleryCopy = {
     note: 'Note de l’équipe',
     location: 'Lieu',
     date: 'Mise à jour',
+    departure: 'Date de départ',
+    eta: 'Arrivée estimée',
     reference: 'Expédition / lot',
     process: 'Rubriques de suivi des expéditions',
     empty:
@@ -333,6 +337,8 @@ const galleryCopy = {
     note: 'Nota del equipo',
     location: 'Ubicación',
     date: 'Fecha',
+    departure: 'Fecha de salida',
+    eta: 'Llegada estimada',
     reference: 'Envío / lote',
     process: 'Categorías de seguimiento de envíos',
     empty:
@@ -4220,6 +4226,7 @@ function MainGallery({
   const [active, setActive] = useState(0);
   const [visibleCount, setVisibleCount] = useState(12);
   const [viewerOpen, setViewerOpen] = useState(false);
+  const [viewerItems, setViewerItems] = useState<GalleryItem[]>([]);
   const closeViewer = useCallback(() => setViewerOpen(false), []);
   const section =
     gallerySections.find((entry) => entry.id === activeSection) ||
@@ -4227,7 +4234,18 @@ function MainGallery({
   const visibleItems = items.filter((item) =>
     section.statuses.includes(item.status),
   );
+  const albums = Array.from(
+    visibleItems.reduce((groups, item) => {
+      const key = item.reference.trim() || item.id;
+      const group = groups.get(key) || [];
+      group.push(item);
+      groups.set(key, group);
+      return groups;
+    }, new Map<string, GalleryItem[]>()),
+  ).map(([reference, photos]) => ({ reference, photos, cover: photos[0] }));
   const displayedItems = visibleItems.slice(0, visibleCount);
+  const displayedAlbums = albums.slice(0, visibleCount);
+  const resultCount = activeSection === 'all' ? visibleItems.length : albums.length;
   const caption = (item: GalleryItem) =>
     item.captions[lang] || item.captions.en || labels.untitled;
   const comment = (item: GalleryItem) =>
@@ -4260,14 +4278,17 @@ function MainGallery({
           <span>{description}</span>
         </div>
         <b className="gallery-photo-count" aria-live="polite">
-          {visibleItems.length} {labels.photos}
+          {resultCount} {labels.photos}
         </b>
       </header>
       <nav className="gallery-stage-key" aria-label={labels.process}>
         {gallerySections.map((entry) => {
-          const count = items.filter((item) =>
+          const sectionItems = items.filter((item) =>
             entry.statuses.includes(item.status),
-          ).length;
+          );
+          const count = entry.id === 'all' ? sectionItems.length : new Set(
+            sectionItems.map((item) => item.reference.trim() || item.id),
+          ).size;
           return (
             <button
               type="button"
@@ -4282,41 +4303,20 @@ function MainGallery({
           );
         })}
       </nav>
-      {visibleItems.length ? (
-        <div className="gallery-photo-grid">
+      {visibleItems.length ? activeSection === 'all' ? (
+        <div className="gallery-mosaic">
           {displayedItems.map((item, index) => (
-            <article className="gallery-photo-card" key={item.id}>
-              <button
-                className="gallery-photo-open"
-                onClick={() => {
-                  setActive(index);
-                  setViewerOpen(true);
-                }}
-                aria-label={`${labels.open}: ${caption(item)}`}
-              >
-                <Image
-                  src={item.image}
-                  alt={caption(item)}
-                  width={900}
-                  height={650}
-                  unoptimized
-                />
-                <span><Maximize2 /> {labels.open}</span>
-              </button>
-              <div className="gallery-photo-copy">
-                <span className={`gallery-status status-${item.status}`}>
-                  {labels.statuses[item.status]}
-                </span>
-                <h3>{caption(item)}</h3>
-                <p>{comment(item)}</p>
-                {(item.location || item.date) && (
-                  <small>
-                    {item.location && <span><MapPin /> {item.location}</span>}
-                    {item.date && <span><CalendarDays /> {formatDate(item.date)}</span>}
-                  </small>
-                )}
-              </div>
-            </article>
+            <button key={item.id} onClick={() => { setViewerItems(visibleItems); setActive(index); setViewerOpen(true); }} aria-label={`${labels.open}: ${caption(item)}`}>
+              <Image src={item.image} alt={caption(item)} width={900} height={650} unoptimized />
+            </button>
+          ))}
+        </div>
+      ) : (
+        <div className="shipment-cover-grid">
+          {displayedAlbums.map((album) => (
+            <button key={album.reference} className="shipment-cover" onClick={() => { setViewerItems(album.photos); setActive(0); setViewerOpen(true); }} aria-label={`${labels.open}: ${caption(album.cover)}`}>
+              <Image src={album.cover.image} alt={caption(album.cover)} width={900} height={650} unoptimized />
+            </button>
           ))}
         </div>
       ) : (
@@ -4326,21 +4326,21 @@ function MainGallery({
           <p>{labels.empty}</p>
         </div>
       )}
-      {visibleItems.length > visibleCount && (
+      {resultCount > visibleCount && (
         <button
           type="button"
           className="gallery-load-more"
           onClick={() => setVisibleCount((count) => count + 12)}
         >
           {labels.loadMore}
-          <span>{Math.min(12, visibleItems.length - visibleCount)}</span>
+          <span>{Math.min(12, resultCount - visibleCount)}</span>
         </button>
       )}
-      {viewerOpen && visibleItems.length > 0 && (
+      {viewerOpen && viewerItems.length > 0 && (
         <GalleryViewer
           lang={lang}
-          items={visibleItems}
-          active={active < visibleItems.length ? active : 0}
+          items={viewerItems}
+          active={active < viewerItems.length ? active : 0}
           setActive={setActive}
           close={closeViewer}
         />
@@ -4373,6 +4373,12 @@ function GalleryViewer({
         lang === 'fr' ? 'fr-FR' : lang === 'es' ? 'es-ES' : 'en-GB',
         { dateStyle: 'medium', timeZone: 'UTC' },
       ).format(new Date(`${item.date}T12:00:00Z`))
+    : '';
+  const formatLogisticsDate = (value?: string) => value
+    ? new Intl.DateTimeFormat(
+        lang === 'fr' ? 'fr-FR' : lang === 'es' ? 'es-ES' : 'en-GB',
+        { dateStyle: 'medium', timeZone: 'UTC' },
+      ).format(new Date(`${value}T12:00:00Z`))
     : '';
   const move = (direction: number) =>
     setActive((active + direction + items.length) % items.length);
@@ -4418,13 +4424,13 @@ function GalleryViewer({
               </small>
               <strong>{caption(item)}</strong>
               <span>{comment(item)}</span>
-              {(item.reference || item.location || formattedDate) && (
-                <em>
-                  {[item.reference, item.location, formattedDate]
-                    .filter(Boolean)
-                    .join(' · ')}
-                </em>
-              )}
+              <em className="viewer-logistics">
+                {item.reference && <span><b>{labels.reference}</b>{item.reference}</span>}
+                {item.location && <span><b>{labels.location}</b>{item.location}</span>}
+                {item.departureDate && <span><b>{labels.departure}</b>{formatLogisticsDate(item.departureDate)}</span>}
+                {item.eta && <span><b>{labels.eta}</b>{formatLogisticsDate(item.eta)}</span>}
+                {formattedDate && <span><b>{labels.date}</b>{formattedDate}</span>}
+              </em>
             </span>
             <b>
               {active + 1} / {items.length}
@@ -7007,6 +7013,7 @@ function AdminPanel({
     setMediaUploadError('');
     try {
       const uploaded: GalleryItem[] = [];
+      const batchReference = `JF-${new Date().toISOString().slice(0, 10).replaceAll('-', '')}-${crypto.randomUUID().slice(0, 6).toUpperCase()}`;
       for (const file of selected) {
         const image = await uploadMedia(file, 'gallery');
         const fileTitle = file.name
@@ -7029,7 +7036,7 @@ function AdminPanel({
           status,
           date: new Date().toISOString().slice(0, 10),
           location: '',
-          reference: '',
+          reference: batchReference,
         });
       }
       setContentDraft((current) => ({
@@ -7956,6 +7963,30 @@ function AdminPanel({
                                 onChange={(event) =>
                                   updateGalleryDetails(index, {
                                     date: event.target.value,
+                                  })
+                                }
+                              />
+                            </label>
+                            <label>
+                              Departure date
+                              <input
+                                type="date"
+                                value={item.departureDate || ''}
+                                onChange={(event) =>
+                                  updateGalleryDetails(index, {
+                                    departureDate: event.target.value,
+                                  })
+                                }
+                              />
+                            </label>
+                            <label>
+                              Estimated arrival (ETA)
+                              <input
+                                type="date"
+                                value={item.eta || ''}
+                                onChange={(event) =>
+                                  updateGalleryDetails(index, {
+                                    eta: event.target.value,
                                   })
                                 }
                               />
