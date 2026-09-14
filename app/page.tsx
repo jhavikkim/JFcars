@@ -2956,6 +2956,47 @@ export default function Home() {
           )}
         </nav>
       )}
+      <nav className="mobile-bottom-nav" aria-label="Mobile navigation">
+        <button
+          className={sitePage === 'market' && mode === 'buy' && origin !== 'abroad' ? 'active' : ''}
+          onClick={() => {
+            setOrigin('Any');
+            headerNavigate('buy');
+          }}
+        >
+          <CarFront />
+          <span>{lang === 'fr' ? 'Acheter' : lang === 'es' ? 'Comprar' : 'Buy'}</span>
+        </button>
+        <button
+          className={sitePage === 'market' && mode === 'rent' ? 'active' : ''}
+          onClick={() => headerNavigate('rent')}
+        >
+          <KeyRound />
+          <span>{lang === 'fr' ? 'Louer' : lang === 'es' ? 'Alquilar' : 'Rent'}</span>
+        </button>
+        <button
+          className={sitePage === 'gallery' ? 'active' : ''}
+          onClick={galleryNavigate}
+        >
+          <Images />
+          <span>{galleryCopy[lang].nav}</span>
+        </button>
+        <button
+          className={sitePage === 'market' && mode === 'buy' && origin === 'abroad' ? 'active' : ''}
+          onClick={() => {
+            setSitePage('market');
+            selectMode('buy');
+            setOrigin('abroad');
+            setLocation('Any');
+            setCountry('Any');
+            setPage(1);
+            scrollToSection('inventory');
+          }}
+        >
+          <ShoppingBag />
+          <span>E-Buy</span>
+        </button>
+      </nav>
       {sitePage === 'market' && (
         <>
       {heroVisible && (
