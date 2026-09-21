@@ -118,6 +118,15 @@ export function AdminPanel({
           storefrontContent.es?.galleryDescription ||
           galleryCopy.es.description,
       },
+      pt: {
+        headline: storefrontContent.pt?.headline || copy.pt.hero,
+        description: storefrontContent.pt?.description || copy.pt.sub,
+        galleryTitle:
+          storefrontContent.pt?.galleryTitle || galleryCopy.pt.title,
+        galleryDescription:
+          storefrontContent.pt?.galleryDescription ||
+          galleryCopy.pt.description,
+      },
       gallery: normalizeGallery(storefrontContent.gallery),
       heroVideo: isSafeMediaSource(storefrontContent.heroVideo)
         ? storefrontContent.heroVideo
@@ -241,11 +250,13 @@ export function AdminPanel({
             en: fileTitle || 'Shipment photo update',
             fr: fileTitle || 'Mise à jour photo de l’expédition',
             es: fileTitle || 'Actualización fotográfica del envío',
+            pt: fileTitle || 'Actualização fotográfica do envio',
           },
           comments: {
             en: 'Add an operations note for this update.',
             fr: 'Ajoutez une note opérationnelle pour cette mise à jour.',
             es: 'Añade una nota operativa para esta actualización.',
+            pt: 'Adicione uma nota operacional para esta actualização.',
           },
           status,
           date: new Date().toISOString().slice(0, 10),
@@ -305,11 +316,13 @@ export function AdminPanel({
             en: 'New gallery photo',
             fr: 'Nouvelle photo de la galerie',
             es: 'Nueva foto de la galería',
+            pt: 'Nova fotografia da galeria',
           },
           comments: {
             en: 'Add an operations note for this update.',
             fr: 'Ajoutez une note opérationnelle pour cette mise à jour.',
             es: 'Añade una nota operativa para esta actualización.',
+            pt: 'Adicione uma nota operacional para esta actualização.',
           },
           status,
           date: new Date().toISOString().slice(0, 10),
@@ -591,7 +604,10 @@ export function AdminPanel({
                 <div className="admin-toolbar">
                   <div>
                     <h3>Vehicle inventory</h3>
-                    <p>Edit pricing, availability and listing details.</p>
+                    <p>
+                      Edit canonical XAF pricing, availability and listing
+                      details.
+                    </p>
                   </div>
                   <button onClick={() => setAdding(true)}>
                     <Plus />
@@ -602,7 +618,7 @@ export function AdminPanel({
                   <div className="admin-row head">
                     <span>Vehicle</span>
                     <span>Category</span>
-                    <span>Price</span>
+                    <span>Price (XAF)</span>
                     <span>Status</span>
                     <span>Actions</span>
                   </div>
@@ -908,7 +924,7 @@ export function AdminPanel({
                   className="content-language-tabs"
                   aria-label="Content language"
                 >
-                  {(['en', 'fr', 'es'] as Lang[]).map((locale) => (
+                  {(['en', 'fr', 'es', 'pt'] as Lang[]).map((locale) => (
                     <button
                       key={locale}
                       className={contentLocale === locale ? 'active' : ''}
@@ -1352,7 +1368,7 @@ export function AdminPanel({
                 <input name="year" type="number" defaultValue="2024" required />
               </label>
               <label>
-                Price (FCFA)
+                Canonical price (FCFA / XAF)
                 <input name="price" type="number" required />
               </label>
               <label>
@@ -1651,7 +1667,7 @@ export function AdminPanel({
                 />
               </label>
               <label>
-                Price (FCFA)
+                Canonical price (FCFA / XAF)
                 <input
                   name="price"
                   type="number"

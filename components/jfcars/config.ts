@@ -7,6 +7,7 @@ import {
 import type {
   Car,
   ContactPreference,
+  Currency,
   GalleryItem,
   Lang,
   UserAccount,
@@ -16,6 +17,7 @@ export type {
   AuthSession,
   Car,
   ContactPreference,
+  Currency,
   GalleryItem,
   Lang,
   OrderItem,
@@ -115,6 +117,35 @@ export const copy = {
     sellCta: '¿Listo para tu próxima etapa?',
     sellSub: 'Publica tu coche en minutos. Nosotros te ayudamos con el resto.',
     start: 'Empezar',
+  },
+  pt: {
+    buy: 'Comprar',
+    sell: 'Vender o meu carro',
+    saved: 'Guardados',
+    hero: 'Encontre o carro certo para si.',
+    sub: 'Bons carros, informações claras e sem pressão.',
+    search: 'Pesquisar marca, modelo ou palavra-chave',
+    go: 'Pesquisar',
+    filters: 'Filtros',
+    results: 'carros encontrados',
+    sort: 'Ordenar: Recomendados',
+    price: 'Preço',
+    body: 'Tipo de carroçaria',
+    fuel: 'Combustível',
+    year: 'Ano',
+    any: 'Todos',
+    reset: 'Repor',
+    compare: 'Comparar',
+    view: 'Ver carro',
+    monthly: 'est. / mês',
+    trusted: 'Histórico verificado',
+    quick: 'Pesquisa rápida',
+    popular: 'Populares agora',
+    empty: 'Nenhum carro corresponde a estes filtros.',
+    emptySub: 'Alargue a pesquisa ou reponha os filtros.',
+    sellCta: 'Pronto para a próxima etapa?',
+    sellSub: 'Anuncie o seu carro em poucos minutos. Nós ajudamos no resto.',
+    start: 'Começar',
   },
 };
 export const galleryCopy = {
@@ -230,6 +261,43 @@ export const galleryCopy = {
       in_store: 'En stock local',
     },
   },
+  pt: {
+    nav: 'Galeria e expedições',
+    eyebrow: 'Da nossa equipa',
+    title: 'Fotos reais. Informações claras sobre a expedição.',
+    description:
+      'Veja as fotografias mais recentes do nosso parque e saiba o que está pronto, o que parte a seguir e o que já está a caminho.',
+    open: 'Abrir fotografia',
+    close: 'Fechar galeria',
+    previous: 'Fotografia anterior da galeria',
+    next: 'Fotografia seguinte da galeria',
+    photos: 'fotografias',
+    untitled: 'Fotografia da galeria JFcars',
+    note: 'Atualização da equipa',
+    location: 'Localização',
+    date: 'Atualizado',
+    departure: 'Data de partida',
+    eta: 'Chegada prevista',
+    reference: 'Expedição / lote',
+    process: 'Categorias de atualização das expedições',
+    empty: 'Ainda não foi publicada nenhuma fotografia para esta etapa.',
+    loadMore: 'Mostrar mais fotografias',
+    sections: {
+      all: 'Galeria de fotografias',
+      ready_to_ship: 'Pronto para expedir',
+      preparing: 'Próxima expedição',
+      in_transit: 'A caminho',
+    },
+    statuses: {
+      ready_to_load: 'A preparar o carregamento',
+      loaded: 'Carregamento concluído',
+      ready_to_ship: 'Pronto para expedir',
+      shipped_out: 'Expedido',
+      in_transit: 'Em trânsito',
+      arrived_unloaded: 'Chegou e foi descarregado',
+      in_store: 'Em stock local',
+    },
+  },
 } as const;
 
 export type GallerySection =
@@ -258,11 +326,13 @@ export const coreGalleryItems: GalleryItem[] = [
       en: 'Vehicles secured for shipment',
       fr: 'Véhicules sécurisés pour l’expédition',
       es: 'Vehículos asegurados para el envío',
+      pt: 'Veículos preparados em segurança para expedição',
     },
     comments: {
       en: 'Vehicles are checked, photographed and lined up before container loading. The team posts a new note when loading is complete.',
       fr: 'Les véhicules sont contrôlés, photographiés et alignés avant le chargement du conteneur. L’équipe publie une nouvelle note une fois le chargement terminé.',
       es: 'Los vehículos se revisan, fotografían y preparan antes de cargarlos en el contenedor. El equipo publica una nueva nota al terminar la carga.',
+      pt: 'Os veículos são verificados, fotografados e alinhados antes do carregamento no contentor. A equipa publica uma nova atualização quando o carregamento termina.',
     },
     status: 'ready_to_load',
     date: '',
@@ -276,11 +346,13 @@ export const coreGalleryItems: GalleryItem[] = [
       en: 'Careful unloading on arrival',
       fr: 'Déchargement soigné à l’arrivée',
       es: 'Descarga cuidadosa a la llegada',
+      pt: 'Descarga cuidadosa à chegada',
     },
     comments: {
       en: 'Arrival photos document unloading and the handover to our regional operations team.',
       fr: 'Les photos d’arrivée documentent le déchargement et la remise à notre équipe régionale.',
       es: 'Las fotos de llegada documentan la descarga y la entrega a nuestro equipo regional.',
+      pt: 'As fotografias da chegada documentam a descarga e a entrega à nossa equipa regional de operações.',
     },
     status: 'arrived_unloaded',
     date: '',
@@ -294,11 +366,13 @@ export const coreGalleryItems: GalleryItem[] = [
       en: 'Vehicle delivery underway',
       fr: 'Livraison du véhicule en cours',
       es: 'Entrega del vehículo en curso',
+      pt: 'Entrega do veículo em curso',
     },
     comments: {
       en: 'This vehicle has left our yard. We will add the arrival photos here as soon as the local team receives it.',
       fr: 'Ce véhicule a quitté notre parc. Nous ajouterons ici les photos d’arrivée dès sa réception par l’équipe locale.',
       es: 'Este vehículo ya salió de nuestro depósito. Añadiremos aquí las fotos de llegada en cuanto lo reciba el equipo local.',
+      pt: 'Este veículo já saiu do nosso parque. Adicionaremos aqui as fotografias da chegada assim que a equipa local o receber.',
     },
     status: 'in_transit',
     date: '',
@@ -312,11 +386,13 @@ export const coreGalleryItems: GalleryItem[] = [
       en: 'Parts available in our local store',
       fr: 'Pièces disponibles dans notre magasin local',
       es: 'Repuestos disponibles en nuestra tienda local',
+      pt: 'Peças disponíveis na nossa loja local',
     },
     comments: {
       en: 'Parts held locally are photographed with a short availability and condition note.',
       fr: 'Les pièces disponibles localement sont photographiées avec une courte note sur leur disponibilité et leur état.',
       es: 'Los repuestos disponibles localmente se fotografían con una breve nota sobre su disponibilidad y estado.',
+      pt: 'As peças disponíveis localmente são fotografadas com uma breve nota sobre a disponibilidade e o estado.',
     },
     status: 'in_store',
     date: '',
@@ -344,11 +420,13 @@ export const demoShipments: Array<{
       en: 'Next shipment being prepared',
       fr: 'Prochaine expédition en préparation',
       es: 'Próximo envío en preparación',
+      pt: 'Próxima expedição em preparação',
     },
     comments: {
       en: 'Vehicles have passed the first inspection and are being photographed before loading.',
       fr: 'Les véhicules ont passé le premier contrôle et sont photographiés avant le chargement.',
       es: 'Los vehículos pasaron la primera inspección y se están fotografiando antes de la carga.',
+      pt: 'Os veículos passaram a primeira inspeção e estão a ser fotografados antes do carregamento.',
     },
     images: [
       'https://images.unsplash.com/photo-1619767886558-efdc259cde1a?auto=format&fit=crop&w=1400&q=85',
@@ -368,11 +446,13 @@ export const demoShipments: Array<{
       en: 'Ready for the October sailing',
       fr: 'Prêt pour le départ d’octobre',
       es: 'Listo para la salida de octubre',
+      pt: 'Pronto para a partida de outubro',
     },
     comments: {
       en: 'The vehicle set is complete, documented and waiting for its confirmed vessel.',
       fr: 'Le lot de véhicules est complet, documenté et attend son navire confirmé.',
       es: 'El lote de vehículos está completo, documentado y espera su buque confirmado.',
+      pt: 'O lote de veículos está completo, documentado e aguarda o navio confirmado.',
     },
     images: [
       'https://images.unsplash.com/photo-1618843479313-40f8afb4b4d8?auto=format&fit=crop&w=1400&q=85',
@@ -392,11 +472,13 @@ export const demoShipments: Array<{
       en: 'September shipment on the road',
       fr: 'Expédition de septembre en route',
       es: 'Envío de septiembre en camino',
+      pt: 'Expedição de setembro a caminho',
     },
     comments: {
       en: 'This shipment has departed. The next update will be posted after the port arrival check.',
       fr: 'Cette expédition est partie. La prochaine mise à jour sera publiée après le contrôle à l’arrivée au port.',
       es: 'Este envío ya salió. La próxima actualización se publicará después del control de llegada al puerto.',
+      pt: 'Esta expedição já partiu. A próxima atualização será publicada após a verificação de chegada ao porto.',
     },
     images: [
       'https://images.unsplash.com/photo-1606664515524-ed2f786a0bd6?auto=format&fit=crop&w=1400&q=85',
@@ -414,11 +496,13 @@ export const demoShipments: Array<{
       en: 'SUV batch awaiting inspection',
       fr: 'Lot de SUV en attente de contrôle',
       es: 'Lote de SUV pendiente de inspección',
+      pt: 'Lote de SUV a aguardar inspeção',
     },
     comments: {
       en: 'A second group is being checked and documented before its loading slot.',
       fr: 'Un deuxième lot est contrôlé et documenté avant son créneau de chargement.',
       es: 'Un segundo lote está siendo revisado y documentado antes de su turno de carga.',
+      pt: 'Um segundo lote está a ser verificado e documentado antes do seu horário de carregamento.',
     },
     images: [
       'https://images.unsplash.com/photo-1533473359331-0135ef1b58bf?auto=format&fit=crop&w=1400&q=85',
@@ -434,11 +518,13 @@ export const demoShipments: Array<{
       en: 'City cars loaded for the next departure',
       fr: 'Citadines chargées pour le prochain départ',
       es: 'Coches urbanos cargados para la próxima salida',
+      pt: 'Carros citadinos carregados para a próxima partida',
     },
     comments: {
       en: 'Loading is complete. Final shipping documents are now being prepared.',
       fr: 'Le chargement est terminé. Les derniers documents d’expédition sont en préparation.',
       es: 'La carga ha terminado. Se están preparando los últimos documentos de envío.',
+      pt: 'O carregamento está concluído. Os documentos finais de expedição estão agora a ser preparados.',
     },
     images: [
       'https://images.unsplash.com/photo-1605559424843-9e4c228bf1c2?auto=format&fit=crop&w=1400&q=85',
@@ -456,11 +542,13 @@ export const demoShipments: Array<{
       en: 'Family vehicles ready to ship',
       fr: 'Véhicules familiaux prêts à expédier',
       es: 'Vehículos familiares listos para enviar',
+      pt: 'Veículos familiares prontos para expedir',
     },
     comments: {
       en: 'Inspection, photos and export paperwork are complete for this batch.',
       fr: 'Le contrôle, les photos et les documents d’exportation de ce lot sont terminés.',
       es: 'La inspección, las fotos y la documentación de exportación de este lote están completas.',
+      pt: 'A inspeção, as fotografias e a documentação de exportação deste lote estão concluídas.',
     },
     images: [
       'https://images.unsplash.com/photo-1550355291-bbee04a92027?auto=format&fit=crop&w=1400&q=85',
@@ -478,11 +566,13 @@ export const demoShipments: Array<{
       en: 'Pickup vehicles cleared for departure',
       fr: 'Pick-up autorisés au départ',
       es: 'Pick-ups autorizados para la salida',
+      pt: 'Carrinhas de caixa aberta autorizadas para a partida',
     },
     comments: {
       en: 'This group has been cleared and is waiting in the secure export area.',
       fr: 'Ce groupe a été autorisé et attend dans la zone d’exportation sécurisée.',
       es: 'Este grupo ha sido autorizado y espera en la zona segura de exportación.',
+      pt: 'Este grupo foi autorizado e aguarda na zona segura de exportação.',
     },
     images: [
       'https://images.unsplash.com/photo-1542282088-72c9c27ed0cd?auto=format&fit=crop&w=1400&q=85',
@@ -500,11 +590,13 @@ export const demoShipments: Array<{
       en: 'Pointe-Noire shipment departed',
       fr: 'Expédition pour Pointe-Noire partie',
       es: 'Envío a Pointe-Noire en ruta',
+      pt: 'Expedição para Pointe-Noire já partiu',
     },
     comments: {
       en: 'The vessel has departed and the shipment is progressing on schedule.',
       fr: 'Le navire est parti et l’expédition avance selon le calendrier prévu.',
       es: 'El buque ha partido y el envío avanza según lo previsto.',
+      pt: 'O navio partiu e a expedição está a avançar conforme o previsto.',
     },
     images: [
       'https://images.unsplash.com/photo-1492144534655-ae79c964c9d7?auto=format&fit=crop&w=1400&q=85',
@@ -522,11 +614,13 @@ export const demoShipments: Array<{
       en: 'Douala shipment in transit',
       fr: 'Expédition pour Douala en transit',
       es: 'Envío a Douala en tránsito',
+      pt: 'Expedição para Douala em trânsito',
     },
     comments: {
       en: 'The carrier has confirmed departure. Port arrival details will follow.',
       fr: 'Le transporteur a confirmé le départ. Les détails d’arrivée au port suivront.',
       es: 'El transportista confirmó la salida. Próximamente se publicarán los datos de llegada.',
+      pt: 'O transportador confirmou a partida. Os detalhes da chegada ao porto serão publicados em breve.',
     },
     images: [
       'https://images.unsplash.com/photo-1618843479313-40f8afb4b4d8?auto=format&fit=crop&w=1400&q=85',
@@ -916,8 +1010,83 @@ export const catalogBrands = (inventory: Car[]) => {
   })).sort((a, b) => a.name.localeCompare(b.name));
 };
 export const letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
-export const money = (n: number, lang: Lang) =>
-  `${new Intl.NumberFormat(lang === 'fr' ? 'fr-FR' : lang === 'es' ? 'es-ES' : 'en-US', { maximumFractionDigits: 0 }).format(n)} FCFA`;
+export const supportedCurrencies = ['XAF', 'USD', 'EUR', 'AOA'] as const;
+
+/**
+ * Canonical catalogue values remain in XAF. Display conversions use official
+ * reference rates published for 18 September 2026: the BEAC euro peg
+ * (EUR 1 = XAF 655.957), ECB EUR/USD (EUR 1 = USD 1.1460), and BNA EUR/AOA
+ * (EUR 1 = AOA 1,046.796). These figures are indicative; sellers confirm the
+ * final transaction currency and amount.
+ */
+export const xafPerCurrency: Record<Currency, number> = {
+  XAF: 1,
+  EUR: 655.957,
+  USD: 655.957 / 1.146,
+  AOA: 655.957 / 1046.796,
+};
+
+export const isCurrency = (value: unknown): value is Currency =>
+  typeof value === 'string' && supportedCurrencies.includes(value as Currency);
+
+export const localeFor = (lang: Lang) =>
+  lang === 'fr'
+    ? 'fr-FR'
+    : lang === 'es'
+      ? 'es-ES'
+      : lang === 'pt'
+        ? 'pt-AO'
+        : 'en-US';
+
+export const convertFromXaf = (amount: number, currency: Currency) =>
+  amount / xafPerCurrency[currency];
+
+export const convertToXaf = (amount: number, currency: Currency) =>
+  Math.round(amount * xafPerCurrency[currency]);
+
+export const currencyRateDate = '2026-09-18';
+
+const currencyMarks: Record<Currency, string> = {
+  XAF: 'FCFA',
+  USD: 'US$',
+  EUR: '€',
+  AOA: 'Kz',
+};
+
+export const currencyLabel = (currency: Currency) =>
+  `${currencyMarks[currency]} · ${currency}`;
+
+const formatCurrencyParts = (
+  amount: number,
+  lang: Lang,
+  currency: Currency,
+  compact = false,
+) =>
+  new Intl.NumberFormat(localeFor(lang), {
+    style: 'currency',
+    currency,
+    currencyDisplay: 'code',
+    notation: compact ? 'compact' : 'standard',
+    maximumFractionDigits: compact
+      ? 1
+      : currency === 'XAF' || currency === 'AOA'
+        ? 0
+        : 2,
+  })
+    .formatToParts(convertFromXaf(amount, currency))
+    .map((part) =>
+      part.type === 'currency' ? currencyMarks[currency] : part.value,
+    )
+    .join('');
+
+export const money = (n: number, lang: Lang, currency: Currency = 'XAF') =>
+  formatCurrencyParts(n, lang, currency);
+
+export const compactMoney = (
+  n: number,
+  lang: Lang,
+  currency: Currency = 'XAF',
+) => formatCurrencyParts(n, lang, currency, true);
 export const rentalRate = (car: Car) =>
   Math.max(0, Math.round(car.dailyRate || 0));
 export const rentalDaysBetween = (start: string, end: string) => {
@@ -1006,11 +1175,48 @@ export const vocabulary: Record<Lang, Record<string, string>> = {
     Dealer: 'Profesional',
     Private: 'Particular',
   },
+  pt: {
+    Electric: 'Elétrico',
+    Hybrid: 'Híbrido',
+    Petrol: 'Gasolina',
+    Diesel: 'Gasóleo',
+    Sedan: 'Sedan',
+    Hatchback: 'Citadino',
+    Wagon: 'Carrinha',
+    Coupe: 'Coupé',
+    Pickup: 'Carrinha de caixa aberta',
+    Van: 'Furgão',
+    Automatic: 'Automática',
+    Manual: 'Manual',
+    Black: 'Preto',
+    White: 'Branco',
+    Silver: 'Prateado',
+    Blue: 'Azul',
+    Yellow: 'Amarelo',
+    Sage: 'Verde-sálvia',
+    'Great price': 'Ótimo preço',
+    'Just arrived': 'Acabado de chegar',
+    'Low mileage': 'Baixa quilometragem',
+    'City favorite': 'Preferido na cidade',
+    'Family pick': 'Escolha familiar',
+    'Fast charge': 'Carregamento rápido',
+    'New listing': 'Novo anúncio',
+    Local: 'Local',
+    Abroad: 'No estrangeiro',
+    Europe: 'Europa',
+    Asia: 'Ásia',
+    America: 'América',
+    'Republic of the Congo': 'República do Congo',
+    Cameroon: 'Camarões',
+    Gabon: 'Gabão',
+    Angola: 'Angola',
+    'DR Congo': 'RD Congo',
+    Dealer: 'Profissional',
+    Private: 'Particular',
+  },
 };
 export const localize = (value: string | undefined, lang: Lang) =>
   value ? vocabulary[lang][value] || value : '—';
-export const localeFor = (lang: Lang) =>
-  lang === 'fr' ? 'fr-FR' : lang === 'es' ? 'es-ES' : 'en-US';
 export const numberFor = (value: number, lang: Lang) =>
   new Intl.NumberFormat(localeFor(lang)).format(value);
 export const carPlace = (car: Car, lang: Lang) =>
@@ -1034,11 +1240,18 @@ export const contactPreferenceLabels: Record<
   en: { WhatsApp: 'WhatsApp', Phone: 'Phone call', Email: 'Email' },
   fr: { WhatsApp: 'WhatsApp', Phone: 'Appel téléphonique', Email: 'E-mail' },
   es: { WhatsApp: 'WhatsApp', Phone: 'Llamada telefónica', Email: 'Correo' },
+  pt: { WhatsApp: 'WhatsApp', Phone: 'Chamada telefónica', Email: 'E-mail' },
 };
 export const languageLabels: Record<Lang, Record<Lang, string>> = {
-  en: { en: 'English', fr: 'French', es: 'Spanish' },
-  fr: { en: 'Anglais', fr: 'Français', es: 'Espagnol' },
-  es: { en: 'Inglés', fr: 'Francés', es: 'Español' },
+  en: { en: 'English', fr: 'French', es: 'Spanish', pt: 'Portuguese (Angola)' },
+  fr: {
+    en: 'Anglais',
+    fr: 'Français',
+    es: 'Espagnol',
+    pt: 'Portugais (Angola)',
+  },
+  es: { en: 'Inglés', fr: 'Francés', es: 'Español', pt: 'Portugués (Angola)' },
+  pt: { en: 'Inglês', fr: 'Francês', es: 'Espanhol', pt: 'Português (Angola)' },
 };
 export const profileCompletion = (user: UserAccount | null) => {
   if (!user) return 0;
@@ -1080,6 +1293,12 @@ export const orderStatus = (status: string, lang: Lang) => {
       Contacted: 'Contactado',
       Complete: 'Completada',
       Cancelled: 'Cancelada',
+    },
+    pt: {
+      New: 'Novo pedido',
+      Contacted: 'Contactado',
+      Complete: 'Concluído',
+      Cancelled: 'Cancelado',
     },
   };
   return statuses[lang][status] || status;
@@ -1131,6 +1350,22 @@ export const accessibilityCopy = {
       'Clientes observando un SUV en un mercado de automóviles de África Central',
     playHero: 'Reproducir el vídeo de portada',
     pauseHero: 'Pausar el vídeo de portada',
+  },
+  pt: {
+    language: 'Idioma',
+    menu: 'Menu',
+    clearSearch: 'Limpar pesquisa',
+    closeFilters: 'Fechar filtros',
+    inventoryPages: 'Páginas de anúncios',
+    previousPage: 'Página anterior',
+    nextPage: 'Página seguinte',
+    remove: 'Remover',
+    previousPhoto: 'Fotografia anterior',
+    nextPhoto: 'Fotografia seguinte',
+    heroAlt:
+      'Clientes a observar um SUV num mercado automóvel da África Central',
+    playHero: 'Reproduzir o vídeo principal',
+    pauseHero: 'Pausar o vídeo principal',
   },
 } as const;
 export const formValue = (data: FormData, key: string, fallback = '') => {
@@ -1243,6 +1478,38 @@ export const ui = {
     original: 'Estado de piezas: consultar al vendedor',
     service: 'Historial de mantenimiento bajo pedido',
     close: 'Cerrar detalles',
+  },
+  pt: {
+    buyCar: 'Comprar um carro',
+    rentCar: 'Alugar um carro',
+    parts: 'Peças auto',
+    cart: 'Carrinho',
+    signIn: 'Iniciar sessão',
+    buy: 'Comprar',
+    rent: 'Alugar',
+    partsDemand: 'Peças por encomenda',
+    allMakes: 'Todas as marcas',
+    allModels: 'Todos os modelos {brand}',
+    models: 'Modelos',
+    refine: 'Pesquisa rápida',
+    clear: 'Limpar tudo',
+    selected: 'Filtros selecionados',
+    insurance: 'Condições de aluguer disponíveis',
+    options: 'Confirmar datas com o vendedor',
+    added: 'Adicionado',
+    inCart: 'No carrinho',
+    book: 'Pedir aluguer',
+    addCart: 'Adicionar ao carrinho',
+    details: 'Ver detalhes',
+    overview: 'Visão geral',
+    equipment: 'Equipamento',
+    seller: 'Informações do vendedor',
+    contact: 'Contactar o vendedor',
+    inspected: 'Detalhes do anúncio verificados',
+    noAccident: 'Histórico de acidentes: consultar o vendedor',
+    original: 'Estado das peças: consultar o vendedor',
+    service: 'Registos de manutenção disponíveis mediante pedido',
+    close: 'Fechar detalhes',
   },
 } as const;
 export const marketCopy = {
@@ -1447,6 +1714,73 @@ export const marketCopy = {
     terms: 'Condiciones',
     tagline: 'Conduce feliz.',
   },
+  pt: {
+    trust: [
+      'Cinco mercados regionais',
+      'Detalhes claros nos anúncios',
+      'Contacto direto com o vendedor',
+      'Peças por encomenda',
+    ],
+    browse: 'Explorar marcas',
+    listings: 'anúncios',
+    allBrands: 'Todas as marcas',
+    locationGroup: 'Localização e origem',
+    essentialsGroup: 'Preço e critérios essenciais',
+    specificationsGroup: 'Mais especificações',
+    year: 'Ano a partir de',
+    location: 'Localização',
+    source: 'Origem do stock',
+    local: 'Stock local',
+    abroad: 'Stock no estrangeiro',
+    country: 'País',
+    importRegion: 'Região de importação',
+    engine: 'Cilindrada',
+    sellerType: 'Tipo de vendedor',
+    minPrice: 'Mínimo FCFA',
+    maxPrice: 'Máximo FCFA',
+    dailyPrice: 'Tarifa diária',
+    rentUnder: 'Menos de 60 000 FCFA/dia',
+    verifiedOnly: 'Anúncio verificado',
+    availableOnly: 'Anúncio disponível',
+    onDemand: 'Por encomenda',
+    listedToday: 'Publicado hoje',
+    dayAgo: 'dia',
+    daysAgo: 'dias',
+    latestOnly: 'Publicado nos últimos 7 dias',
+    privateOnly: 'Vendedor particular',
+    mileage: 'Quilometragem',
+    transmission: 'Transmissão',
+    drivetrain: 'Tração',
+    color: 'Cor',
+    doors: 'Portas',
+    seats: 'Lugares',
+    under: 'Menos de',
+    doorCount: 'portas',
+    seatCount: 'lugares',
+    localAvailability: 'Disponível localmente',
+    abroadAvailability: 'No estrangeiro — importação necessária',
+    importNote:
+      'Importação estimada: 4–8 semanas. O transporte e os direitos aduaneiros são orçamentados separadamente.',
+    show: 'Mostrar',
+    cars: 'carros',
+    rentReady: 'DISPONÍVEIS PARA ALUGAR',
+    trip: 'carros prontos para a sua viagem',
+    sort: [
+      'Preço: mais baixo primeiro',
+      'Preço: mais alto primeiro',
+      'Mais recentes primeiro',
+      'Mais antigos primeiro',
+      'Menor quilometragem',
+      'Cilindrada',
+    ],
+    rentalTerms: 'Condições de aluguer',
+    selected: 'selecionados',
+    compareNow: 'Comparar agora',
+    help: 'Ajuda',
+    privacy: 'Privacidade',
+    terms: 'Termos',
+    tagline: 'Siga viagem feliz.',
+  },
 } as const;
 export const footerCopy = {
   en: {
@@ -1514,6 +1848,28 @@ export const footerCopy = {
     notice:
       'Las solicitudes de compra y alquiler requieren la confirmación del vendedor. JFcars no procesa pagos en este sitio; el pago se organiza directamente con el vendedor. JFcars no realiza reembolsos.',
     copyright: 'Todos los derechos reservados.',
+  },
+  pt: {
+    summary: 'Compre, alugue e peça peças auto em toda a África Central.',
+    markets:
+      'Os nossos cinco mercados: República do Congo, Camarões, Gabão, Angola (Cabinda) e RD Congo.',
+    explore: 'Explorar',
+    buy: 'Comprar um carro',
+    rent: 'Alugar um carro',
+    parts: 'Pedir uma peça',
+    gallery: 'Expedições',
+    about: 'Sobre nós',
+    contact: 'Contacte-nos',
+    accountHelp: 'Conta e ajuda',
+    account: 'A minha conta',
+    cartRequests: 'Carrinho e pedidos',
+    help: 'Ajuda',
+    legal: 'Informações legais',
+    privacy: 'Privacidade',
+    terms: 'Termos do mercado',
+    notice:
+      'Os pedidos de compra e aluguer exigem a confirmação do vendedor. A JFcars não processa pagamentos neste site; o pagamento é combinado diretamente com o vendedor. A JFcars não efetua reembolsos.',
+    copyright: 'Todos os direitos reservados.',
   },
 } as const;
 export const flowCopy = {
@@ -1739,6 +2095,82 @@ export const flowCopy = {
     sellDone:
       'Solicitud guardada. Nuestro equipo te contactará para las fotos y la verificación.',
   },
+  pt: {
+    eyebrow: 'O mercado automóvel de confiança da África Central.',
+    markets: 'mercados regionais',
+    quick: ['Elétrico', 'SUV', 'Menos de 20 M FCFA'],
+    sellEyebrow: 'VENDA COM A JFCARS',
+    account: 'A SUA CONTA JFCARS',
+    welcome: 'Bem-vindo de volta.',
+    moving: 'Vamos pô-lo em movimento.',
+    signinDesc: 'Inicie sessão para gerir os seus carros, reservas e pedidos.',
+    signupDesc:
+      'Crie uma conta para guardar, comparar e avançar mais depressa.',
+    signIn: 'Iniciar sessão',
+    create: 'Criar conta',
+    name: 'Nome completo',
+    email: 'Endereço de e-mail',
+    password: 'Palavra-passe',
+    remember: 'Lembrar-me',
+    forgot: 'Esqueceu-se da palavra-passe?',
+    forgotSent:
+      'As instruções de reposição serão enviadas para o e-mail indicado acima.',
+    continue:
+      'Ao continuar, aceita os nossos Termos e a Política de Privacidade.',
+    selection: 'A SUA SELEÇÃO',
+    estimated: 'Total estimado',
+    purchase: 'Compra',
+    rental: 'Aluguer',
+    day: 'dia',
+    rentalDates: 'Datas do aluguer',
+    rentalStart: 'Data de levantamento',
+    rentalEnd: 'Data de devolução',
+    pickupAt: 'Levantamento',
+    rentalConsent:
+      'Compreendo que este é um pedido de disponibilidade. O vendedor confirma a caução, os requisitos de identificação e carta de condução, e as condições finais do aluguer antes do pagamento.',
+    rentalRequired:
+      'Escolha datas válidas de levantamento e devolução e confirme as condições do aluguer.',
+    chooseDates: 'Escolha as datas para calcular o total do aluguer',
+    checkout: 'Enviar pedido de compra ou aluguer',
+    checkoutNote:
+      'A JFcars não recebe pagamentos neste site. O pagamento é combinado separadamente com o vendedor. A JFcars não efetua reembolsos.',
+    signinContinue: 'Inicie sessão para continuar',
+    checkoutDone:
+      'Pedido enviado. Nenhuma compra ou aluguer fica confirmado até o vendedor aceitar e combinar consigo as condições finais.',
+    emptyCart: 'O seu carrinho está pronto para uma aventura.',
+    emptyCartP: 'Adicione um carro ou aluguer e ele aparecerá aqui.',
+    browse: 'Continuar a procurar',
+    profileSaved: 'Alterações do perfil guardadas.',
+    viewDetails: 'Ver detalhes',
+    adminHint:
+      'O acesso de administração está limitado ao proprietário verificado da JFcars.',
+    helpTitle: 'Como podemos ajudar?',
+    aboutTitle: 'Sobre a JFcars',
+    contactTitle: 'Contacte-nos',
+    privacyTitle: 'Privacidade na JFcars',
+    termsTitle: 'Termos do mercado',
+    helpText:
+      'Explore, compare, alugue ou peça uma peça. Para apoio numa transação, utilize o formulário do vendedor em qualquer anúncio.',
+    aboutText:
+      'A JFcars liga compradores e clientes de aluguer a veículos, peças e atualizações de expedição nos nossos mercados da África Central. Damos prioridade a informações claras, apoio local e logística visível desde a partida até à chegada.',
+    contactText:
+      'Diga à nossa equipa como podemos ajudar. Para um veículo específico, indique a marca ou o nome do anúncio na sua mensagem.',
+    contactName: 'O seu nome',
+    contactWay: 'Telefone, WhatsApp ou e-mail',
+    contactMessage: 'Como podemos ajudar?',
+    contactSend: 'Enviar mensagem',
+    contactSent: 'Obrigado. A sua mensagem foi enviada à equipa JFcars.',
+    contactError: 'Não foi possível enviar a sua mensagem. Tente novamente.',
+    privacyText:
+      'Os pedidos do mercado e os dados do perfil com sessão iniciada — incluindo preferências de contacto, localização e idioma — são guardados de forma segura para a prestação do serviço. Algumas preferências do dispositivo também podem ser guardadas localmente.',
+    termsText:
+      'Todos os pedidos continuam sujeitos a inspeção, confirmação do vendedor, pagamento, entrega e requisitos locais de matrícula. A JFcars não efetua reembolsos.',
+    sellTitle: 'Anuncie o seu veículo',
+    sellText:
+      'Partilhe as informações essenciais. A equipa JFcars analisará o seu anúncio antes da publicação.',
+    sellDone:
+      'Pedido de anúncio guardado. A nossa equipa entrará em contacto consigo para tratar das fotografias e da verificação.',
+  },
 } as const;
 export const profileCopy = {
   en: {
@@ -1852,6 +2284,44 @@ export const profileCopy = {
     saveError: 'No se pudo guardar tu perfil. Inténtalo de nuevo.',
     signout: 'Cerrar sesión',
   },
+  pt: {
+    welcome: 'Bem-vindo de volta',
+    tabs: ['Visão geral', 'Compras', 'Alugueres', 'Definições'],
+    glance: 'A sua atividade JFcars',
+    saved: 'Carros guardados',
+    cart: 'No carrinho',
+    parts: 'Pedidos de peças',
+    recent: 'Atividade recente',
+    completion: 'Conclusão do perfil',
+    complete: 'Perfil completo',
+    completeText:
+      'Os seus contactos e preferências de mercado estão prontos a utilizar.',
+    incompleteText:
+      'Adicione os dados em falta para acelerar os pedidos e as respostas.',
+    completeAction: 'Completar perfil',
+    details: 'Os seus dados',
+    notProvided: 'Não indicado',
+    noPurchases: 'Ainda não há compras',
+    purchasesText: 'As suas encomendas de veículos serão acompanhadas aqui.',
+    noRentals: 'Não há alugueres próximos',
+    rentalsText: 'Alugue um carro e faça a gestão da sua viagem aqui.',
+    settings: 'Definições do perfil',
+    settingsText:
+      'Mantenha atualizados os dados que a nossa equipa regional e os vendedores utilizam para o contactar.',
+    phone: 'Número de telefone ou WhatsApp',
+    country: 'País ou mercado',
+    city: 'Cidade',
+    preferredLanguage: 'Idioma preferido',
+    preferredContact: 'Meio de contacto preferido',
+    chooseCountry: 'Escolha o seu mercado',
+    emailManaged: 'Verificado e gerido pelo seu início de sessão no ChatGPT.',
+    authNote:
+      'O início de sessão seguro fornece o seu e-mail verificado. Adicione o telefone, a cidade e as preferências no seu perfil.',
+    save: 'Guardar alterações',
+    saving: 'A guardar…',
+    saveError: 'Não foi possível guardar o seu perfil. Tente novamente.',
+    signout: 'Terminar sessão',
+  },
 } as const;
 export const compareCopy = {
   en: {
@@ -1892,5 +2362,18 @@ export const compareCopy = {
     seats: 'Plazas',
     location: 'Ubicación',
     add: 'Añadir al carrito',
+  },
+  pt: {
+    eyebrow: 'LADO A LADO',
+    title: 'Compare a sua seleção',
+    close: 'Fechar comparação',
+    remove: 'Remover',
+    mileage: 'Quilometragem',
+    body: 'Carroçaria',
+    transmission: 'Transmissão',
+    drivetrain: 'Tração',
+    seats: 'Lugares',
+    location: 'Localização',
+    add: 'Adicionar ao carrinho',
   },
 } as const;

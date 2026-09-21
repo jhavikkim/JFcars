@@ -16,7 +16,9 @@ import {
 } from '@/lib/storefront-content';
 import { parseJson } from '@/lib/json';
 
-const locales: Lang[] = ['en', 'fr', 'es'];
+const locales: Lang[] = ['en', 'fr', 'es', 'pt'];
+const profileLanguages = new Set<Lang>(locales);
+const profileCurrencies = new Set(['XAF', 'USD', 'EUR', 'AOA']);
 const migrationNames = {
   marketplace: 'marketplace_v1',
   accounts: 'accounts_v1',
@@ -724,6 +726,17 @@ type LegacyProfile = {
   city?: string;
   preferredContact?: string;
   preferredLanguage?: string;
+  preferredCurrency?: string;
+};
+
+const normalizedProfileLanguage = (value: unknown) => {
+  const language = cleanText(value, 2) as Lang;
+  return profileLanguages.has(language) ? language : '';
+};
+
+const normalizedProfileCurrency = (value: unknown) => {
+  const currency = cleanText(value, 3).toUpperCase();
+  return profileCurrencies.has(currency) ? currency : 'XAF';
 };
 
 function normalizedProfileStatement(
@@ -735,12 +748,13 @@ function normalizedProfileStatement(
     .prepare(
       `INSERT INTO user_profiles
        (user_id, name, phone, country, city, preferred_contact,
-        preferred_language, updated_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+        preferred_language, preferred_currency, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
        ON CONFLICT(user_id) DO UPDATE SET name = excluded.name,
        phone = excluded.phone, country = excluded.country, city = excluded.city,
        preferred_contact = excluded.preferred_contact,
        preferred_language = excluded.preferred_language,
+       preferred_currency = excluded.preferred_currency,
        updated_at = CURRENT_TIMESTAMP`,
     )
     .bind(
@@ -750,7 +764,8 @@ function normalizedProfileStatement(
       cleanText(profile.country, 80),
       cleanText(profile.city, 80),
       cleanText(profile.preferredContact, 20),
-      cleanText(profile.preferredLanguage, 2),
+      normalizedProfileLanguage(profile.preferredLanguage),
+      normalizedProfileCurrency(profile.preferredCurrency),
     );
 }
 
@@ -794,7 +809,7 @@ async function backfillAccounts(db: D1Database) {
     db.prepare(
       `INSERT INTO user_profiles
        (user_id, name, phone, country, city, preferred_contact,
-        preferred_language, updated_at)
+        preferred_language, preferred_currency, updated_at)
        SELECT user_id,
               SUBSTR(TRIM(COALESCE(json_extract(
                 CASE WHEN json_valid(profile) THEN profile ELSE '{}' END,
@@ -811,15 +826,29 @@ async function backfillAccounts(db: D1Database) {
               SUBSTR(TRIM(COALESCE(json_extract(
                 CASE WHEN json_valid(profile) THEN profile ELSE '{}' END,
                 '$.preferredContact'), '')), 1, 20),
-              SUBSTR(TRIM(COALESCE(json_extract(
+              CASE WHEN SUBSTR(TRIM(COALESCE(json_extract(
                 CASE WHEN json_valid(profile) THEN profile ELSE '{}' END,
-                '$.preferredLanguage'), '')), 1, 2),
+                '$.preferredLanguage'), '')), 1, 2)
+                IN ('en', 'fr', 'es', 'pt')
+              THEN SUBSTR(TRIM(COALESCE(json_extract(
+                CASE WHEN json_valid(profile) THEN profile ELSE '{}' END,
+                '$.preferredLanguage'), '')), 1, 2)
+              ELSE '' END,
+              CASE WHEN UPPER(SUBSTR(TRIM(COALESCE(json_extract(
+                CASE WHEN json_valid(profile) THEN profile ELSE '{}' END,
+                '$.preferredCurrency'), 'XAF')), 1, 3))
+                IN ('XAF', 'USD', 'EUR', 'AOA')
+              THEN UPPER(SUBSTR(TRIM(COALESCE(json_extract(
+                CASE WHEN json_valid(profile) THEN profile ELSE '{}' END,
+                '$.preferredCurrency'), 'XAF')), 1, 3))
+              ELSE 'XAF' END,
               CURRENT_TIMESTAMP
        FROM account_state WHERE true
        ON CONFLICT(user_id) DO UPDATE SET name = excluded.name,
        phone = excluded.phone, country = excluded.country,
        city = excluded.city, preferred_contact = excluded.preferred_contact,
        preferred_language = excluded.preferred_language,
+       preferred_currency = excluded.preferred_currency,
        updated_at = CURRENT_TIMESTAMP`,
     ),
     db.prepare(
@@ -1090,7 +1119,8 @@ export async function readAccountState(db: D1Database, userId: string) {
     db
       .prepare(
         `SELECT name, phone, country, city, preferred_contact,
-                preferred_language FROM user_profiles WHERE user_id = ?`,
+                preferred_language, preferred_currency
+         FROM user_profiles WHERE user_id = ?`,
       )
       .bind(userId)
       .first<{
@@ -1100,6 +1130,7 @@ export async function readAccountState(db: D1Database, userId: string) {
         city: string;
         preferred_contact: string;
         preferred_language: string;
+        preferred_currency: string;
       }>(),
     db
       .prepare(

@@ -12,6 +12,7 @@ const migratedDatabase = () => {
   db.exec(migration('0000_jfcars_marketplace.sql'));
   db.exec(migration('0001_light_magneto.sql'));
   db.exec(migration('0002_brave_nova.sql'));
+  db.exec(migration('0003_fearless_genesis.sql'));
   return db;
 };
 
@@ -125,6 +126,119 @@ test('vehicle media cascades while order snapshots survive deletion', () => {
       vehicle_name: 'Toyota Hilux',
       amount: 19_800_000,
     },
+  );
+  assert.deepEqual(db.prepare('PRAGMA foreign_key_check').all(), []);
+  db.close();
+});
+
+test('Portuguese translations and supported currencies satisfy schema constraints', () => {
+  const db = migratedDatabase();
+  db.exec(`
+    INSERT INTO storefront_translations (locale, headline)
+    VALUES ('pt', 'Automóveis para a África Central');
+    INSERT INTO gallery_items
+      (id, image_url, status, location, reference)
+    VALUES
+      ('load-pt', 'https://example.com/load.webp', 'ready_to_ship',
+       'Luanda', 'JF-PT-1');
+    INSERT INTO gallery_item_translations
+      (gallery_item_id, locale, caption, comment)
+    VALUES
+      ('load-pt', 'pt', 'Pronto para envio', 'Contentor verificado');
+    INSERT INTO user_profiles
+      (user_id, preferred_language, preferred_currency)
+    VALUES
+      ('user-pt', 'pt', 'AOA'),
+      ('user-default', '', 'XAF');
+  `);
+  assert.deepEqual(
+    {
+      ...db
+        .prepare(
+          `SELECT preferred_language, preferred_currency
+           FROM user_profiles WHERE user_id = 'user-pt'`,
+        )
+        .get(),
+    },
+    { preferred_language: 'pt', preferred_currency: 'AOA' },
+  );
+  assert.throws(() =>
+    db
+      .prepare(
+        `INSERT INTO user_profiles
+         (user_id, preferred_language, preferred_currency)
+         VALUES ('bad-language', 'de', 'XAF')`,
+      )
+      .run(),
+  );
+  assert.throws(() =>
+    db
+      .prepare(
+        `INSERT INTO user_profiles (user_id, preferred_currency)
+         VALUES ('bad-currency', 'BTC')`,
+      )
+      .run(),
+  );
+  assert.throws(() =>
+    db
+      .prepare(
+        `INSERT INTO storefront_translations (locale, headline)
+         VALUES ('de', 'Nicht unterstützt')`,
+      )
+      .run(),
+  );
+  db.close();
+});
+
+test('currency migration preserves profiles and vehicle lists', () => {
+  const db = new DatabaseSync(':memory:');
+  db.exec('PRAGMA foreign_keys = ON');
+  db.exec(migration('0000_jfcars_marketplace.sql'));
+  db.exec(migration('0001_light_magneto.sql'));
+  db.exec(migration('0002_brave_nova.sql'));
+  db.exec(`
+    INSERT INTO vehicles
+      (id, make, model, year, price, mileage_km, fuel, body, origin,
+       country, city, import_region, rentable)
+    VALUES
+      (8, 'Toyota', 'Hilux', 2022, 19000000, 32000, 'Diesel', 'Pickup',
+       'local', 'Angola', 'Cabinda', NULL, 0);
+    INSERT INTO user_profiles (user_id, name, preferred_language)
+    VALUES
+      ('legacy-user', 'Ana', 'fr'),
+      ('legacy-invalid-language', 'Unsupported', 'de');
+    INSERT INTO user_vehicle_lists (user_id, vehicle_id, list_kind)
+    VALUES ('legacy-user', 8, 'saved');
+  `);
+  db.exec(migration('0003_fearless_genesis.sql'));
+  assert.deepEqual(
+    {
+      ...db
+        .prepare(
+          `SELECT name, preferred_language, preferred_currency
+           FROM user_profiles WHERE user_id = 'legacy-user'`,
+        )
+        .get(),
+    },
+    { name: 'Ana', preferred_language: 'fr', preferred_currency: 'XAF' },
+  );
+  assert.equal(
+    db
+      .prepare(
+        `SELECT COUNT(*) AS count FROM user_vehicle_lists
+         WHERE user_id = 'legacy-user' AND vehicle_id = 8`,
+      )
+      .get().count,
+    1,
+  );
+  assert.equal(
+    db
+      .prepare(
+        `SELECT preferred_language FROM user_profiles
+         WHERE user_id = 'legacy-invalid-language'`,
+      )
+      .get().preferred_language,
+    '',
   );
   assert.deepEqual(db.prepare('PRAGMA foreign_key_check').all(), []);
   db.close();

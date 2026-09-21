@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import {
   type Lang,
+  type Currency,
   type Car,
   type UserAccount,
   type SellerInquiry,
@@ -36,6 +37,7 @@ export function VehicleDetails({
   inventory,
   user,
   lang,
+  currency,
   mode,
   close,
   selectVehicle,
@@ -47,6 +49,7 @@ export function VehicleDetails({
   inventory: Car[];
   user: UserAccount | null;
   lang: Lang;
+  currency: Currency;
   mode: 'buy' | 'rent' | 'parts';
   close: () => void;
   selectVehicle: (car: Car) => void;
@@ -207,6 +210,51 @@ export function VehicleDetails({
         'Para ti',
       ],
     },
+    pt: {
+      year: 'Ano',
+      mileage: 'Quilometragem',
+      fuel: 'Combustível',
+      body: 'Carroçaria',
+      gearbox: 'Transmissão',
+      drive: 'Tracção',
+      color: 'Cor',
+      seats: 'Lugares',
+      location: 'Localização',
+      source: 'Origem do stock',
+      engine: 'Cilindrada',
+      sellerType: 'Vendedor',
+      price: 'Preço',
+      desc: 'Um anúncio de veículo com informações claras fornecidas pelo vendedor e o apoio da nossa equipa regional.',
+      vehiclePhotos: 'Fotografias do veículo',
+      similar: 'Veículos semelhantes em stock',
+      similarText: 'Mais veículos disponíveis semelhantes a este anúncio.',
+      mightLike: 'Também poderá gostar',
+      mightLikeText:
+        'Outros veículos disponíveis seleccionados por carroçaria, combustível e preço.',
+      viewVehicle: 'Ver veículo',
+      gallery: ['Exterior', 'Interior', 'Detalhe'],
+      viewAll: 'Ver todas as fotografias',
+      photos: 'fotografias',
+      contactTitle: 'Contactar este vendedor',
+      contactName: 'O seu nome',
+      contactPhone: 'Telefone ou WhatsApp',
+      contactMessage: 'Mensagem',
+      send: 'Enviar pedido',
+      sent: 'Pedido enviado. O vendedor entrará em contacto brevemente.',
+      added: 'Adicionado ao carrinho',
+      abs: 'Sistema de travagem ABS',
+      airConditioning: 'Ar condicionado',
+      bluetooth: 'Bluetooth',
+      parkingCamera: 'Câmara de estacionamento',
+      sections: [
+        'Fotografias',
+        'Resumo',
+        'Equipamento',
+        'Vendedor',
+        'Semelhantes',
+        'Para si',
+      ],
+    },
   }[lang];
   const recommendations = useMemo(() => {
     const unique = new Map<number, Car>();
@@ -364,14 +412,16 @@ export function VehicleDetails({
                 ? 'Annonce et photos de démonstration — remplacez-les dans Admin avant toute transaction.'
                 : lang === 'es'
                   ? 'Anuncio y fotos de demostración; sustitúyelos en Admin antes de cualquier operación.'
-                  : 'Demonstration listing and reference photos—replace them in Admin before any transaction.'}
+                  : lang === 'pt'
+                    ? 'Anúncio e fotografias de demonstração — substitua-os no Admin antes de qualquer transacção.'
+                    : 'Demonstration listing and reference photos—replace them in Admin before any transaction.'}
             </p>
           )}
           <p>{labels.desc}</p>
           <strong>
             {mode === 'rent'
-              ? `${money(rentalRate(car), lang)}/${flowCopy[lang].day}`
-              : money(car.price, lang)}
+              ? `${money(rentalRate(car), lang, currency)}/${flowCopy[lang].day}`
+              : money(car.price, lang, currency)}
           </strong>
           <div className="detail-location">
             <MapPin />
@@ -461,7 +511,9 @@ export function VehicleDetails({
                         ? 'Envoi…'
                         : lang === 'es'
                           ? 'Enviando…'
-                          : 'Sending…'
+                          : lang === 'pt'
+                            ? 'A enviar…'
+                            : 'Sending…'
                       : labels.send}
                     <ArrowRight />
                   </button>
@@ -471,7 +523,9 @@ export function VehicleDetails({
                         ? 'Impossible d’envoyer la demande. Réessayez.'
                         : lang === 'es'
                           ? 'No se pudo enviar la solicitud. Inténtalo de nuevo.'
-                          : 'We could not send your request. Please try again.'}
+                          : lang === 'pt'
+                            ? 'Não foi possível enviar o pedido. Tente novamente.'
+                            : 'We could not send your request. Please try again.'}
                     </p>
                   )}
                 </>
@@ -549,6 +603,7 @@ export function VehicleDetails({
                   key={candidate.id}
                   car={candidate}
                   lang={lang}
+                  currency={currency}
                   mode={mode}
                   action={labels.viewVehicle}
                   onSelect={() => selectVehicle(candidate)}
@@ -572,6 +627,7 @@ export function VehicleDetails({
                   key={candidate.id}
                   car={candidate}
                   lang={lang}
+                  currency={currency}
                   mode={mode}
                   action={labels.viewVehicle}
                   onSelect={() => selectVehicle(candidate)}
@@ -657,12 +713,14 @@ export function VehicleDetails({
 export function VehicleRecommendationCard({
   car,
   lang,
+  currency,
   mode,
   action,
   onSelect,
 }: {
   car: Car;
   lang: Lang;
+  currency: Currency;
   mode: 'buy' | 'rent' | 'parts';
   action: string;
   onSelect: () => void;
@@ -691,8 +749,8 @@ export function VehicleRecommendationCard({
         </span>
         <strong>
           {mode === 'rent'
-            ? `${money(rentalRate(car), lang)}/${flowCopy[lang].day}`
-            : money(car.price, lang)}
+            ? `${money(rentalRate(car), lang, currency)}/${flowCopy[lang].day}`
+            : money(car.price, lang, currency)}
         </strong>
         <button className="recommendation-action" onClick={onSelect}>
           {action}
@@ -708,6 +766,7 @@ export function ComparePanel({
   remove,
   add,
   lang,
+  currency,
   mode,
 }: {
   cars: Car[];
@@ -715,6 +774,7 @@ export function ComparePanel({
   remove: (id: number) => void;
   add: (id: number) => void;
   lang: Lang;
+  currency: Currency;
   mode: 'buy' | 'rent' | 'parts';
 }) {
   useDialog(close);
@@ -761,8 +821,8 @@ export function ComparePanel({
               </h3>
               <strong>
                 {mode === 'rent'
-                  ? `${money(rentalRate(c), lang)}/${f.day}`
-                  : money(c.price, lang)}
+                  ? `${money(rentalRate(c), lang, currency)}/${f.day}`
+                  : money(c.price, lang, currency)}
               </strong>
               <dl>
                 <div>

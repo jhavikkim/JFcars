@@ -22,6 +22,7 @@ import {
   type GallerySection,
   gallerySections,
   formValue,
+  localeFor,
 } from '@/components/jfcars/config';
 import { useDialog } from '@/components/jfcars/useDialog';
 export function HeroVideo({
@@ -229,6 +230,52 @@ export function InformationPage({
       shipment: 'Seguimiento de envíos',
       shipmentText: 'Incluye la referencia del envío o lote si la tienes.',
     },
+    pt: {
+      aboutKicker: 'Criado para as estradas da África Central',
+      aboutTitle: 'Comprar um automóvel deve ser uma experiência pessoal.',
+      aboutIntro:
+        'A JFcars reúne veículos, peças e atualizações reais sobre expedições num só espaço de confiança, com pessoas no terreno a ajudar em cada etapa.',
+      storyTitle: 'Um mercado com uma ligação humana',
+      story:
+        'Criámos a JFcars para encurtar distâncias. Os compradores consultam informações claras sobre os veículos, acompanham as expedições com fotografias reais e falam diretamente com pessoas que conhecem o seu mercado.',
+      values: [
+        [
+          'Clareza desde o início',
+          'Informações honestas, disponibilidade visível e nenhum pagamento online escondido.',
+        ],
+        [
+          'Conhecimento local',
+          'Apoio adaptado às estradas, cidades e necessidades de cada mercado.',
+        ],
+        [
+          'Atualizações que pode ver',
+          'Fotografias reais da preparação, do carregamento, do trânsito e da chegada.',
+        ],
+      ],
+      markets: 'Presentes em cinco mercados regionais',
+      marketList: 'República do Congo · Camarões · Gabão · Cabinda · RD Congo',
+      contactKicker: 'Fale com uma pessoa real',
+      contactTitle: 'Como podemos ajudar?',
+      contactIntro:
+        'Tem dúvidas sobre um veículo, uma peça ou uma expedição? Envie uma mensagem à equipa com o máximo de detalhes possível.',
+      name: 'O seu nome',
+      contact: 'Telefone, WhatsApp ou e-mail',
+      message: 'A sua mensagem',
+      send: 'Enviar para a JFcars',
+      sending: 'A enviar…',
+      success: 'Obrigado. A equipa da JFcars recebeu a sua mensagem.',
+      error: 'Não foi possível enviar a sua mensagem. Tente novamente.',
+      response: 'Normalmente respondemos no prazo de um dia útil.',
+      regional: 'Apoio regional',
+      regionalText:
+        'Indique o seu país e cidade para que a equipa certa possa responder.',
+      vehicle: 'Questões sobre veículos',
+      vehicleText:
+        'Inclua a marca, o modelo ou o nome do anúncio, se possível.',
+      shipment: 'Atualizações de expedição',
+      shipmentText:
+        'Inclua a referência da expedição ou do lote, se tiver uma.',
+    },
   }[lang];
 
   if (page === 'about')
@@ -244,7 +291,15 @@ export function InformationPage({
             src="/jfcars-central-africa-hero.webp"
             width={1200}
             height={800}
-            alt="JFcars team with a vehicle"
+            alt={
+              lang === 'fr'
+                ? 'L’équipe JFcars avec un véhicule'
+                : lang === 'es'
+                  ? 'El equipo de JFcars junto a un vehículo'
+                  : lang === 'pt'
+                    ? 'Equipa da JFcars junto a um veículo'
+                    : 'JFcars team with a vehicle'
+            }
           />
         </div>
         <div className="about-story">
@@ -575,17 +630,17 @@ export function GalleryViewer({
   const comment = (entry: GalleryItem) =>
     entry.comments[lang] || entry.comments.en || caption(entry);
   const formattedDate = item.date
-    ? new Intl.DateTimeFormat(
-        lang === 'fr' ? 'fr-FR' : lang === 'es' ? 'es-ES' : 'en-GB',
-        { dateStyle: 'medium', timeZone: 'UTC' },
-      ).format(new Date(`${item.date}T12:00:00Z`))
+    ? new Intl.DateTimeFormat(localeFor(lang), {
+        dateStyle: 'medium',
+        timeZone: 'UTC',
+      }).format(new Date(`${item.date}T12:00:00Z`))
     : '';
   const formatLogisticsDate = (value?: string) =>
     value
-      ? new Intl.DateTimeFormat(
-          lang === 'fr' ? 'fr-FR' : lang === 'es' ? 'es-ES' : 'en-GB',
-          { dateStyle: 'medium', timeZone: 'UTC' },
-        ).format(new Date(`${value}T12:00:00Z`))
+      ? new Intl.DateTimeFormat(localeFor(lang), {
+          dateStyle: 'medium',
+          timeZone: 'UTC',
+        }).format(new Date(`${value}T12:00:00Z`))
       : '';
   const move = (direction: number) =>
     setActive((active + direction + items.length) % items.length);

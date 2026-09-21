@@ -231,7 +231,7 @@ export const storefrontTranslations = sqliteTable(
   (table) => [
     check(
       'storefront_locale_check',
-      sql`${table.locale} IN ('en', 'fr', 'es')`,
+      sql`${table.locale} IN ('en', 'fr', 'es', 'pt')`,
     ),
   ],
 );
@@ -278,23 +278,37 @@ export const galleryItemTranslations = sqliteTable(
     primaryKey({ columns: [table.galleryItemId, table.locale] }),
     check(
       'gallery_translation_locale_check',
-      sql`${table.locale} IN ('en', 'fr', 'es')`,
+      sql`${table.locale} IN ('en', 'fr', 'es', 'pt')`,
     ),
   ],
 );
 
-export const userProfiles = sqliteTable('user_profiles', {
-  userId: text('user_id').primaryKey(),
-  name: text('name').notNull().default(''),
-  phone: text('phone').notNull().default(''),
-  country: text('country').notNull().default(''),
-  city: text('city').notNull().default(''),
-  preferredContact: text('preferred_contact').notNull().default(''),
-  preferredLanguage: text('preferred_language').notNull().default(''),
-  updatedAt: text('updated_at')
-    .notNull()
-    .default(sql`CURRENT_TIMESTAMP`),
-});
+export const userProfiles = sqliteTable(
+  'user_profiles',
+  {
+    userId: text('user_id').primaryKey(),
+    name: text('name').notNull().default(''),
+    phone: text('phone').notNull().default(''),
+    country: text('country').notNull().default(''),
+    city: text('city').notNull().default(''),
+    preferredContact: text('preferred_contact').notNull().default(''),
+    preferredLanguage: text('preferred_language').notNull().default(''),
+    preferredCurrency: text('preferred_currency').notNull().default('XAF'),
+    updatedAt: text('updated_at')
+      .notNull()
+      .default(sql`CURRENT_TIMESTAMP`),
+  },
+  (table) => [
+    check(
+      'user_profiles_language_check',
+      sql`${table.preferredLanguage} = '' OR ${table.preferredLanguage} IN ('en', 'fr', 'es', 'pt')`,
+    ),
+    check(
+      'user_profiles_currency_check',
+      sql`${table.preferredCurrency} IN ('XAF', 'USD', 'EUR', 'AOA')`,
+    ),
+  ],
+);
 
 export const userVehicleLists = sqliteTable(
   'user_vehicle_lists',

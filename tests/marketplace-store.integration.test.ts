@@ -7,11 +7,13 @@ import {
   createOrder,
   createSellRequest,
   ensureNormalizedData,
+  readAccountState,
   readOrders,
   readSellRequests,
   readStorefrontContent,
   readVehicles,
   replaceMarketplace,
+  saveAccountState,
 } from '../lib/marketplace-store';
 import type { Car } from '../lib/marketplace/types';
 
@@ -19,33 +21,43 @@ const migrations = [
   '0000_jfcars_marketplace.sql',
   '0001_light_magneto.sql',
   '0002_brave_nova.sql',
+  '0003_fearless_genesis.sql',
 ];
 
-async function database() {
+async function applyMigrations(db: D1Database, names: string[]) {
+  for (const name of names) {
+    const sql = readFileSync(
+      new URL(`../drizzle/${name}`, import.meta.url),
+      'utf8',
+    );
+    const statements = sql
+      .split('--> statement-breakpoint')
+      .map((statement) => statement.trim())
+      .filter(Boolean)
+      .map((statement) => db.prepare(statement));
+    if (statements.length) await db.batch(statements);
+  }
+}
+
+async function emptyDatabase() {
   const mf = new Miniflare({
     modules: true,
     script: 'export default { fetch() { return new Response("ok") } }',
     d1Databases: { DB: `test-${crypto.randomUUID()}` },
   });
   const db = await mf.getD1Database('DB');
+  return { db, dispose: () => mf.dispose() };
+}
+
+async function database() {
+  const instance = await emptyDatabase();
   try {
-    for (const name of migrations) {
-      const sql = readFileSync(
-        new URL(`../drizzle/${name}`, import.meta.url),
-        'utf8',
-      );
-      const statements = sql
-        .split('--> statement-breakpoint')
-        .map((statement) => statement.trim())
-        .filter(Boolean)
-        .map((statement) => db.prepare(statement));
-      if (statements.length) await db.batch(statements);
-    }
+    await applyMigrations(instance.db, migrations);
   } catch (error) {
-    await mf.dispose();
+    await instance.dispose();
     throw error;
   }
-  return { db, dispose: () => mf.dispose() };
+  return instance;
 }
 
 const validCar = (id = 901): Car => ({
@@ -148,7 +160,8 @@ void test('legacy account, order, and seller data backfills idempotently', async
             country: 'Cameroon',
             city: 'Douala',
             preferredContact: 'WhatsApp',
-            preferredLanguage: 'fr',
+            preferredLanguage: 'pt',
+            preferredCurrency: 'AOA',
           }),
         ),
       db
@@ -192,6 +205,10 @@ void test('legacy account, order, and seller data backfills idempotently', async
     assert.equal(await count('sell_request_details'), 1);
     assert.equal(await count('sell_request_media'), 2);
 
+    const account = await readAccountState(db, 'user-1');
+    assert.equal(account.profile?.preferred_language, 'pt');
+    assert.equal(account.profile?.preferred_currency, 'AOA');
+
     const orders = await readOrders(db, 'user-1');
     assert.equal(orders[0]?.items[0]?.carId, 901);
     const sellRequests = await readSellRequests(db);
@@ -213,6 +230,12 @@ void test('normalized storefront content and gallery round-trip', async () => {
         galleryTitle: 'Latest shipment',
         galleryDescription: 'Real photos from our team.',
       },
+      pt: {
+        headline: 'Automóveis para a África Central',
+        description: 'Inventário claro e atualizações de envio.',
+        galleryTitle: 'Último envio',
+        galleryDescription: 'Fotografias reais da nossa equipa.',
+      },
       gallery: [
         {
           id: 'load-1',
@@ -221,16 +244,95 @@ void test('normalized storefront content and gallery round-trip', async () => {
           date: '2026-09-21',
           location: 'Antwerp',
           reference: 'JF-LOAD-1',
-          captions: { en: 'Ready to ship', fr: 'Prêt à expédier' },
-          comments: { en: 'Container checked', fr: 'Conteneur vérifié' },
+          captions: {
+            en: 'Ready to ship',
+            fr: 'Prêt à expédier',
+            pt: 'Pronto para envio',
+          },
+          comments: {
+            en: 'Container checked',
+            fr: 'Conteneur vérifié',
+            pt: 'Contentor verificado',
+          },
         },
       ],
     });
     const content = await readStorefrontContent(db);
     assert.equal(content.heroVideo, 'https://example.com/hero.mp4');
     assert.equal(content.en?.headline, 'Cars for Central Africa');
+    assert.equal(content.pt?.headline, 'Automóveis para a África Central');
     assert.equal(content.gallery?.[0]?.captions.fr, 'Prêt à expédier');
+    assert.equal(content.gallery?.[0]?.captions.pt, 'Pronto para envio');
     assert.equal((await readVehicles(db, true)).length, 1);
+  } finally {
+    await dispose();
+  }
+});
+
+void test('account preferences persist Portuguese and currency safely', async () => {
+  const { db, dispose } = await database();
+  try {
+    await ensureNormalizedData(db);
+    await saveAccountState(
+      db,
+      'user-settings',
+      {
+        name: 'Ana Cabinda',
+        preferredLanguage: 'pt',
+        preferredCurrency: 'AOA',
+      },
+      { cart: [], rentalCart: [], saved: [] },
+    );
+    let account = await readAccountState(db, 'user-settings');
+    assert.equal(account.profile?.preferred_language, 'pt');
+    assert.equal(account.profile?.preferred_currency, 'AOA');
+
+    await saveAccountState(
+      db,
+      'user-settings',
+      {
+        name: 'Ana Cabinda',
+        preferredLanguage: 'de',
+        preferredCurrency: 'BTC',
+      },
+      { cart: [], rentalCart: [], saved: [] },
+    );
+    account = await readAccountState(db, 'user-settings');
+    assert.equal(account.profile?.preferred_language, '');
+    assert.equal(account.profile?.preferred_currency, 'XAF');
+  } finally {
+    await dispose();
+  }
+});
+
+void test('currency migration preserves existing D1 account lists', async () => {
+  const { db, dispose } = await emptyDatabase();
+  try {
+    await applyMigrations(db, migrations.slice(0, 3));
+    await db.batch([
+      db.prepare(
+        `INSERT INTO vehicles
+         (id, make, model, year, price, mileage_km, fuel, body, origin,
+          country, city, import_region, rentable)
+         VALUES
+         (42, 'Toyota', 'Hilux', 2022, 19000000, 32000, 'Diesel',
+          'Pickup', 'local', 'Angola', 'Cabinda', NULL, 0)`,
+      ),
+      db.prepare(
+        `INSERT INTO user_profiles (user_id, name, preferred_language)
+         VALUES ('existing-user', 'Ana', 'pt')`,
+      ),
+      db.prepare(
+        `INSERT INTO user_vehicle_lists
+         (user_id, vehicle_id, list_kind)
+         VALUES ('existing-user', 42, 'saved')`,
+      ),
+    ]);
+    await applyMigrations(db, migrations.slice(3));
+    const account = await readAccountState(db, 'existing-user');
+    assert.equal(account.profile?.preferred_language, 'pt');
+    assert.equal(account.profile?.preferred_currency, 'XAF');
+    assert.deepEqual(account.saved, [42]);
   } finally {
     await dispose();
   }

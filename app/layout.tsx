@@ -11,6 +11,7 @@ export const metadata: Metadata = {
       en: '/?lang=en',
       fr: '/?lang=fr',
       es: '/?lang=es',
+      'pt-AO': '/?lang=pt',
       'x-default': '/',
     },
   },
@@ -18,8 +19,8 @@ export const metadata: Metadata = {
     title: 'JFcars — Move happy',
     description: 'Cars, rentals and parts for Central Africa.',
     images: ['/og.png'],
-    locale: 'en',
-    alternateLocale: ['fr', 'es'],
+    locale: 'en_US',
+    alternateLocale: ['fr_FR', 'es_ES', 'pt_AO'],
   },
   twitter: {
     card: 'summary_large_image',

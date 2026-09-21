@@ -20,12 +20,16 @@ import {
 } from 'lucide-react';
 import {
   type Lang,
+  type Currency,
   type ContactPreference,
   type Car,
   type UserAccount,
   type OrderItem,
   type OrderRecord,
   money,
+  currencyLabel,
+  localeFor,
+  supportedCurrencies,
   rentalRate,
   rentalDaysBetween,
   localize,
@@ -63,6 +67,8 @@ export function AccountLayer({
   orders,
   setOrders,
   lang,
+  currency,
+  onCurrencyChange,
   onLanguageChange,
 }: {
   panel: 'auth' | 'cart' | 'profile';
@@ -82,6 +88,8 @@ export function AccountLayer({
   orders: OrderRecord[];
   setOrders: (orders: OrderRecord[]) => void;
   lang: Lang;
+  currency: Currency;
+  onCurrencyChange: (currency: Currency) => void;
   onLanguageChange: (language: Lang) => void;
 }) {
   const [profileTab, setProfileTab] = useState('overview');
@@ -143,6 +151,11 @@ export function AccountLayer({
         'WhatsApp',
       ) as ContactPreference,
       preferredLanguage: formValue(data, 'profileLanguage', lang) as Lang,
+      preferredCurrency: formValue(
+        data,
+        'profileCurrency',
+        currency,
+      ) as Currency,
     };
     setProfileSaving(true);
     setProfileSaveFailed(false);
@@ -164,6 +177,8 @@ export function AccountLayer({
       setUser(savedUser);
       if (savedUser.preferredLanguage)
         onLanguageChange(savedUser.preferredLanguage);
+      if (savedUser.preferredCurrency)
+        onCurrencyChange(savedUser.preferredCurrency);
       setNotice(flowCopy[savedUser.preferredLanguage || lang].profileSaved);
     } catch {
       setProfileSaveFailed(true);
@@ -227,7 +242,9 @@ export function AccountLayer({
           ? 'La demande n’a pas pu être envoyée. Réessayez.'
           : lang === 'es'
             ? 'No se pudo enviar la solicitud. Inténtalo de nuevo.'
-            : 'We could not submit the request. Please try again.',
+            : lang === 'pt'
+              ? 'Não foi possível enviar o pedido. Tente novamente.'
+              : 'We could not submit the request. Please try again.',
       );
     } finally {
       setCheckoutBusy(false);
@@ -328,8 +345,8 @@ export function AccountLayer({
                         </small>
                         <strong>
                           {kind === 'rent'
-                            ? `${money(rentalRate(c), lang)}/${f.day}`
-                            : money(amount, lang)}
+                            ? `${money(rentalRate(c), lang, currency)}/${f.day}`
+                            : money(amount, lang, currency)}
                         </strong>
                         {kind === 'buy' && c.origin === 'abroad' && (
                           <small className="cart-import-note">
@@ -401,6 +418,7 @@ export function AccountLayer({
                       ? money(
                           picked.reduce((n, item) => n + item.amount, 0),
                           lang,
+                          currency,
                         )
                       : f.chooseDates}
                   </b>
@@ -416,7 +434,9 @@ export function AccountLayer({
                       ? 'Envoi…'
                       : lang === 'es'
                         ? 'Enviando…'
-                        : 'Submitting…'
+                        : lang === 'pt'
+                          ? 'A enviar…'
+                          : 'Submitting…'
                     : user
                       ? f.checkout
                       : f.signinContinue}
@@ -571,6 +591,18 @@ export function AccountLayer({
                           : p.notProvided}
                       </b>
                     </div>
+                    <div>
+                      <span>
+                        {lang === 'fr'
+                          ? 'Devise préférée'
+                          : lang === 'es'
+                            ? 'Moneda preferida'
+                            : lang === 'pt'
+                              ? 'Moeda preferida'
+                              : 'Preferred currency'}
+                      </span>
+                      <b>{currencyLabel(user.preferredCurrency || currency)}</b>
+                    </div>
                   </div>
                 </>
               )}
@@ -582,6 +614,7 @@ export function AccountLayer({
                   emptyTitle={p.noPurchases}
                   emptyText={p.purchasesText}
                   lang={lang}
+                  currency={currency}
                 />
               )}
               {profileTab === 'rentals' && (
@@ -592,6 +625,7 @@ export function AccountLayer({
                   emptyTitle={p.noRentals}
                   emptyText={p.rentalsText}
                   lang={lang}
+                  currency={currency}
                 />
               )}
               {profileTab === 'settings' && (
@@ -700,9 +734,31 @@ export function AccountLayer({
                         defaultValue={user.preferredLanguage || lang}
                         required
                       >
-                        {(['en', 'fr', 'es'] as Lang[]).map((language) => (
-                          <option key={language} value={language}>
-                            {languageLabels[lang][language]}
+                        {(['en', 'fr', 'es', 'pt'] as Lang[]).map(
+                          (language) => (
+                            <option key={language} value={language}>
+                              {languageLabels[lang][language]}
+                            </option>
+                          ),
+                        )}
+                      </select>
+                    </label>
+                    <label>
+                      {lang === 'fr'
+                        ? 'Devise préférée'
+                        : lang === 'es'
+                          ? 'Moneda preferida'
+                          : lang === 'pt'
+                            ? 'Moeda preferida'
+                            : 'Preferred currency'}
+                      <select
+                        name="profileCurrency"
+                        defaultValue={user.preferredCurrency || currency}
+                        required
+                      >
+                        {supportedCurrencies.map((code) => (
+                          <option key={code} value={code}>
+                            {currencyLabel(code)}
                           </option>
                         ))}
                       </select>
@@ -759,11 +815,13 @@ export function ProfileOrders({
   emptyTitle,
   emptyText,
   lang,
+  currency,
 }: {
   orders: OrderRecord[];
   emptyTitle: string;
   emptyText: string;
   lang: Lang;
+  currency: Currency;
 }) {
   if (!orders.length)
     return <ProfileEmpty icon={Package} title={emptyTitle} text={emptyText} />;
@@ -774,9 +832,7 @@ export function ProfileOrders({
           <div>
             <b>{order.items.map((item) => item.vehicle).join(', ')}</b>
             <span>
-              {new Date(order.createdAt).toLocaleDateString(
-                lang === 'fr' ? 'fr-FR' : lang === 'es' ? 'es-ES' : 'en-US',
-              )}
+              {new Date(order.createdAt).toLocaleDateString(localeFor(lang))}
             </span>
             {order.items.some((item) => item.rentalStart) && (
               <span>
@@ -790,7 +846,7 @@ export function ProfileOrders({
               </span>
             )}
           </div>
-          <strong>{money(order.total, lang)}</strong>
+          <strong>{money(order.total, lang, currency)}</strong>
           <small>{orderStatus(order.status, lang)}</small>
         </article>
       ))}

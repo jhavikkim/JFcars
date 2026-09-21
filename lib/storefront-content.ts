@@ -11,7 +11,7 @@ export const galleryStatuses = [
 export const galleryItemLimit = 500;
 
 export type GalleryStatus = (typeof galleryStatuses)[number];
-export type StorefrontLang = 'en' | 'fr' | 'es';
+export type StorefrontLang = 'en' | 'fr' | 'es' | 'pt';
 export type LocalizedText = Partial<Record<StorefrontLang, string>>;
 
 export type GalleryItemRecord = {
@@ -66,6 +66,7 @@ function localized(value: unknown, maximum: number): LocalizedText {
     en: text(source.en, maximum),
     fr: text(source.fr, maximum),
     es: text(source.es, maximum),
+    pt: text(source.pt, maximum),
   };
 }
 
@@ -88,7 +89,10 @@ function isIsoDate(value: string) {
   );
 }
 
-export function normalizeGalleryRecords(value: unknown, limit = galleryItemLimit) {
+export function normalizeGalleryRecords(
+  value: unknown,
+  limit = galleryItemLimit,
+) {
   if (!Array.isArray(value)) return [] as GalleryItemRecord[];
   const ids = new Set<string>();
   const records: GalleryItemRecord[] = [];

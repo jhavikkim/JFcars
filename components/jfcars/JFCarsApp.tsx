@@ -27,6 +27,7 @@ import {
 } from 'lucide-react';
 import {
   type Lang,
+  type Currency,
   type Car,
   type UserAccount,
   type PartRequest,
@@ -45,6 +46,13 @@ import {
   catalogBrands,
   letters,
   money,
+  compactMoney,
+  convertFromXaf,
+  convertToXaf,
+  currencyLabel,
+  currencyRateDate,
+  isCurrency,
+  supportedCurrencies,
   rentalRate,
   localize,
   numberFor,
@@ -60,8 +68,80 @@ import {
   profileCopy,
 } from '@/components/jfcars/config';
 
+function PriceRangeInputs({
+  currency,
+  minPrice,
+  maxPrice,
+  minLabel,
+  maxLabel,
+  step,
+  onMinCommit,
+  onMaxCommit,
+}: {
+  currency: Currency;
+  minPrice: string;
+  maxPrice: string;
+  minLabel: string;
+  maxLabel: string;
+  step: number;
+  onMinCommit: (value: string) => void;
+  onMaxCommit: (value: string) => void;
+}) {
+  const displayValue = (value: string) => {
+    if (value === 'Any') return '';
+    const converted = convertFromXaf(Number(value), currency);
+    return currency === 'XAF' || currency === 'AOA'
+      ? String(Math.round(converted))
+      : converted.toFixed(2);
+  };
+  const [minDraft, setMinDraft] = useState(() => displayValue(minPrice));
+  const [maxDraft, setMaxDraft] = useState(() => displayValue(maxPrice));
+  const commit = (value: string, update: (next: string) => void) => {
+    const amount = Number(value);
+    update(
+      value && Number.isFinite(amount) && amount >= 0
+        ? String(convertToXaf(amount, currency))
+        : 'Any',
+    );
+  };
+
+  return (
+    <div className="custom-price-range">
+      <label>
+        {minLabel}
+        <input
+          type="number"
+          min="0"
+          step={step}
+          value={minDraft}
+          onChange={(event) => setMinDraft(event.target.value)}
+          onBlur={() => commit(minDraft, onMinCommit)}
+          onKeyDown={(event) => {
+            if (event.key === 'Enter') event.currentTarget.blur();
+          }}
+        />
+      </label>
+      <label>
+        {maxLabel}
+        <input
+          type="number"
+          min="0"
+          step={step}
+          value={maxDraft}
+          onChange={(event) => setMaxDraft(event.target.value)}
+          onBlur={() => commit(maxDraft, onMaxCommit)}
+          onKeyDown={(event) => {
+            if (event.key === 'Enter') event.currentTarget.blur();
+          }}
+        />
+      </label>
+    </div>
+  );
+}
+
 export default function JFCarsApp() {
   const [lang, setLang] = useState<Lang>('en'),
+    [currency, setCurrency] = useState<Currency>('XAF'),
     [query, setQuery] = useState(''),
     [body, setBody] = useState('Any'),
     [fuel, setFuel] = useState('Any'),
@@ -134,6 +214,44 @@ export default function JFCarsApp() {
     f = flowCopy[lang],
     a = accessibilityCopy[lang];
   const galleryItems = normalizeGallery(storefrontContent.gallery);
+  const currencyCode = (
+    {
+      XAF: 'FCFA',
+      USD: 'US$',
+      EUR: '€',
+      AOA: 'Kz',
+    } satisfies Record<Currency, string>
+  )[currency];
+  const currencyRateLabel = new Intl.DateTimeFormat(
+    lang === 'pt'
+      ? 'pt-AO'
+      : lang === 'fr'
+        ? 'fr-FR'
+        : lang === 'es'
+          ? 'es-ES'
+          : 'en-GB',
+    { dateStyle: 'medium', timeZone: 'UTC' },
+  ).format(new Date(`${currencyRateDate}T12:00:00Z`));
+  const currencyDisclosure =
+    lang === 'fr'
+      ? `Conversion indicative · taux de référence du ${currencyRateLabel}. Le vendeur confirme le montant final.`
+      : lang === 'es'
+        ? `Conversión indicativa · tipos de referencia del ${currencyRateLabel}. El vendedor confirma el importe final.`
+        : lang === 'pt'
+          ? `Conversão indicativa · taxas de referência de ${currencyRateLabel}. O vendedor confirma o valor final.`
+          : `Indicative conversion · reference rates from ${currencyRateLabel}. The seller confirms the final amount.`;
+  const priceInputStep =
+    currency === 'XAF'
+      ? mode === 'rent'
+        ? 1000
+        : 100000
+      : currency === 'AOA'
+        ? mode === 'rent'
+          ? 1000
+          : 100000
+        : mode === 'rent'
+          ? 5
+          : 500;
   const modeInventory = useMemo(
     () =>
       mode === 'rent'
@@ -202,12 +320,14 @@ export default function JFCarsApp() {
         if (raw) {
           const data = JSON.parse(raw) as {
             lang?: Lang;
+            currency?: Currency;
             cart?: number[];
             rentalCart?: number[];
             saved?: number[];
           };
-          if (data.lang && ['en', 'fr', 'es'].includes(data.lang))
+          if (data.lang && ['en', 'fr', 'es', 'pt'].includes(data.lang))
             setLang(data.lang);
+          if (isCurrency(data.currency)) setCurrency(data.currency);
           if (Array.isArray(data.cart)) setCart(data.cart);
           if (Array.isArray(data.rentalCart)) setRentalCart(data.rentalCart);
           if (Array.isArray(data.saved)) setSaved(data.saved);
@@ -221,8 +341,15 @@ export default function JFCarsApp() {
         if (value) setter(value);
       };
       const urlLang = params.get('lang');
-      if (urlLang === 'en' || urlLang === 'fr' || urlLang === 'es')
-        setLang(urlLang);
+      const hasUrlLang =
+        urlLang === 'en' ||
+        urlLang === 'fr' ||
+        urlLang === 'es' ||
+        urlLang === 'pt';
+      if (hasUrlLang) setLang(urlLang as Lang);
+      const urlCurrency = params.get('currency');
+      const hasUrlCurrency = isCurrency(urlCurrency);
+      if (hasUrlCurrency) setCurrency(urlCurrency);
       const urlMode = params.get('mode');
       if (urlMode === 'buy' || urlMode === 'rent' || urlMode === 'parts') {
         setMode(urlMode);
@@ -406,11 +533,18 @@ export default function JFCarsApp() {
               if (account.user) {
                 setUser(account.user);
                 if (
-                  !urlLang &&
+                  !hasUrlLang &&
                   account.user.preferredLanguage &&
-                  ['en', 'fr', 'es'].includes(account.user.preferredLanguage)
+                  ['en', 'fr', 'es', 'pt'].includes(
+                    account.user.preferredLanguage,
+                  )
                 )
                   setLang(account.user.preferredLanguage);
+                if (
+                  !hasUrlCurrency &&
+                  isCurrency(account.user.preferredCurrency)
+                )
+                  setCurrency(account.user.preferredCurrency);
               }
               if (Array.isArray(account.cart))
                 setCart((current) =>
@@ -466,18 +600,19 @@ export default function JFCarsApp() {
     };
   }, []);
   useEffect(() => {
-    document.documentElement.lang = lang;
+    document.documentElement.lang = lang === 'pt' ? 'pt-AO' : lang;
     if (!persistenceReady) return;
     window.localStorage.setItem(
       'jfcars-store-v5',
       JSON.stringify({
         lang,
+        currency,
         cart,
         rentalCart,
         saved,
       }),
     );
-  }, [lang, cart, rentalCart, saved, persistenceReady]);
+  }, [lang, currency, cart, rentalCart, saved, persistenceReady]);
   useEffect(() => {
     if (!persistenceReady) return;
     const params = new URLSearchParams();
@@ -485,6 +620,7 @@ export default function JFCarsApp() {
       if (value !== empty) params.set(key, value);
     };
     add('lang', lang, 'en');
+    add('currency', currency, 'XAF');
     add('mode', mode, 'buy');
     add('q', query, '');
     add('make', brand, 'All');
@@ -519,6 +655,7 @@ export default function JFCarsApp() {
   }, [
     persistenceReady,
     lang,
+    currency,
     mode,
     query,
     brand,
@@ -753,8 +890,8 @@ export default function JFCarsApp() {
       setImportRegion('Any');
     }
   };
-  const scrollToSection = (id: 'inventory' | 'gallery') => {
-    setHeroVisible(true);
+  const scrollToSection = (id: 'inventory' | 'gallery', showHero = true) => {
+    setHeroVisible(showHero);
     setMobileMenu(false);
     requestAnimationFrame(() =>
       requestAnimationFrame(() => {
@@ -779,7 +916,7 @@ export default function JFCarsApp() {
   const headerNavigate = (next: 'buy' | 'rent' | 'parts') => {
     setSitePage('market');
     selectMode(next);
-    scrollToSection('inventory');
+    scrollToSection('inventory', false);
   };
   const galleryNavigate = () => {
     setSitePage('gallery');
@@ -825,11 +962,11 @@ export default function JFCarsApp() {
     body !== 'Any' && [localize(body, lang), () => updateFacet(setBody, 'Any')],
     fuel !== 'Any' && [localize(fuel, lang), () => updateFacet(setFuel, 'Any')],
     minPrice !== 'Any' && [
-      `≥ ${money(Number(minPrice), lang)}${mode === 'rent' ? `/${f.day}` : ''}`,
+      `≥ ${money(Number(minPrice), lang, currency)}${mode === 'rent' ? `/${f.day}` : ''}`,
       () => updateFacet(setMinPrice, 'Any'),
     ],
     maxPrice !== 'Any' && [
-      `${m.under} ${money(Number(maxPrice), lang)}${mode === 'rent' ? `/${f.day}` : ''}`,
+      `${m.under} ${money(Number(maxPrice), lang, currency)}${mode === 'rent' ? `/${f.day}` : ''}`,
       () => updateFacet(setMaxPrice, 'Any'),
     ],
     minYear !== 'Any' && [`${minYear}+`, () => updateFacet(setMinYear, 'Any')],
@@ -927,11 +1064,11 @@ export default function JFCarsApp() {
   const priceFilterSummary = (() => {
     const suffix = mode === 'rent' ? `/${f.day}` : '';
     if (minPrice !== 'Any' && maxPrice !== 'Any')
-      return `${money(Number(minPrice), lang)} – ${money(Number(maxPrice), lang)}${suffix}`;
+      return `${money(Number(minPrice), lang, currency)} – ${money(Number(maxPrice), lang, currency)}${suffix}`;
     if (minPrice !== 'Any')
-      return `≥ ${money(Number(minPrice), lang)}${suffix}`;
+      return `≥ ${money(Number(minPrice), lang, currency)}${suffix}`;
     if (maxPrice !== 'Any')
-      return `≤ ${money(Number(maxPrice), lang)}${suffix}`;
+      return `≤ ${money(Number(maxPrice), lang, currency)}${suffix}`;
     return '';
   })();
   const pageSize = 6;
@@ -1011,12 +1148,52 @@ export default function JFCarsApp() {
             <Languages size={17} />
             <select
               aria-label={a.language}
+              title={
+                lang === 'pt'
+                  ? 'Português (Angola)'
+                  : lang === 'fr'
+                    ? 'Français'
+                    : lang === 'es'
+                      ? 'Español'
+                      : 'English'
+              }
               value={lang}
               onChange={(e) => setLang(e.target.value as Lang)}
             >
-              <option value="en">EN</option>
-              <option value="fr">FR</option>
-              <option value="es">ES</option>
+              <option value="en">🇬🇧</option>
+              <option value="fr">🇫🇷</option>
+              <option value="es">🇪🇸</option>
+              <option value="pt">🇦🇴</option>
+            </select>
+          </div>
+          <div className="currency-control">
+            <select
+              aria-label={
+                lang === 'fr'
+                  ? 'Devise'
+                  : lang === 'es'
+                    ? 'Moneda'
+                    : lang === 'pt'
+                      ? 'Moeda'
+                      : 'Currency'
+              }
+              title={
+                lang === 'fr'
+                  ? 'Changer la devise affichée'
+                  : lang === 'es'
+                    ? 'Cambiar la moneda mostrada'
+                    : lang === 'pt'
+                      ? 'Alterar a moeda apresentada'
+                      : 'Change display currency'
+              }
+              value={currency}
+              onChange={(event) => setCurrency(event.target.value as Currency)}
+            >
+              {supportedCurrencies.map((code) => (
+                <option key={code} value={code}>
+                  {currencyLabel(code)}
+                </option>
+              ))}
             </select>
           </div>
           <button
@@ -1130,7 +1307,13 @@ export default function JFCarsApp() {
         >
           <CarFront />
           <span>
-            {lang === 'fr' ? 'Acheter' : lang === 'es' ? 'Comprar' : 'Buy'}
+            {lang === 'fr'
+              ? 'Acheter'
+              : lang === 'es'
+                ? 'Comprar'
+                : lang === 'pt'
+                  ? 'Comprar'
+                  : 'Buy'}
           </span>
         </button>
         <button
@@ -1139,7 +1322,13 @@ export default function JFCarsApp() {
         >
           <KeyRound />
           <span>
-            {lang === 'fr' ? 'Louer' : lang === 'es' ? 'Alquilar' : 'Rent'}
+            {lang === 'fr'
+              ? 'Louer'
+              : lang === 'es'
+                ? 'Alquilar'
+                : lang === 'pt'
+                  ? 'Alugar'
+                  : 'Rent'}
           </span>
         </button>
         <button
@@ -1222,7 +1411,9 @@ export default function JFCarsApp() {
                             : updateFacet(setMaxPrice, '20000000')
                       }
                     >
-                      {label}
+                      {index === 2
+                        ? `${m.under} ${compactMoney(20000000, lang, currency)}`
+                        : label}
                     </button>
                   ))}
                 </div>
@@ -1292,12 +1483,10 @@ export default function JFCarsApp() {
                   }
                   onKeyDown={(event) => {
                     if (event.key === 'Enter')
-                      document
-                        .querySelector('.inventory')
-                        ?.scrollIntoView({
-                          behavior: 'smooth',
-                          block: 'start',
-                        });
+                      document.querySelector('.inventory')?.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'start',
+                      });
                   }}
                   placeholder={t.search}
                   aria-label={t.search}
@@ -1383,7 +1572,13 @@ export default function JFCarsApp() {
                   )
                 }
               >
-                {mode === 'rent' ? m.rentUnder : f.quick[2]}
+                {m.under}{' '}
+                {compactMoney(
+                  mode === 'rent' ? 60000 : 20000000,
+                  lang,
+                  currency,
+                )}
+                {mode === 'rent' ? `/${f.day}` : ''}
               </button>
               <button type="button" onClick={() => updateFacet(setBody, 'SUV')}>
                 SUV
@@ -1398,6 +1593,11 @@ export default function JFCarsApp() {
                 {u.clear}
               </button>
             </div>
+            {currency !== 'XAF' && (
+              <p className="currency-disclosure" role="note">
+                {currencyDisclosure}
+              </p>
+            )}
             {activeFilters.length > 0 && (
               <div className="selected-filters">
                 <b>{u.selected}</b>
@@ -1658,47 +1858,35 @@ export default function JFCarsApp() {
                     }
                     labels={
                       mode === 'rent'
-                        ? [t.any, '30k', '40k', '50k', `60k FCFA/${f.day}`]
-                        : [t.any, '15M', '20M', '25M', '30M FCFA']
+                        ? [
+                            t.any,
+                            ...[30000, 40000, 50000, 60000].map(
+                              (amount) =>
+                                `${compactMoney(amount, lang, currency)}/${f.day}`,
+                            ),
+                          ]
+                        : [
+                            t.any,
+                            ...[15000000, 20000000, 25000000, 30000000].map(
+                              (amount) => compactMoney(amount, lang, currency),
+                            ),
+                          ]
                     }
                     defaultOpen
                     active={minPrice !== 'Any' || maxPrice !== 'Any'}
                     summary={priceFilterSummary}
                   >
-                    <div className="custom-price-range">
-                      <label>
-                        {m.minPrice}
-                        {mode === 'rent' ? ` / ${f.day}` : ''}
-                        <input
-                          type="number"
-                          min="0"
-                          step={mode === 'rent' ? '1000' : '100000'}
-                          value={minPrice === 'Any' ? '' : minPrice}
-                          onChange={(event) =>
-                            updateFacet(
-                              setMinPrice,
-                              event.target.value || 'Any',
-                            )
-                          }
-                        />
-                      </label>
-                      <label>
-                        {m.maxPrice}
-                        {mode === 'rent' ? ` / ${f.day}` : ''}
-                        <input
-                          type="number"
-                          min="0"
-                          step={mode === 'rent' ? '1000' : '100000'}
-                          value={maxPrice === 'Any' ? '' : maxPrice}
-                          onChange={(event) =>
-                            updateFacet(
-                              setMaxPrice,
-                              event.target.value || 'Any',
-                            )
-                          }
-                        />
-                      </label>
-                    </div>
+                    <PriceRangeInputs
+                      key={`${currency}:${mode}:${minPrice}:${maxPrice}`}
+                      currency={currency}
+                      minPrice={minPrice}
+                      maxPrice={maxPrice}
+                      minLabel={`${m.minPrice.replace('FCFA', currencyCode)}${mode === 'rent' ? ` / ${f.day}` : ''}`}
+                      maxLabel={`${m.maxPrice.replace('FCFA', currencyCode)}${mode === 'rent' ? ` / ${f.day}` : ''}`}
+                      step={priceInputStep}
+                      onMinCommit={(value) => updateFacet(setMinPrice, value)}
+                      onMaxCommit={(value) => updateFacet(setMaxPrice, value)}
+                    />
                   </Filter>
                   <Filter
                     key="year"
@@ -1968,7 +2156,9 @@ export default function JFCarsApp() {
                                 ? 'Annonce exemple'
                                 : lang === 'es'
                                   ? 'Anuncio de muestra'
-                                  : 'Sample listing'}
+                                  : lang === 'pt'
+                                    ? 'Anúncio de demonstração'
+                                    : 'Sample listing'}
                             </span>
                           )}
                           <button
@@ -1980,7 +2170,9 @@ export default function JFCarsApp() {
                                 ? 'Ajouter aux favoris'
                                 : lang === 'es'
                                   ? 'Guardar vehículo'
-                                  : 'Save car'
+                                  : lang === 'pt'
+                                    ? 'Guardar automóvel'
+                                    : 'Save car'
                             }
                             onClick={() =>
                               setSaved((s) =>
@@ -2010,8 +2202,8 @@ export default function JFCarsApp() {
                             </div>
                             <h4>
                               {mode === 'rent'
-                                ? `${money(rentalRate(car), lang)}/${f.day}`
-                                : money(car.price, lang)}
+                                ? `${money(rentalRate(car), lang, currency)}/${f.day}`
+                                : money(car.price, lang, currency)}
                             </h4>
                           </div>
                           <div className="meta">
@@ -2225,6 +2417,7 @@ export default function JFCarsApp() {
                 )
           }
           lang={lang}
+          currency={currency}
           mode={mode}
         />
       )}
@@ -2237,6 +2430,7 @@ export default function JFCarsApp() {
           )}
           user={user}
           lang={lang}
+          currency={currency}
           mode={mode}
           inCart={(mode === 'rent' ? rentalCart : cart).includes(
             selectedCar.id,
@@ -2295,6 +2489,8 @@ export default function JFCarsApp() {
           orders={userOrders}
           setOrders={setUserOrders}
           lang={lang}
+          currency={currency}
+          onCurrencyChange={setCurrency}
           onLanguageChange={setLang}
         />
       )}{' '}

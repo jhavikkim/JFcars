@@ -145,6 +145,26 @@ export function SellCarPanel({
       photos: 'Más URL de fotos',
       onePerLine: 'Una URL por línea',
     },
+    pt: {
+      make: 'Marca',
+      model: 'Modelo',
+      year: 'Ano',
+      price: 'Preço (FCFA)',
+      mileage: 'Quilometragem',
+      source: 'Onde está o automóvel agora?',
+      local: 'Stock local',
+      abroad: 'Stock no estrangeiro',
+      country: 'País',
+      city: 'Cidade',
+      region: 'Região de importação',
+      engine: 'Cilindrada (litros; 0 para elétrico)',
+      fuel: 'Combustível',
+      body: 'Carroçaria',
+      color: 'Cor',
+      photo: 'URL da fotografia principal',
+      photos: 'Mais URLs de fotografias',
+      onePerLine: 'Um URL por linha',
+    },
   }[lang];
   useDialog(close);
   return (
@@ -386,7 +406,9 @@ export function SellCarPanel({
                     ? 'Envoi…'
                     : lang === 'es'
                       ? 'Enviando…'
-                      : 'Sending…'
+                      : lang === 'pt'
+                        ? 'A enviar…'
+                        : 'Sending…'
                   : copy[lang].start}{' '}
                 <ArrowRight />
               </button>
@@ -396,7 +418,9 @@ export function SellCarPanel({
                     ? 'Impossible d’envoyer l’annonce. Réessayez.'
                     : lang === 'es'
                       ? 'No se pudo enviar el anuncio. Inténtalo de nuevo.'
-                      : 'We could not submit your listing. Please try again.'}
+                      : lang === 'pt'
+                        ? 'Não foi possível enviar o anúncio. Tente novamente.'
+                        : 'We could not submit your listing. Please try again.'}
                 </p>
               )}
             </form>
@@ -604,6 +628,36 @@ const partCopy = {
       'RD del Congo',
     ],
   },
+  pt: {
+    k: 'PEÇAS POR ENCOMENDA',
+    h: 'Diga-nos de que peça precisa. Encontramos a certa.',
+    p: 'Nova, usada, original ou compatível — vendedores verificados respondem diretamente.',
+    s: [
+      'Descreva a peça',
+      'Receba propostas verificadas',
+      'Escolha a melhor opção',
+    ],
+    received: 'Pedido recebido.',
+    receivedP:
+      'Vamos encontrar a sua peça junto de vendedores verificados e avisá-lo quando chegarem propostas.',
+    again: 'Enviar outro pedido',
+    vehicle: 'Marca e modelo do veículo',
+    part: 'Peça necessária',
+    condition: 'Estado da peça',
+    delivery: 'País de entrega',
+    details: 'Detalhes',
+    send: 'Enviar o meu pedido',
+    fast: 'Normalmente encontrada em até 24 horas',
+    cats: ['Iluminação', 'Travões', 'Baterias', 'Peças de manutenção'],
+    conditions: ['Qualquer estado', 'Nova', 'Usada', 'Recondicionada'],
+    countries: [
+      'República do Congo',
+      'Angola — Cabinda',
+      'Camarões',
+      'Gabão',
+      'RD Congo',
+    ],
+  },
 } as const;
 export function PartsPanel({
   lang,
@@ -637,6 +691,12 @@ export function PartsPanel({
       'Baterías de arranque y vehículos eléctricos',
       'Filtros, correas y kits de mantenimiento',
     ],
+    pt: [
+      'Faróis, lâmpadas e iluminação da carroçaria',
+      'Pastilhas, discos e componentes hidráulicos',
+      'Baterias de arranque e para veículos elétricos',
+      'Filtros, correias e kits de manutenção',
+    ],
   }[lang];
   return (
     <section className="parts-panel">
@@ -656,7 +716,9 @@ export function PartsPanel({
               ? 'Phare, freins, batterie et pièces d’entretien'
               : lang === 'es'
                 ? 'Faro, frenos, batería y piezas de mantenimiento'
-                : 'Headlamp, brakes, battery and service parts'
+                : lang === 'pt'
+                  ? 'Faróis, travões, bateria e peças de manutenção'
+                  : 'Headlamp, brakes, battery and service parts'
           }
         />
         <div className="parts-categories">
@@ -740,7 +802,9 @@ export function PartsPanel({
                   ? 'ex. Audi A4 2020'
                   : lang === 'es'
                     ? 'p. ej., Audi A4 2020'
-                    : 'e.g. 2020 Audi A4'
+                    : lang === 'pt'
+                      ? 'ex.: Audi A4 de 2020'
+                      : 'e.g. 2020 Audi A4'
               }
             />
           </label>
@@ -756,7 +820,9 @@ export function PartsPanel({
                   ? 'ex. phare LED gauche'
                   : lang === 'es'
                     ? 'p. ej., faro LED izquierdo'
-                    : 'e.g. Left LED headlight'
+                    : lang === 'pt'
+                      ? 'ex.: farol LED esquerdo'
+                      : 'e.g. Left LED headlight'
               }
             />
           </label>
@@ -787,7 +853,9 @@ export function PartsPanel({
                   ? 'Référence de pièce, VIN, couleur…'
                   : lang === 'es'
                     ? 'Añade la referencia, VIN, color…'
-                    : 'Add a part number, VIN, color or anything helpful…'
+                    : lang === 'pt'
+                      ? 'Adicione a referência da peça, VIN, cor ou qualquer informação útil…'
+                      : 'Add a part number, VIN, color or anything helpful…'
               }
             />
           </label>
@@ -797,7 +865,9 @@ export function PartsPanel({
                 ? 'Envoi…'
                 : lang === 'es'
                   ? 'Enviando…'
-                  : 'Sending…'
+                  : lang === 'pt'
+                    ? 'A enviar…'
+                    : 'Sending…'
               : p.send}{' '}
             <ArrowRight />
           </button>
@@ -807,7 +877,9 @@ export function PartsPanel({
                 ? 'Impossible d’envoyer la demande. Réessayez.'
                 : lang === 'es'
                   ? 'No se pudo enviar la solicitud. Inténtalo de nuevo.'
-                  : 'We could not send your request. Please try again.'}
+                  : lang === 'pt'
+                    ? 'Não foi possível enviar o pedido. Tente novamente.'
+                    : 'We could not send your request. Please try again.'}
             </p>
           )}
           <small>

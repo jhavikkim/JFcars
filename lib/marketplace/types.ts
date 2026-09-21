@@ -1,6 +1,7 @@
 import type { GalleryItemRecord } from '@/lib/storefront-content';
 
-export type Lang = 'en' | 'fr' | 'es';
+export type Lang = 'en' | 'fr' | 'es' | 'pt';
+export type Currency = 'XAF' | 'USD' | 'EUR' | 'AOA';
 export type ContactPreference = 'WhatsApp' | 'Phone' | 'Email';
 
 export type Car = {
@@ -44,6 +45,7 @@ export type UserAccount = {
   city?: string;
   preferredContact?: ContactPreference;
   preferredLanguage?: Lang;
+  preferredCurrency?: Currency;
 };
 
 export type PartRequest = {
