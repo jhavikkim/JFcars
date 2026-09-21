@@ -1,5 +1,7 @@
 import { ensureDatabase, json, requestUser } from '@/lib/site-db';
 import { loadServerCatalog } from '@/lib/catalog';
+import { createOrder } from '@/lib/marketplace-store';
+import type { OrderItem } from '@/lib/marketplace/types';
 
 export const dynamic = 'force-dynamic';
 
@@ -67,7 +69,8 @@ export async function POST(request: Request) {
       if (!value || typeof value !== 'object') return [];
       const requestedItem = value as Record<string, unknown>;
       const carId = Math.round(Number(requestedItem.carId));
-      const kind = requestedItem.kind === 'rent' ? 'rent' : 'buy';
+      const kind: OrderItem['kind'] =
+        requestedItem.kind === 'rent' ? 'rent' : 'buy';
       const key = `${carId}:${kind}`;
       if (!Number.isFinite(carId) || seen.has(key)) return [];
       const car = catalog.find(
@@ -109,13 +112,13 @@ export async function POST(request: Request) {
         { status: 409 },
       );
     const total = items.reduce((sum, item) => sum + item.amount, 0);
-    await db
-      .prepare(
-        `INSERT INTO orders (id, user_id, email, items, total, status)
-         VALUES (?, ?, ?, ?, ?, 'New')`,
-      )
-      .bind(id, identity.id, identity.email, JSON.stringify(items), total)
-      .run();
+    await createOrder(db, {
+      id,
+      userId: identity.id,
+      email: identity.email,
+      items,
+      total,
+    });
     return json({ ok: true, orderId: id, items, total });
   } catch {
     return json({ error: 'Order service unavailable' }, { status: 503 });

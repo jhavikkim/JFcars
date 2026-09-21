@@ -1,0 +1,1 @@
+ALTER TABLE `order_items` ADD `vehicle_snapshot_id` integer DEFAULT 0 NOT NULL;

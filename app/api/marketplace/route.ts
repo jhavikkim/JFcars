@@ -2,10 +2,19 @@ import {
   ensureDatabase,
   isAdminRequest,
   json,
-  parseJson,
   requestUser,
 } from '@/lib/site-db';
+import {
+  createSellRequest,
+  ensureNormalizedData,
+  normalizeVehicleList,
+  readSellRequests,
+  readStorefrontContent,
+  readVehicles,
+  replaceMarketplace,
+} from '@/lib/marketplace-store';
 import { normalizeGalleryRecords } from '@/lib/storefront-content';
+import type { Car } from '@/lib/marketplace/types';
 
 export const dynamic = 'force-dynamic';
 
@@ -91,39 +100,20 @@ async function rateLimited(
 
 async function ensureMarketplaceRow() {
   const db = await ensureDatabase();
-  await db
-    .prepare(
-      `INSERT OR IGNORE INTO marketplace_state
-       (id, inventory, part_requests, seller_inquiries, storefront_content)
-       VALUES (1, NULL, '[]', '[]', '{}')`,
-    )
-    .run();
+  await ensureNormalizedData(db);
   return db;
 }
 
 async function readState(includePrivate: boolean): Promise<MarketplaceState> {
   const db = await ensureMarketplaceRow();
-  const row = await db
-    .prepare(
-      `SELECT inventory, storefront_content
-       FROM marketplace_state WHERE id = 1`,
-    )
-    .first<{ inventory: string | null; storefront_content: string }>();
-  const inventory = parseJson<unknown[] | null>(row?.inventory ?? null, null);
+  const [inventory, storefrontContent] = await Promise.all([
+    readVehicles(db, includePrivate),
+    readStorefrontContent(db),
+  ]);
   if (!includePrivate) {
     return {
-      inventory: Array.isArray(inventory)
-        ? inventory.filter(
-            (item) =>
-              !item ||
-              typeof item !== 'object' ||
-              !(item as { hidden?: boolean }).hidden,
-          )
-        : null,
-      storefrontContent: parseJson<Record<string, unknown>>(
-        row?.storefront_content ?? null,
-        {},
-      ),
+      inventory,
+      storefrontContent,
       partRequests: [],
       sellerInquiries: [],
       sellRequests: [],
@@ -160,24 +150,11 @@ async function readState(includePrivate: boolean): Promise<MarketplaceState> {
         message: string;
         created_at: string;
       }>(),
-    db
-      .prepare(
-        `SELECT id, payload, status, created_at
-         FROM sell_requests ORDER BY created_at DESC LIMIT 1000`,
-      )
-      .all<{
-        id: string;
-        payload: string;
-        status: string;
-        created_at: string;
-      }>(),
+    readSellRequests(db),
   ]);
   return {
     inventory,
-    storefrontContent: parseJson<Record<string, unknown>>(
-      row?.storefront_content ?? null,
-      {},
-    ),
+    storefrontContent,
     partRequests: parts.results.map((item) => ({
       id: item.id,
       vehicle: item.vehicle,
@@ -196,12 +173,7 @@ async function readState(includePrivate: boolean): Promise<MarketplaceState> {
       message: item.message,
       createdAt: item.created_at,
     })),
-    sellRequests: sellRequests.results.map((item) => ({
-      id: item.id,
-      car: parseJson<Record<string, unknown>>(item.payload, {}),
-      status: item.status,
-      createdAt: item.created_at,
-    })),
+    sellRequests,
   };
 }
 
@@ -309,10 +281,12 @@ export async function POST(request: Request) {
       const payload = body.payload as Record<string, unknown>;
       const origin = payload?.origin === 'abroad' ? 'abroad' : 'local';
       const requestedRegion = safeText(payload?.importRegion);
-      const importRegion = ['Europe', 'Asia', 'America'].includes(
-        requestedRegion,
-      )
-        ? requestedRegion
+      const importRegion: NonNullable<Car['importRegion']> = [
+        'Europe',
+        'Asia',
+        'America',
+      ].includes(requestedRegion)
+        ? (requestedRegion as NonNullable<Car['importRegion']>)
         : 'Europe';
       const country = safeText(payload?.country, 80);
       const city = safeText(payload?.city, 80);
@@ -320,7 +294,7 @@ export async function POST(request: Request) {
       const extraImages = Array.isArray(payload?.images)
         ? payload.images.map(safeUrl).filter(Boolean).slice(0, 8)
         : [];
-      const car = {
+      const car: Car = {
         id: Date.now() + Math.floor(Math.random() * 1000),
         make: safeText(payload?.make, 60),
         model: safeText(payload?.model, 100),
@@ -373,17 +347,11 @@ export async function POST(request: Request) {
           { status: 400 },
         );
       const requestId = crypto.randomUUID();
-      await db
-        .prepare(
-          `INSERT INTO sell_requests (id, user_id, payload, status)
-           VALUES (?, ?, ?, 'Pending')`,
-        )
-        .bind(requestId, userId, JSON.stringify(car))
-        .run();
+      const storedCar = await createSellRequest(db, requestId, userId, car);
       return json({
         ok: true,
-        item: car,
-        request: { id: requestId, car, status: 'Pending' },
+        item: storedCar,
+        request: { id: requestId, car: storedCar, status: 'Pending' },
       });
     }
 
@@ -393,6 +361,12 @@ export async function POST(request: Request) {
       const inventory = Array.isArray(body.inventory)
         ? body.inventory.slice(0, 2000)
         : [];
+      const normalizedInventory = normalizeVehicleList(inventory);
+      if (normalizedInventory.length !== inventory.length)
+        return json(
+          { error: 'Inventory contains invalid or duplicate vehicles' },
+          { status: 400 },
+        );
       const invalidLocalInventory = inventory.some((value) => {
         if (!value || typeof value !== 'object') return true;
         const item = value as Record<string, unknown>;
@@ -442,21 +416,18 @@ export async function POST(request: Request) {
       }
       const serializedInventory = JSON.stringify(inventory);
       const serializedContent = JSON.stringify(storefrontContent);
+      const encodedSize = new TextEncoder().encode(
+        serializedInventory + serializedContent,
+      ).byteLength;
       if (
-        serializedInventory.length > 5_000_000 ||
-        serializedContent.length > 50_000
+        encodedSize > 1_900_000 ||
+        new TextEncoder().encode(serializedContent).byteLength > 50_000
       )
         return json(
           { error: 'Marketplace update is too large' },
           { status: 413 },
         );
-      await db
-        .prepare(
-          `UPDATE marketplace_state SET inventory = ?, storefront_content = ?,
-           updated_at = CURRENT_TIMESTAMP WHERE id = 1`,
-        )
-        .bind(serializedInventory, serializedContent)
-        .run();
+      await replaceMarketplace(db, normalizedInventory, storefrontContent);
       return json({ ok: true });
     }
 

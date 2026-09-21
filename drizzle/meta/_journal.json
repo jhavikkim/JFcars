@@ -1,0 +1,27 @@
+{
+  "version": "7",
+  "dialect": "sqlite",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "6",
+      "when": 1789991874836,
+      "tag": "0000_jfcars_marketplace",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "6",
+      "when": 1789991890067,
+      "tag": "0001_light_magneto",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1789993582826,
+      "tag": "0002_brave_nova",
+      "breakpoints": true
+    }
+  ]
+}

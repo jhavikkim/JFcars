@@ -1,15 +1,4 @@
 import { env } from 'cloudflare:workers';
-import {
-  accountStateSchema,
-  marketplaceStateSchema,
-  ordersSchema,
-  ordersUserIndexSchema,
-  partRequestsSchema,
-  partRequestsUserIndexSchema,
-  requestLimitsSchema,
-  sellerInquiriesSchema,
-  sellRequestsSchema,
-} from '@/db/schema';
 
 type RuntimeEnv = {
   DB?: D1Database;
@@ -23,19 +12,7 @@ export function database() {
 }
 
 export async function ensureDatabase() {
-  const db = database();
-  await db.batch([
-    db.prepare(marketplaceStateSchema),
-    db.prepare(accountStateSchema),
-    db.prepare(ordersSchema),
-    db.prepare(ordersUserIndexSchema),
-    db.prepare(partRequestsSchema),
-    db.prepare(partRequestsUserIndexSchema),
-    db.prepare(requestLimitsSchema),
-    db.prepare(sellerInquiriesSchema),
-    db.prepare(sellRequestsSchema),
-  ]);
-  return db;
+  return database();
 }
 
 export function requestUser(request: Request) {
@@ -77,13 +54,4 @@ export function json(value: unknown, init: ResponseInit = {}) {
     ...init,
     headers,
   });
-}
-
-export function parseJson<T>(value: string | null, fallback: T): T {
-  if (!value) return fallback;
-  try {
-    return JSON.parse(value) as T;
-  } catch {
-    return fallback;
-  }
 }

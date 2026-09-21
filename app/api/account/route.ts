@@ -1,4 +1,10 @@
-import { ensureDatabase, json, parseJson, requestUser } from '@/lib/site-db';
+import { ensureDatabase, json, requestUser } from '@/lib/site-db';
+import {
+  ensureNormalizedData,
+  readAccountState,
+  readOrders,
+  saveAccountState,
+} from '@/lib/marketplace-store';
 
 export const dynamic = 'force-dynamic';
 
@@ -58,38 +64,26 @@ export async function GET(request: Request) {
   };
   try {
     const db = await ensureDatabase();
-    const row = await db
-      .prepare(
-        `SELECT profile, cart, rental_cart, saved
-         FROM account_state WHERE user_id = ?`,
-      )
-      .bind(identity.id)
-      .first<{
-        profile: string;
-        cart: string;
-        rental_cart: string;
-        saved: string;
-      }>();
-    const orderRows = await db
-      .prepare(
-        `SELECT id, email, items, total, status, created_at
-         FROM orders WHERE user_id = ? ORDER BY created_at DESC LIMIT 100`,
-      )
-      .bind(identity.id)
-      .all<{
-        id: string;
-        email: string;
-        items: string;
-        total: number;
-        status: string;
-        created_at: string;
-      }>();
+    await ensureNormalizedData(db);
+    const [state, orders] = await Promise.all([
+      readAccountState(db, identity.id),
+      readOrders(db, identity.id),
+    ]);
     const partCount = await db
       .prepare(`SELECT COUNT(*) AS count FROM part_requests WHERE user_id = ?`)
       .bind(identity.id)
       .first<{ count: number }>();
     const profile = normalizeProfile(
-      parseJson<StoredProfile>(row?.profile ?? null, {}),
+      state.profile
+        ? {
+            name: state.profile.name,
+            phone: state.profile.phone,
+            country: state.profile.country,
+            city: state.profile.city,
+            preferredContact: state.profile.preferred_contact,
+            preferredLanguage: state.profile.preferred_language,
+          }
+        : {},
       identity.name,
     );
     return json({
@@ -97,18 +91,11 @@ export async function GET(request: Request) {
         ...profile,
         email: identity.email,
       },
-      cart: parseJson<number[]>(row?.cart ?? null, []),
-      rentalCart: parseJson<number[]>(row?.rental_cart ?? null, []),
-      saved: parseJson<number[]>(row?.saved ?? null, []),
+      cart: state.cart,
+      rentalCart: state.rentalCart,
+      saved: state.saved,
       partRequestCount: Number(partCount?.count || 0),
-      orders: orderRows.results.map((order) => ({
-        id: order.id,
-        email: order.email,
-        items: parseJson<unknown[]>(order.items, []),
-        total: order.total,
-        status: order.status,
-        createdAt: order.created_at,
-      })),
+      orders,
     });
   } catch {
     return json({ error: 'Account service unavailable' }, { status: 503 });
@@ -146,34 +133,29 @@ export async function PUT(request: Request) {
   const saved = safeIds(body.saved);
   try {
     const db = await ensureDatabase();
-    const current = await db
-      .prepare(`SELECT profile FROM account_state WHERE user_id = ?`)
-      .bind(identity.id)
-      .first<{ profile: string }>();
+    await ensureNormalizedData(db);
+    const current = await readAccountState(db, identity.id);
     const profile = normalizeProfile(
       {
-        ...parseJson<StoredProfile>(current?.profile ?? null, {}),
+        ...(current.profile
+          ? {
+              name: current.profile.name,
+              phone: current.profile.phone,
+              country: current.profile.country,
+              city: current.profile.city,
+              preferredContact: current.profile.preferred_contact,
+              preferredLanguage: current.profile.preferred_language,
+            }
+          : {}),
         ...profileInput,
       },
       identity.email.split('@')[0],
     );
-    await db
-      .prepare(
-        `INSERT INTO account_state
-         (user_id, profile, cart, rental_cart, saved, updated_at)
-         VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
-         ON CONFLICT(user_id) DO UPDATE SET profile = excluded.profile,
-         cart = excluded.cart, rental_cart = excluded.rental_cart,
-         saved = excluded.saved, updated_at = CURRENT_TIMESTAMP`,
-      )
-      .bind(
-        identity.id,
-        JSON.stringify(profile),
-        JSON.stringify(cart),
-        JSON.stringify(rentalCart),
-        JSON.stringify(saved),
-      )
-      .run();
+    await saveAccountState(db, identity.id, profile, {
+      cart,
+      rentalCart,
+      saved,
+    });
     return json({ ok: true, user: { ...profile, email: identity.email } });
   } catch {
     return json({ error: 'Account service unavailable' }, { status: 503 });

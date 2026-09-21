@@ -78,7 +78,9 @@ export async function POST(request: Request) {
   try {
     const form = await request.formData();
     const upload = form.get('file');
-    const purposeValue = String(form.get('purpose') || 'gallery');
+    const purposeField = form.get('purpose');
+    const purposeValue =
+      typeof purposeField === 'string' ? purposeField : 'gallery';
     const purpose = purposeValue === 'hero' ? 'hero' : 'gallery';
     if (!(upload instanceof File))
       return json({ error: 'Choose a media file' }, { status: 400 });
@@ -97,7 +99,10 @@ export async function POST(request: Request) {
     if (purpose === 'hero' && !type.startsWith('video/'))
       return json({ error: 'The hero requires a video file' }, { status: 400 });
     if (purpose === 'gallery' && !type.startsWith('image/'))
-      return json({ error: 'Shipment updates require image files' }, { status: 400 });
+      return json(
+        { error: 'Shipment updates require image files' },
+        { status: 400 },
+      );
     const signature = new Uint8Array(await upload.slice(0, 16).arrayBuffer());
     if (!matchesSignature(signature, type))
       return json({ error: 'The file content is not valid' }, { status: 400 });
