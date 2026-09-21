@@ -6438,11 +6438,13 @@ footer .logo {
     border-radius: 0;
     box-shadow: none;
   }
-  .brand-strip button {
-    flex-basis: 72px;
+  .brand-strip button,
+  .brand-strip button:nth-child(n) {
+    flex: 0 0 72px;
     min-height: 54px;
     padding: 6px;
     gap: 0;
+    justify-content: center;
   }
   .brand-strip button img {
     width: 34px;
