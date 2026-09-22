@@ -1,7 +1,7 @@
 'use client';
 
 import Image from 'next/image';
-import { type ReactNode, useId, useState } from 'react';
+import { type ReactNode, useEffect, useId, useRef, useState } from 'react';
 import {
   ArrowRight,
   Check,
@@ -14,6 +14,7 @@ import {
   type Lang,
   type Car,
   type PartRequest,
+  type UserAccount,
   copy,
   cars,
   localize,
@@ -557,6 +558,11 @@ const partCopy = {
     condition: 'Part condition',
     delivery: 'Delivery country',
     details: 'Details',
+    contactName: 'Your name',
+    contactEmail: 'Email',
+    contactPhone: 'Phone or WhatsApp',
+    contactRequired:
+      'Add your name and an email address or phone number so we can reply.',
     send: 'Send my request',
     fast: 'Usually matched within 24 hours',
     cats: ['Lighting', 'Brakes', 'Batteries', 'Service parts'],
@@ -587,6 +593,11 @@ const partCopy = {
     condition: 'État de la pièce',
     delivery: 'Pays de livraison',
     details: 'Détails',
+    contactName: 'Votre nom',
+    contactEmail: 'E-mail',
+    contactPhone: 'Téléphone ou WhatsApp',
+    contactRequired:
+      'Ajoutez votre nom et une adresse e-mail ou un numéro de téléphone pour être recontacté.',
     send: 'Envoyer ma demande',
     fast: 'Réponse habituelle sous 24 heures',
     cats: ['Éclairage', 'Freinage', 'Batteries', 'Entretien'],
@@ -616,6 +627,11 @@ const partCopy = {
     condition: 'Estado de la pieza',
     delivery: 'País de entrega',
     details: 'Detalles',
+    contactName: 'Tu nombre',
+    contactEmail: 'Correo electrónico',
+    contactPhone: 'Teléfono o WhatsApp',
+    contactRequired:
+      'Añade tu nombre y un correo electrónico o teléfono para que podamos responder.',
     send: 'Enviar mi solicitud',
     fast: 'Respuesta habitual en 24 horas',
     cats: ['Iluminación', 'Frenos', 'Baterías', 'Mantenimiento'],
@@ -646,6 +662,11 @@ const partCopy = {
     condition: 'Estado da peça',
     delivery: 'País de entrega',
     details: 'Detalhes',
+    contactName: 'O seu nome',
+    contactEmail: 'E-mail',
+    contactPhone: 'Telefone ou WhatsApp',
+    contactRequired:
+      'Adicione o seu nome e um e-mail ou telefone para podermos responder.',
     send: 'Enviar o meu pedido',
     fast: 'Normalmente encontrada em até 24 horas',
     cats: ['Iluminação', 'Travões', 'Baterias', 'Peças de manutenção'],
@@ -661,16 +682,28 @@ const partCopy = {
 } as const;
 export function PartsPanel({
   lang,
+  user,
   onRequest,
 }: {
   lang: Lang;
+  user: UserAccount | null;
   onRequest: (request: PartRequest) => Promise<PartRequest | null>;
 }) {
   const [sent, setSent] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState(false);
+  const [contactError, setContactError] = useState(false);
   const [selectedPart, setSelectedPart] = useState(0);
   const [partName, setPartName] = useState('');
+  const [contactName, setContactName] = useState(user?.name || '');
+  const [contactEmail, setContactEmail] = useState(user?.email || '');
+  const [contactPhone, setContactPhone] = useState(user?.phone || '');
+  const contactTouched = useRef({ name: false, email: false, phone: false });
+  useEffect(() => {
+    if (!contactTouched.current.name) setContactName(user?.name || '');
+    if (!contactTouched.current.email) setContactEmail(user?.email || '');
+    if (!contactTouched.current.phone) setContactPhone(user?.phone || '');
+  }, [user?.email, user?.name, user?.phone]);
   const p = partCopy[lang];
   const details = {
     en: [
@@ -776,8 +809,17 @@ export function PartsPanel({
           onSubmit={async (e) => {
             e.preventDefault();
             const data = new FormData(e.currentTarget);
+            const submittedName = contactName.trim();
+            const submittedEmail = contactEmail.trim();
+            const submittedPhone = contactPhone.trim();
+            if (!submittedName || (!submittedEmail && !submittedPhone)) {
+              setContactError(true);
+              setSubmitError(false);
+              return;
+            }
             setSubmitting(true);
             setSubmitError(false);
+            setContactError(false);
             const saved = await onRequest({
               id: crypto.randomUUID(),
               vehicle: formValue(data, 'vehicle'),
@@ -785,6 +827,9 @@ export function PartsPanel({
               condition: formValue(data, 'condition', p.conditions[0]),
               delivery: formValue(data, 'delivery', p.countries[0]),
               details: formValue(data, 'details'),
+              contactName: submittedName,
+              contactEmail: submittedEmail,
+              contactPhone: submittedPhone,
               status: 'Open',
             });
             setSubmitting(false);
@@ -859,6 +904,55 @@ export function PartsPanel({
               }
             />
           </label>
+          <div className="parts-contact-fields">
+            <label>
+              {p.contactName}
+              <input
+                name="contactName"
+                autoComplete="name"
+                value={contactName}
+                onChange={(event) => {
+                  contactTouched.current.name = true;
+                  setContactName(event.target.value);
+                  setContactError(false);
+                }}
+                required
+              />
+            </label>
+            <label>
+              {p.contactEmail}
+              <input
+                name="contactEmail"
+                type="email"
+                autoComplete="email"
+                value={contactEmail}
+                onChange={(event) => {
+                  contactTouched.current.email = true;
+                  setContactEmail(event.target.value);
+                  setContactError(false);
+                }}
+              />
+            </label>
+            <label>
+              {p.contactPhone}
+              <input
+                name="contactPhone"
+                type="tel"
+                autoComplete="tel"
+                value={contactPhone}
+                onChange={(event) => {
+                  contactTouched.current.phone = true;
+                  setContactPhone(event.target.value);
+                  setContactError(false);
+                }}
+              />
+            </label>
+          </div>
+          {contactError && (
+            <p className="form-notice error" role="alert">
+              {p.contactRequired}
+            </p>
+          )}
           <button disabled={submitting}>
             {submitting
               ? lang === 'fr'

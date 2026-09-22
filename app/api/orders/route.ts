@@ -2,6 +2,7 @@ import { ensureDatabase, json, requestUser } from '@/lib/site-db';
 import { loadServerCatalog } from '@/lib/catalog';
 import { createOrder } from '@/lib/marketplace-store';
 import type { OrderItem } from '@/lib/marketplace/types';
+import { readJsonObject } from '@/lib/request-body';
 
 export const dynamic = 'force-dynamic';
 
@@ -13,14 +14,10 @@ export async function POST(request: Request) {
     id: 'local-admin',
     email: 'admin@jfcars.local',
   };
-  let body: Record<string, unknown>;
-  if (Number(request.headers.get('content-length') || 0) > 50_000)
-    return json({ error: 'Request is too large' }, { status: 413 });
-  try {
-    body = (await request.json()) as Record<string, unknown>;
-  } catch {
-    return json({ error: 'Invalid request body' }, { status: 400 });
-  }
+  const parsed = await readJsonObject(request, 50_000);
+  if (!parsed.ok)
+    return json({ error: parsed.error }, { status: parsed.status });
+  const body = parsed.value;
   const requested = Array.isArray(body.items) ? body.items.slice(0, 20) : [];
   if (!requested.length)
     return json({ error: 'Order is empty' }, { status: 400 });

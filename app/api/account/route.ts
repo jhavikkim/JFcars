@@ -5,6 +5,7 @@ import {
   readOrders,
   saveAccountState,
 } from '@/lib/marketplace-store';
+import { readJsonObject } from '@/lib/request-body';
 
 export const dynamic = 'force-dynamic';
 
@@ -117,12 +118,10 @@ export async function PUT(request: Request) {
     id: 'local-admin',
     email: 'admin@jfcars.local',
   };
-  let body: Record<string, unknown>;
-  try {
-    body = (await request.json()) as Record<string, unknown>;
-  } catch {
-    return json({ error: 'Invalid request body' }, { status: 400 });
-  }
+  const parsed = await readJsonObject(request, 100_000);
+  if (!parsed.ok)
+    return json({ error: parsed.error }, { status: parsed.status });
+  const body = parsed.value;
   const profileInput =
     body.profile && typeof body.profile === 'object'
       ? (body.profile as Record<string, unknown>)

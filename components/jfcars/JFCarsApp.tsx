@@ -2,7 +2,7 @@
 
 import Image from 'next/image';
 import { isSafeMediaSource } from '@/lib/storefront-content';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ArrowRight,
   CarFront,
@@ -197,7 +197,9 @@ export default function JFCarsApp() {
     [remoteReady, setRemoteReady] = useState(false),
     [accountReady, setAccountReady] = useState(false),
     [adminRevision, setAdminRevision] = useState(0),
+    [marketplaceRevision, setMarketplaceRevision] = useState(0),
     [adminSyncError, setAdminSyncError] = useState(false),
+    [adminSyncConflict, setAdminSyncConflict] = useState(false),
     [userOrders, setUserOrders] = useState<OrderRecord[]>([]),
     [orders, setOrders] = useState<OrderRecord[]>([]),
     [sellOpen, setSellOpen] = useState(false),
@@ -208,11 +210,29 @@ export default function JFCarsApp() {
   const filterPanelRef = useRef<HTMLElement>(null);
   const filterCloseRef = useRef<HTMLButtonElement>(null);
   const filterButtonRef = useRef<HTMLButtonElement>(null);
+  const adminSyncInFlightRef = useRef(false);
+  const adminSyncQueuedRef = useRef(false);
+  const adminSyncConflictRef = useRef(false);
+  const inventoryRef = useRef(inventory);
+  const storefrontContentRef = useRef(storefrontContent);
+  const marketplaceRevisionRef = useRef(marketplaceRevision);
   const t = copy[lang],
     u = ui[lang],
     m = marketCopy[lang],
     f = flowCopy[lang],
     a = accessibilityCopy[lang];
+  const changeLanguage = (next: Lang) => {
+    setLang(next);
+    setUser((current) =>
+      current ? { ...current, preferredLanguage: next } : current,
+    );
+  };
+  const changeCurrency = (next: Currency) => {
+    setCurrency(next);
+    setUser((current) =>
+      current ? { ...current, preferredCurrency: next } : current,
+    );
+  };
   const galleryItems = normalizeGallery(storefrontContent.gallery);
   const currencyCode = (
     {
@@ -350,6 +370,15 @@ export default function JFCarsApp() {
       const urlCurrency = params.get('currency');
       const hasUrlCurrency = isCurrency(urlCurrency);
       if (hasUrlCurrency) setCurrency(urlCurrency);
+      const requestedView = params.get('view');
+      if (
+        requestedView === 'gallery' ||
+        requestedView === 'about' ||
+        requestedView === 'contact'
+      ) {
+        setSitePage(requestedView);
+        setHeroVisible(false);
+      }
       const urlMode = params.get('mode');
       if (urlMode === 'buy' || urlMode === 'rent' || urlMode === 'parts') {
         setMode(urlMode);
@@ -444,6 +473,7 @@ export default function JFCarsApp() {
             sellerInquiries: SellerInquiry[];
             sellRequests: SellRequest[];
             storefrontContent: StorefrontContent;
+            revision: number;
           }>;
         }),
       ]);
@@ -453,6 +483,13 @@ export default function JFCarsApp() {
         Array.isArray(marketplaceResult.value.inventory)
           ? marketplaceResult.value.inventory
           : cars;
+      const requestedCarId = Number(params.get('car'));
+      if (Number.isInteger(requestedCarId) && requestedCarId > 0) {
+        const requestedCar = loadedInventoryForSession.find(
+          (car) => car.id === requestedCarId && !car.hidden,
+        );
+        if (requestedCar) setSelectedCar(requestedCar);
+      }
 
       if (marketplaceResult.status === 'fulfilled') {
         const data = marketplaceResult.value;
@@ -509,6 +546,8 @@ export default function JFCarsApp() {
           setSellRequests(data.sellRequests);
         if (data.storefrontContent)
           setStorefrontContent(data.storefrontContent);
+        if (Number.isInteger(data.revision) && data.revision >= 0)
+          setMarketplaceRevision(data.revision);
         setRemoteReady(true);
       }
 
@@ -600,6 +639,11 @@ export default function JFCarsApp() {
     };
   }, []);
   useEffect(() => {
+    inventoryRef.current = inventory;
+    storefrontContentRef.current = storefrontContent;
+    marketplaceRevisionRef.current = marketplaceRevision;
+  }, [inventory, marketplaceRevision, storefrontContent]);
+  useEffect(() => {
     document.documentElement.lang = lang === 'pt' ? 'pt-AO' : lang;
     if (!persistenceReady) return;
     window.localStorage.setItem(
@@ -613,6 +657,11 @@ export default function JFCarsApp() {
       }),
     );
   }, [lang, currency, cart, rentalCart, saved, persistenceReady]);
+  useEffect(() => {
+    const reloadFromHistory = () => window.location.reload();
+    window.addEventListener('popstate', reloadFromHistory);
+    return () => window.removeEventListener('popstate', reloadFromHistory);
+  }, []);
   useEffect(() => {
     if (!persistenceReady) return;
     const params = new URLSearchParams();
@@ -643,12 +692,14 @@ export default function JFCarsApp() {
     add('doors', doors, 'Any');
     add('seats', seats, 'Any');
     add('sort', sort, 'recommended');
+    add('view', sitePage, 'market');
+    if (selectedCar) params.set('car', String(selectedCar.id));
     if (verifiedOnly) params.set('verified', '1');
     if (availableOnly) params.set('available', '1');
     if (latestOnly) params.set('latest', '1');
     const search = params.toString();
     window.history.replaceState(
-      null,
+      window.history.state,
       '',
       `${window.location.pathname}${search ? `?${search}` : ''}${window.location.hash}`,
     );
@@ -681,6 +732,8 @@ export default function JFCarsApp() {
     doors,
     seats,
     sort,
+    sitePage,
+    selectedCar,
   ]);
   useEffect(() => {
     if (!authenticated || !accountReady || !user) return;
@@ -698,6 +751,7 @@ export default function JFCarsApp() {
             city: user.city || '',
             preferredContact: user.preferredContact || '',
             preferredLanguage: user.preferredLanguage || '',
+            preferredCurrency: user.preferredCurrency || currency,
           },
           cart,
           rentalCart,
@@ -709,33 +763,66 @@ export default function JFCarsApp() {
       window.clearTimeout(timeout);
       controller.abort();
     };
-  }, [authenticated, accountReady, user, cart, rentalCart, saved]);
+  }, [authenticated, accountReady, user, cart, rentalCart, saved, currency]);
+  const syncLatestAdminState = useCallback(async () => {
+    if (adminSyncConflictRef.current) return;
+    if (adminSyncInFlightRef.current) {
+      adminSyncQueuedRef.current = true;
+      return;
+    }
+    adminSyncInFlightRef.current = true;
+    try {
+      do {
+        adminSyncQueuedRef.current = false;
+        const response = await fetch('/api/marketplace', {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({
+            action: 'admin-sync',
+            baseRevision: marketplaceRevisionRef.current,
+            inventory: inventoryRef.current,
+            storefrontContent: storefrontContentRef.current,
+          }),
+        });
+        if (!response.ok) {
+          if (response.status === 409) {
+            const result = (await response.json().catch(() => null)) as {
+              currentRevision?: number;
+            } | null;
+            if (Number.isInteger(result?.currentRevision)) {
+              marketplaceRevisionRef.current = Number(result?.currentRevision);
+              setMarketplaceRevision(Number(result?.currentRevision));
+            }
+            adminSyncConflictRef.current = true;
+            setAdminSyncConflict(true);
+          }
+          setAdminSyncError(true);
+          adminSyncQueuedRef.current = false;
+          break;
+        }
+        const result = (await response.json()) as { revision?: number };
+        if (Number.isInteger(result.revision)) {
+          marketplaceRevisionRef.current = Number(result.revision);
+          setMarketplaceRevision(Number(result.revision));
+        }
+        adminSyncConflictRef.current = false;
+        setAdminSyncConflict(false);
+        setAdminSyncError(false);
+      } while (adminSyncQueuedRef.current);
+    } catch {
+      setAdminSyncError(true);
+      adminSyncQueuedRef.current = false;
+    } finally {
+      adminSyncInFlightRef.current = false;
+    }
+  }, []);
   useEffect(() => {
     if (!isAdmin || !remoteReady || adminRevision === 0) return;
-    const controller = new AbortController();
     const timeout = window.setTimeout(() => {
-      void fetch('/api/marketplace', {
-        method: 'POST',
-        signal: controller.signal,
-        headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({
-          action: 'admin-sync',
-          inventory,
-          storefrontContent,
-        }),
-      })
-        .then((response) => {
-          if (!controller.signal.aborted) setAdminSyncError(!response.ok);
-        })
-        .catch(() => {
-          if (!controller.signal.aborted) setAdminSyncError(true);
-        });
+      void syncLatestAdminState();
     }, 300);
-    return () => {
-      window.clearTimeout(timeout);
-      controller.abort();
-    };
-  }, [isAdmin, remoteReady, adminRevision, inventory, storefrontContent]);
+    return () => window.clearTimeout(timeout);
+  }, [adminRevision, isAdmin, remoteReady, syncLatestAdminState]);
   const filtered = useMemo(() => {
     let r = inventory.filter(
       (c) =>
@@ -860,6 +947,12 @@ export default function JFCarsApp() {
       setCompare([]);
       setCompareOpen(false);
     }
+    if (mode === 'rent' && next !== 'rent') {
+      setOrigin('Any');
+      setCountry('Any');
+      setLocation('Any');
+      setImportRegion('Any');
+    }
     setMode(next);
     setPage(1);
     if (next === 'rent') {
@@ -913,21 +1006,79 @@ export default function JFCarsApp() {
       }),
     );
   };
+  const pushNavigationState = (update: (params: URLSearchParams) => void) => {
+    const params = new URLSearchParams(window.location.search);
+    update(params);
+    const search = params.toString();
+    const next = `${window.location.pathname}${search ? `?${search}` : ''}${window.location.hash}`;
+    const current = `${window.location.pathname}${window.location.search}${window.location.hash}`;
+    if (next !== current) window.history.pushState(null, '', next);
+  };
   const headerNavigate = (next: 'buy' | 'rent' | 'parts') => {
+    pushNavigationState((params) => {
+      params.delete('view');
+      params.delete('car');
+      if (next === 'buy') params.delete('mode');
+      else params.set('mode', next);
+      if (next === 'rent') params.set('source', 'local');
+      else if (mode === 'rent') {
+        params.delete('source');
+        params.delete('country');
+        params.delete('city');
+        params.delete('region');
+      }
+    });
     setSitePage('market');
     selectMode(next);
     scrollToSection('inventory', false);
   };
   const galleryNavigate = () => {
+    pushNavigationState((params) => {
+      params.set('view', 'gallery');
+      params.delete('car');
+    });
     setSitePage('gallery');
     setGalleryFocus(true);
     scrollToSection('gallery');
   };
   const informationNavigate = (page: 'about' | 'contact') => {
+    pushNavigationState((params) => {
+      params.set('view', page);
+      params.delete('car');
+    });
     setSitePage(page);
     setGalleryFocus(false);
     setMobileMenu(false);
     window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+  const openVehicle = (car: Car) => {
+    const params = new URLSearchParams(window.location.search);
+    params.set('car', String(car.id));
+    const search = params.toString();
+    const next = `${window.location.pathname}${search ? `?${search}` : ''}${window.location.hash}`;
+    if (window.history.state?.jfcarsOverlay === 'vehicle') {
+      window.history.replaceState(window.history.state, '', next);
+    } else {
+      window.history.pushState({ jfcarsOverlay: 'vehicle' }, '', next);
+    }
+    setSelectedCar(car);
+  };
+  const closeVehicle = () => {
+    if (window.history.state?.jfcarsOverlay === 'vehicle') {
+      // popstate owns the dialog state during traversal; clearing first lets
+      // the URL-sync effect corrupt the forward-history overlay entry.
+      window.history.back();
+      return;
+    }
+    const params = new URLSearchParams(window.location.search);
+    params.delete('car');
+    const search = params.toString();
+    window.history.replaceState(
+      null,
+      '',
+      `${window.location.pathname}${search ? `?${search}` : ''}${window.location.hash}`,
+    );
+    setSelectedCar(null);
   };
   const reset = () => {
     setPage(1);
@@ -1084,7 +1235,12 @@ export default function JFCarsApp() {
         <button
           className="logo"
           onClick={() => {
+            pushNavigationState((params) => {
+              params.delete('view');
+              params.delete('car');
+            });
             setSitePage('market');
+            setSelectedCar(null);
             setHeroVisible(true);
             setGalleryFocus(false);
             window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -1158,7 +1314,7 @@ export default function JFCarsApp() {
                       : 'English'
               }
               value={lang}
-              onChange={(e) => setLang(e.target.value as Lang)}
+              onChange={(e) => changeLanguage(e.target.value as Lang)}
             >
               <option value="en">🇬🇧</option>
               <option value="fr">🇫🇷</option>
@@ -1187,7 +1343,9 @@ export default function JFCarsApp() {
                       : 'Change display currency'
               }
               value={currency}
-              onChange={(event) => setCurrency(event.target.value as Currency)}
+              onChange={(event) =>
+                changeCurrency(event.target.value as Currency)
+              }
             >
               {supportedCurrencies.map((code) => (
                 <option key={code} value={code}>
@@ -1232,6 +1390,7 @@ export default function JFCarsApp() {
           <button
             className="menu"
             aria-label={a.menu}
+            aria-expanded={mobileMenu}
             onClick={() => setMobileMenu((v) => !v)}
           >
             {mobileMenu ? <X /> : <Menu />}
@@ -1240,6 +1399,14 @@ export default function JFCarsApp() {
       </header>
       {mobileMenu && (
         <nav className="mobile-nav">
+          <button
+            onClick={() => {
+              setPanel(user ? 'profile' : 'auth');
+              setMobileMenu(false);
+            }}
+          >
+            {user ? footerCopy[lang].account : u.signIn}
+          </button>
           <button
             onClick={() => {
               headerNavigate('buy');
@@ -1278,6 +1445,30 @@ export default function JFCarsApp() {
             }}
           >
             {footerCopy[lang].contact}
+          </button>
+          <button
+            onClick={() => {
+              setInfoTopic('help');
+              setMobileMenu(false);
+            }}
+          >
+            {footerCopy[lang].help}
+          </button>
+          <button
+            onClick={() => {
+              setInfoTopic('privacy');
+              setMobileMenu(false);
+            }}
+          >
+            {footerCopy[lang].privacy}
+          </button>
+          <button
+            onClick={() => {
+              setInfoTopic('terms');
+              setMobileMenu(false);
+            }}
+          >
+            {footerCopy[lang].terms}
           </button>
           {isAdmin && (
             <button
@@ -1345,13 +1536,11 @@ export default function JFCarsApp() {
               : ''
           }
           onClick={() => {
-            setSitePage('market');
-            selectMode('buy');
+            headerNavigate('buy');
             setOrigin('abroad');
             setLocation('Any');
             setCountry('Any');
             setPage(1);
-            scrollToSection('inventory');
           }}
         >
           <ShoppingBag />
@@ -1522,6 +1711,8 @@ export default function JFCarsApp() {
                 <button
                   key={b.name}
                   className={brand == b.name ? 'active' : ''}
+                  aria-label={b.name}
+                  aria-pressed={brand === b.name}
                   onClick={() => {
                     chooseBrand(b.name);
                   }}
@@ -1616,6 +1807,7 @@ export default function JFCarsApp() {
           {mode === 'parts' ? (
             <PartsPanel
               lang={lang}
+              user={user}
               onRequest={async (request) => {
                 try {
                   const response = await fetch('/api/marketplace', {
@@ -2143,7 +2335,7 @@ export default function JFCarsApp() {
                           <button
                             className="details-hitbox"
                             aria-label={`${u.details}: ${car.make} ${car.model}`}
-                            onClick={() => setSelectedCar(car)}
+                            onClick={() => openVehicle(car)}
                           />
                           <span className="badge">
                             {mode === 'rent'
@@ -2294,7 +2486,7 @@ export default function JFCarsApp() {
                           </div>
                           <button
                             className="card-details"
-                            onClick={() => setSelectedCar(car)}
+                            onClick={() => openVehicle(car)}
                           >
                             {f.viewDetails} <ArrowRight />
                           </button>
@@ -2435,8 +2627,8 @@ export default function JFCarsApp() {
           inCart={(mode === 'rent' ? rentalCart : cart).includes(
             selectedCar.id,
           )}
-          close={() => setSelectedCar(null)}
-          selectVehicle={(candidate) => setSelectedCar(candidate)}
+          close={closeVehicle}
+          selectVehicle={openVehicle}
           add={() =>
             mode === 'rent'
               ? setRentalCart((s) =>
@@ -2490,15 +2682,14 @@ export default function JFCarsApp() {
           setOrders={setUserOrders}
           lang={lang}
           currency={currency}
-          onCurrencyChange={setCurrency}
-          onLanguageChange={setLang}
+          onCurrencyChange={changeCurrency}
+          onLanguageChange={changeLanguage}
         />
       )}{' '}
       {panel === 'admin' && isAdmin && (
         <AdminPanel
           inventory={inventory}
           setInventory={(items) => {
-            setAdminSyncError(false);
             setInventory(items);
             setAdminRevision((revision) => revision + 1);
           }}
@@ -2508,7 +2699,6 @@ export default function JFCarsApp() {
           setSellerInquiries={setSellerInquiries}
           storefrontContent={storefrontContent}
           setStorefrontContent={(content) => {
-            setAdminSyncError(false);
             setStorefrontContent(content);
             setAdminRevision((revision) => revision + 1);
           }}
@@ -2516,7 +2706,13 @@ export default function JFCarsApp() {
           setOrders={setOrders}
           sellRequests={sellRequests}
           setSellRequests={setSellRequests}
+          onMarketplaceRevision={(revision) => {
+            marketplaceRevisionRef.current = revision;
+            setMarketplaceRevision(revision);
+          }}
           persistenceError={adminSyncError}
+          persistenceConflict={adminSyncConflict}
+          reloadMarketplace={() => window.location.reload()}
           close={() => setPanel(null)}
         />
       )}

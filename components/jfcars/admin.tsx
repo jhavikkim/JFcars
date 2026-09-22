@@ -54,6 +54,7 @@ import {
 } from '@/components/jfcars/config';
 import { useDialog } from '@/components/jfcars/useDialog';
 import { BrandLogo } from '@/components/jfcars/marketplace-panels';
+import { mailtoHref, telHref } from '@/lib/contact';
 export function AdminPanel({
   inventory,
   setInventory,
@@ -67,7 +68,10 @@ export function AdminPanel({
   setOrders,
   sellRequests,
   setSellRequests,
+  onMarketplaceRevision,
   persistenceError,
+  persistenceConflict,
+  reloadMarketplace,
   close,
 }: {
   inventory: Car[];
@@ -82,7 +86,10 @@ export function AdminPanel({
   setOrders: (orders: OrderRecord[]) => void;
   sellRequests: SellRequest[];
   setSellRequests: (requests: SellRequest[]) => void;
+  onMarketplaceRevision: (revision: number) => void;
   persistenceError: boolean;
+  persistenceConflict: boolean;
+  reloadMarketplace: () => void;
   close: () => void;
 }) {
   const [tab, setTab] = useState('dashboard'),
@@ -137,6 +144,7 @@ export function AdminPanel({
   const [galleryUploading, setGalleryUploading] = useState(false);
   const [heroUploading, setHeroUploading] = useState(false);
   const [mediaUploadError, setMediaUploadError] = useState('');
+  const [reviewError, setReviewError] = useState('');
   const [adminAddCountry, setAdminAddCountry] = useState(
     'Republic of the Congo',
   );
@@ -391,29 +399,48 @@ export function AdminPanel({
     request: SellRequest,
     action: 'sell-accept' | 'sell-reject',
   ) => {
-    const response = await fetch('/api/admin', {
-      method: 'POST',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ action, id: request.id }),
-    });
-    if (!response.ok) return;
-    if (action === 'sell-accept') {
-      const result = (await response.json()) as { car: Car };
-      setInventory([
-        result.car,
-        ...inventory.filter((car) => car.id !== result.car.id),
-      ]);
+    try {
+      const response = await fetch('/api/admin', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ action, id: request.id }),
+      });
+      if (!response.ok) {
+        setReviewError(
+          response.status === 409
+            ? 'Marketplace data changed while this request was being reviewed. Reload the latest data before trying again.'
+            : 'This seller request could not be updated. Reload the latest data and try again.',
+        );
+        return;
+      }
+      if (action === 'sell-accept') {
+        const result = (await response.json()) as {
+          car: Car;
+          revision: number;
+        };
+        if (Number.isInteger(result.revision))
+          onMarketplaceRevision(result.revision);
+        setInventory([
+          result.car,
+          ...inventory.filter((car) => car.id !== result.car.id),
+        ]);
+      }
+      setReviewError('');
+      setSellRequests(
+        sellRequests.map((item) =>
+          item.id === request.id
+            ? {
+                ...item,
+                status: action === 'sell-accept' ? 'Accepted' : 'Rejected',
+              }
+            : item,
+        ),
+      );
+    } catch {
+      setReviewError(
+        'This seller request could not be updated. Check the connection and try again.',
+      );
     }
-    setSellRequests(
-      sellRequests.map((item) =>
-        item.id === request.id
-          ? {
-              ...item,
-              status: action === 'sell-accept' ? 'Accepted' : 'Rejected',
-            }
-          : item,
-      ),
-    );
   };
   const updatePrice = (id: number, price: number) =>
     setInventory(inventory.map((c) => (c.id === id ? { ...c, price } : c)));
@@ -526,8 +553,24 @@ export function AdminPanel({
           <div className="admin-content">
             {persistenceError && (
               <div className="admin-sync-error" role="alert">
-                This change was not saved. Check the listing location, rental
-                rate and connection, then try again.
+                <span>
+                  {persistenceConflict
+                    ? 'Another administrator updated the marketplace. Reload the latest data before editing again.'
+                    : 'This change was not saved. Check the listing location, rental rate and connection, then try again.'}
+                </span>
+                {persistenceConflict && (
+                  <button type="button" onClick={reloadMarketplace}>
+                    Reload latest data
+                  </button>
+                )}
+              </div>
+            )}
+            {reviewError && (
+              <div className="admin-sync-error" role="alert">
+                <span>{reviewError}</span>
+                <button type="button" onClick={reloadMarketplace}>
+                  Reload latest data
+                </button>
               </div>
             )}
             {tab === 'dashboard' && (
@@ -805,9 +848,26 @@ export function AdminPanel({
                   partRequests.map((request) => (
                     <article key={request.id}>
                       <span>{request.id.toString().slice(-2)}</span>
-                      <b>
-                        {request.vehicle} · {request.part} · {request.delivery}
-                      </b>
+                      <div className="part-request-summary">
+                        <b>
+                          {request.vehicle} · {request.part} ·{' '}
+                          {request.delivery}
+                        </b>
+                        <small>
+                          {request.contactName || 'Customer'}
+                          {request.contactEmail && (
+                            <a href={mailtoHref(request.contactEmail)}>
+                              {request.contactEmail}
+                            </a>
+                          )}
+                          {request.contactPhone && (
+                            <a href={telHref(request.contactPhone)}>
+                              {request.contactPhone}
+                            </a>
+                          )}
+                        </small>
+                        {request.details && <small>{request.details}</small>}
+                      </div>
                       <select
                         value={request.status}
                         onChange={(event) =>
@@ -1026,7 +1086,7 @@ export function AdminPanel({
                       />
                     </label>
                     <small>
-                      Maximum 50 MB. Audio is muted on the homepage.
+                      Maximum 16 MB. Audio is muted on the homepage.
                     </small>
                   </div>
                 </div>

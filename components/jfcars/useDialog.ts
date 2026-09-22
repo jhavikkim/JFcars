@@ -1,8 +1,10 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useEffectEvent } from 'react';
 
 export function useDialog(close: () => void) {
+  const closeDialog = useEffectEvent(close);
+
   useEffect(() => {
     const previous = document.body.style.overflow;
     const previouslyFocused = document.activeElement as HTMLElement | null;
@@ -21,9 +23,13 @@ export function useDialog(close: () => void) {
       (first || dialog)?.focus();
     }, 0);
     const onKeyDown = (event: KeyboardEvent) => {
+      const topDialog = Array.from(
+        document.querySelectorAll<HTMLDialogElement>('dialog[open]'),
+      ).at(-1);
+      if (!dialog || topDialog !== dialog) return;
       if (event.key === 'Escape') {
         event.preventDefault();
-        close();
+        closeDialog();
       }
       if (event.key === 'Tab' && dialog) {
         const focusable = Array.from(
@@ -53,5 +59,5 @@ export function useDialog(close: () => void) {
       if (previouslyFocused && document.contains(previouslyFocused))
         previouslyFocused.focus();
     };
-  }, [close]);
+  }, []);
 }

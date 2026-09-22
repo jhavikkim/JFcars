@@ -4751,12 +4751,27 @@ dialog[open].photo-viewer {
 .admin-sync-error {
   margin: 0 0 18px;
   padding: 12px 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 14px;
   border: 1px solid #d6532f;
   border-radius: 9px;
   background: #fff0e9;
   color: #8e2d17;
   font-size: 12px;
   font-weight: 750;
+}
+.admin-sync-error button {
+  flex: 0 0 auto;
+  border: 1px solid currentColor;
+  border-radius: 8px;
+  background: white;
+  color: inherit;
+  padding: 8px 11px;
+  font: inherit;
+  cursor: pointer;
 }
 .admin-stats {
   display: grid;
@@ -5016,6 +5031,24 @@ dialog[open].photo-viewer {
   border-radius: 50%;
   display: grid;
   place-items: center;
+}
+.part-request-summary {
+  min-width: 0;
+  display: grid;
+  gap: 4px;
+}
+.part-request-summary small {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 9px;
+  color: #65777b;
+  line-height: 1.4;
+}
+.part-request-summary a {
+  color: var(--forest);
+  font-weight: 750;
+  text-decoration: underline;
+  text-underline-offset: 2px;
 }
 .admin-collection select {
   border: 1px solid var(--line);
@@ -6284,9 +6317,25 @@ footer .logo {
   }
   .topbar .lang svg,
   .topbar .saved span,
-  .topbar .account,
-  .topbar .menu {
+  .topbar .account {
     display: none !important;
+  }
+  .topbar .menu {
+    width: 36px;
+    height: 36px;
+    padding: 0;
+    display: grid !important;
+    place-items: center;
+    border-radius: 50%;
+  }
+  .mobile-nav {
+    z-index: 110;
+    top: 50px;
+    bottom: calc(64px + env(safe-area-inset-bottom));
+    max-height: none;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    border-radius: 0 0 14px 14px;
   }
   .topbar .lang {
     padding: 7px 3px;
@@ -6454,7 +6503,22 @@ footer .logo {
     display: none;
   }
   .model-row {
-    display: none;
+    display: flex;
+    flex-wrap: nowrap;
+    gap: 6px;
+    margin: 0 -12px;
+    padding: 8px 12px;
+    overflow-x: auto;
+    border-right: 0;
+    border-left: 0;
+    scrollbar-width: none;
+  }
+  .model-row > span,
+  .model-row button {
+    flex: 0 0 auto;
+  }
+  .model-row button {
+    white-space: nowrap;
   }
   .quick-filters {
     gap: 6px;
@@ -6552,6 +6616,9 @@ footer .logo {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 10px;
+  }
+  .car-grid.list-view {
+    grid-template-columns: 1fr;
   }
   .car-card,
   .list-view .car-card {

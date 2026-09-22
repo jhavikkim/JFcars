@@ -1,4 +1,5 @@
 import { env } from 'cloudflare:workers';
+import { readFormData } from '@/lib/request-body';
 import { isAdminRequest, json, requestUser } from '@/lib/site-db';
 
 type RuntimeEnv = {
@@ -10,9 +11,12 @@ const mediaTypes = {
   'image/png': { extension: 'png', maximum: 10 * 1024 * 1024 },
   'image/webp': { extension: 'webp', maximum: 10 * 1024 * 1024 },
   'image/avif': { extension: 'avif', maximum: 10 * 1024 * 1024 },
-  'video/mp4': { extension: 'mp4', maximum: 50 * 1024 * 1024 },
-  'video/webm': { extension: 'webm', maximum: 50 * 1024 * 1024 },
+  'video/mp4': { extension: 'mp4', maximum: 16 * 1024 * 1024 },
+  'video/webm': { extension: 'webm', maximum: 16 * 1024 * 1024 },
 } as const;
+// Response.formData() materializes multipart bodies in memory. Keep enough
+// headroom below Workers' isolate limit for the application and parser copies.
+const maximumUploadRequestBytes = 17 * 1024 * 1024;
 
 type MediaType = keyof typeof mediaTypes;
 
@@ -76,7 +80,10 @@ export async function POST(request: Request) {
   if (!isAdminRequest(request))
     return json({ error: 'Admin authorization required' }, { status: 403 });
   try {
-    const form = await request.formData();
+    const parsed = await readFormData(request, maximumUploadRequestBytes);
+    if (!parsed.ok)
+      return json({ error: parsed.error }, { status: parsed.status });
+    const form = parsed.value;
     const upload = form.get('file');
     const purposeField = form.get('purpose');
     const purposeValue =
@@ -91,7 +98,7 @@ export async function POST(request: Request) {
         {
           error:
             purpose === 'hero'
-              ? 'Use an MP4 or WebM video up to 50 MB'
+              ? 'Use an MP4 or WebM video up to 16 MB'
               : 'Use a JPG, PNG, WebP or AVIF image up to 10 MB',
         },
         { status: 413 },

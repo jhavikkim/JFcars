@@ -1,7 +1,13 @@
 'use client';
 
 import Image from 'next/image';
-import { useCallback, useMemo, useState } from 'react';
+import {
+  type Dispatch,
+  type SetStateAction,
+  useCallback,
+  useMemo,
+  useState,
+} from 'react';
 import {
   ArrowRight,
   Check,
@@ -638,78 +644,121 @@ export function VehicleDetails({
         )}
       </dialog>
       {viewerOpen && (
-        <dialog open className="photo-viewer" aria-label={labels.viewAll}>
-          <button
-            className="viewer-close"
-            onClick={() => setViewerOpen(false)}
-            aria-label={u.close}
-          >
-            <X />
-          </button>
-          {images.length > 1 ? (
-            <button
-              className="viewer-arrow prev"
-              onClick={() =>
-                setPhotoView((photoView + images.length - 1) % images.length)
-              }
-              aria-label={accessibilityCopy[lang].previousPhoto}
-            >
-              <ChevronLeft />
-            </button>
-          ) : (
-            <span />
-          )}
-          <figure>
-            <Image
-              src={images[photoView]}
-              alt={`${car.make} ${car.model} — ${labels.gallery[photoView] || labels.photos}`}
-              width={1600}
-              height={1000}
-              unoptimized
-            />
-            <figcaption>
-              <span>
-                {labels.gallery[photoView] ||
-                  `${labels.photos} ${photoView + 1}`}
-              </span>
-              <b>
-                {photoView + 1} / {images.length}
-              </b>
-            </figcaption>
-          </figure>
-          {images.length > 1 ? (
-            <button
-              className="viewer-arrow next"
-              onClick={() => setPhotoView((photoView + 1) % images.length)}
-              aria-label={accessibilityCopy[lang].nextPhoto}
-            >
-              <ChevronRight />
-            </button>
-          ) : (
-            <span />
-          )}
-          <div>
-            {images.map((image, i) => (
-              <button
-                key={`${image}-${i}`}
-                className={photoView === i ? 'active' : ''}
-                onClick={() => setPhotoView(i)}
-              >
-                <Image
-                  src={image}
-                  alt={labels.gallery[i] || `${labels.photos} ${i + 1}`}
-                  width={240}
-                  height={150}
-                  unoptimized
-                />
-              </button>
-            ))}
-          </div>
-        </dialog>
+        <PhotoViewer
+          images={images}
+          photoView={photoView}
+          setPhotoView={setPhotoView}
+          makeModel={`${car.make} ${car.model}`}
+          galleryLabels={labels.gallery}
+          photosLabel={labels.photos}
+          viewAllLabel={labels.viewAll}
+          closeLabel={u.close}
+          previousLabel={accessibilityCopy[lang].previousPhoto}
+          nextLabel={accessibilityCopy[lang].nextPhoto}
+          close={() => setViewerOpen(false)}
+        />
       )}
     </div>
   );
 }
+
+function PhotoViewer({
+  images,
+  photoView,
+  setPhotoView,
+  makeModel,
+  galleryLabels,
+  photosLabel,
+  viewAllLabel,
+  closeLabel,
+  previousLabel,
+  nextLabel,
+  close,
+}: {
+  images: string[];
+  photoView: number;
+  setPhotoView: Dispatch<SetStateAction<number>>;
+  makeModel: string;
+  galleryLabels: readonly string[];
+  photosLabel: string;
+  viewAllLabel: string;
+  closeLabel: string;
+  previousLabel: string;
+  nextLabel: string;
+  close: () => void;
+}) {
+  useDialog(close);
+  return (
+    <dialog open className="photo-viewer" aria-label={viewAllLabel}>
+      <button className="viewer-close" onClick={close} aria-label={closeLabel}>
+        <X />
+      </button>
+      {images.length > 1 ? (
+        <button
+          className="viewer-arrow prev"
+          onClick={() =>
+            setPhotoView(
+              (current) => (current + images.length - 1) % images.length,
+            )
+          }
+          aria-label={previousLabel}
+        >
+          <ChevronLeft />
+        </button>
+      ) : (
+        <span />
+      )}
+      <figure>
+        <Image
+          src={images[photoView]}
+          alt={`${makeModel} — ${galleryLabels[photoView] || photosLabel}`}
+          width={1600}
+          height={1000}
+          unoptimized
+        />
+        <figcaption>
+          <span>
+            {galleryLabels[photoView] || `${photosLabel} ${photoView + 1}`}
+          </span>
+          <b>
+            {photoView + 1} / {images.length}
+          </b>
+        </figcaption>
+      </figure>
+      {images.length > 1 ? (
+        <button
+          className="viewer-arrow next"
+          onClick={() =>
+            setPhotoView((current) => (current + 1) % images.length)
+          }
+          aria-label={nextLabel}
+        >
+          <ChevronRight />
+        </button>
+      ) : (
+        <span />
+      )}
+      <div>
+        {images.map((image, index) => (
+          <button
+            key={`${image}-${index}`}
+            className={photoView === index ? 'active' : ''}
+            onClick={() => setPhotoView(index)}
+          >
+            <Image
+              src={image}
+              alt={galleryLabels[index] || `${photosLabel} ${index + 1}`}
+              width={240}
+              height={150}
+              unoptimized
+            />
+          </button>
+        ))}
+      </div>
+    </dialog>
+  );
+}
+
 export function VehicleRecommendationCard({
   car,
   lang,

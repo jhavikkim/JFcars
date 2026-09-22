@@ -4,10 +4,13 @@ import test from 'node:test';
 import { Miniflare } from 'miniflare';
 
 import {
+  acceptSellRequest,
   createOrder,
   createSellRequest,
   ensureNormalizedData,
+  MarketplaceRevisionConflictError,
   readAccountState,
+  readMarketplaceRevision,
   readOrders,
   readSellRequests,
   readStorefrontContent,
@@ -22,6 +25,7 @@ const migrations = [
   '0001_light_magneto.sql',
   '0002_brave_nova.sql',
   '0003_fearless_genesis.sql',
+  '0004_marketplace_sync_contacts.sql',
 ];
 
 async function applyMigrations(db: D1Database, names: string[]) {
@@ -269,6 +273,57 @@ void test('normalized storefront content and gallery round-trip', async () => {
   }
 });
 
+void test('marketplace snapshot revision rejects stale writes', async () => {
+  const { db, dispose } = await database();
+  try {
+    const first = await replaceMarketplace(db, [validCar()], {}, 0);
+    assert.equal(first.revision, 1);
+    assert.equal(await readMarketplaceRevision(db), 1);
+
+    await assert.rejects(
+      replaceMarketplace(db, [validCar(902)], {}, 0),
+      (error) =>
+        error instanceof MarketplaceRevisionConflictError &&
+        error.currentRevision === 1,
+    );
+    assert.deepEqual(
+      (await readVehicles(db, true)).map((car) => car.id),
+      [901],
+    );
+    assert.equal(await readMarketplaceRevision(db), 1);
+  } finally {
+    await dispose();
+  }
+});
+
+void test('marketplace snapshot update rolls back every table together', async () => {
+  const { db, dispose } = await database();
+  try {
+    await db
+      .prepare(
+        `CREATE TRIGGER reject_storefront_update
+         BEFORE INSERT ON storefront_settings
+         BEGIN SELECT RAISE(ABORT, 'forced storefront failure'); END`,
+      )
+      .run();
+    await assert.rejects(
+      replaceMarketplace(db, [validCar()], { heroVideo: null }, 0),
+    );
+    assert.equal((await readVehicles(db, true)).length, 0);
+    assert.equal(await readMarketplaceRevision(db), 0);
+    assert.equal(
+      (
+        await db
+          .prepare(`SELECT COUNT(*) AS count FROM storefront_settings`)
+          .first<{ count: number }>()
+      )?.count,
+      0,
+    );
+  } finally {
+    await dispose();
+  }
+});
+
 void test('account preferences persist Portuguese and currency safely', async () => {
   const { db, dispose } = await database();
   try {
@@ -399,6 +454,24 @@ void test('seller-request parent rolls back when normalized details fail', async
           .first<{ count: number }>()
       )?.count,
       0,
+    );
+  } finally {
+    await dispose();
+  }
+});
+
+void test('accepting a seller request advances the marketplace revision', async () => {
+  const { db, dispose } = await database();
+  try {
+    await createSellRequest(db, 'sell-accept', 'user-1', validCar(902));
+    assert.equal(await readMarketplaceRevision(db), 0);
+    const accepted = await acceptSellRequest(db, 'sell-accept');
+    assert.equal(accepted?.car.id, 902);
+    assert.equal(accepted?.revision, 1);
+    assert.equal(await readMarketplaceRevision(db), 1);
+    assert.deepEqual(
+      (await readVehicles(db, true)).map((car) => car.id),
+      [902],
     );
   } finally {
     await dispose();

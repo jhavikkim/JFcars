@@ -322,12 +322,16 @@ export async function upsertVehicle(
   return car;
 }
 
-export async function replaceVehicles(db: D1Database, value: unknown) {
+function normalizedVehicleReplacement(value: unknown) {
   const vehicles = normalizeVehicleList(value);
   if (Array.isArray(value) && vehicles.length !== value.length)
     throw new Error('Inventory contains invalid or duplicate vehicles');
+  return vehicles;
+}
+
+function vehicleReplacementStatements(db: D1Database, vehicles: Car[]) {
   const payload = JSON.stringify(vehicles);
-  await db.batch([
+  return [
     db
       .prepare(
         `INSERT INTO vehicles (
@@ -410,7 +414,12 @@ export async function replaceVehicles(db: D1Database, value: unknown) {
          )`,
       )
       .bind(payload),
-  ]);
+  ];
+}
+
+export async function replaceVehicles(db: D1Database, value: unknown) {
+  const vehicles = normalizedVehicleReplacement(value);
+  await db.batch(vehicleReplacementStatements(db, vehicles));
   return vehicles;
 }
 
@@ -483,7 +492,10 @@ export async function readVehicles(db: D1Database, includeHidden = false) {
   });
 }
 
-async function writeStorefrontTables(db: D1Database, value: unknown) {
+function storefrontReplacement(
+  db: D1Database,
+  value: unknown,
+): { content: StorefrontContent; statements: D1PreparedStatement[] } {
   const content = normalizeStorefrontContent(value);
   const translations = locales.flatMap((locale) => {
     const localized = content[locale];
@@ -511,7 +523,7 @@ async function writeStorefrontTables(db: D1Database, value: unknown) {
       comment: item.comments[locale] || '',
     })),
   );
-  await db.batch([
+  const statements = [
     db
       .prepare(
         `INSERT INTO storefront_settings (id, hero_video_url, updated_at)
@@ -561,7 +573,13 @@ async function writeStorefrontTables(db: D1Database, value: unknown) {
          FROM json_each(?)`,
       )
       .bind(JSON.stringify(galleryTranslations)),
-  ]);
+  ];
+  return { content, statements };
+}
+
+async function writeStorefrontTables(db: D1Database, value: unknown) {
+  const { content, statements } = storefrontReplacement(db, value);
+  await db.batch(statements);
   return content;
 }
 
@@ -661,23 +679,76 @@ export async function replaceMarketplace(
   db: D1Database,
   inventory: unknown,
   storefront: unknown,
+  expectedRevision?: number,
 ) {
-  const vehicles = await replaceVehicles(db, inventory);
-  const content = await writeStorefrontTables(db, storefront);
-  // Transitional mirror keeps one-release rollback compatibility. Normalized
-  // tables are the canonical read source.
   await db
-    .prepare(
-      `INSERT INTO marketplace_state
-       (id, inventory, part_requests, seller_inquiries, storefront_content, updated_at)
-       VALUES (1, ?, '[]', '[]', ?, CURRENT_TIMESTAMP)
+    .prepare(`INSERT OR IGNORE INTO marketplace_state (id) VALUES (1)`)
+    .run();
+  const vehicles = normalizedVehicleReplacement(inventory);
+  const { content, statements: storefrontStatements } = storefrontReplacement(
+    db,
+    storefront,
+  );
+  const currentRevision = await readMarketplaceRevision(db);
+  const baseRevision = expectedRevision ?? currentRevision;
+  if (!Number.isSafeInteger(baseRevision) || baseRevision < 0)
+    throw new MarketplaceRevisionConflictError(currentRevision);
+  if (baseRevision !== currentRevision)
+    throw new MarketplaceRevisionConflictError(currentRevision);
+
+  try {
+    await db.batch([
+      // A concurrent writer changes revision before this batch executes. In
+      // that case the ELSE NULL branch violates the NOT NULL constraint and
+      // rolls the entire D1 batch back instead of applying a stale snapshot.
+      db
+        .prepare(
+          `UPDATE marketplace_state
+           SET revision = CASE WHEN revision = ? THEN revision + 1 ELSE NULL END,
+               updated_at = CURRENT_TIMESTAMP
+           WHERE id = 1`,
+        )
+        .bind(baseRevision),
+      ...vehicleReplacementStatements(db, vehicles),
+      ...storefrontStatements,
+      // Transitional mirror keeps one-release rollback compatibility.
+      // Normalized tables are the canonical read source.
+      db
+        .prepare(
+          `INSERT INTO marketplace_state
+       (id, inventory, part_requests, seller_inquiries, storefront_content,
+        revision, updated_at)
+       VALUES (1, ?, '[]', '[]', ?, 1, CURRENT_TIMESTAMP)
        ON CONFLICT(id) DO UPDATE SET inventory = excluded.inventory,
        storefront_content = excluded.storefront_content,
        updated_at = CURRENT_TIMESTAMP`,
-    )
-    .bind(JSON.stringify(vehicles), JSON.stringify(content))
-    .run();
-  return { vehicles, content };
+        )
+        .bind(JSON.stringify(vehicles), JSON.stringify(content)),
+    ]);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    if (message.includes('marketplace_state.revision')) {
+      throw new MarketplaceRevisionConflictError(
+        await readMarketplaceRevision(db),
+      );
+    }
+    throw error;
+  }
+  return { vehicles, content, revision: baseRevision + 1 };
+}
+
+export class MarketplaceRevisionConflictError extends Error {
+  constructor(public readonly currentRevision: number) {
+    super('Marketplace data changed before this update was applied');
+    this.name = 'MarketplaceRevisionConflictError';
+  }
+}
+
+export async function readMarketplaceRevision(db: D1Database) {
+  const row = await db
+    .prepare(`SELECT revision FROM marketplace_state WHERE id = 1`)
+    .first<{ revision: number }>();
+  return Math.max(0, Number(row?.revision || 0));
 }
 
 async function migrationSet(db: D1Database) {
@@ -1406,6 +1477,13 @@ export async function readSellRequests(db: D1Database) {
 }
 
 export async function acceptSellRequest(db: D1Database, id: string) {
+  await db
+    .prepare(`INSERT OR IGNORE INTO marketplace_state (id) VALUES (1)`)
+    .run();
+  // Capture the revision before any source reads. The guarded batch below then
+  // proves that both the inventory snapshot and Pending request are still
+  // current when the accepted vehicle is published.
+  const baseRevision = await readMarketplaceRevision(db);
   const request = (await readSellRequests(db)).find((item) => item.id === id);
   if (!request || request.status !== 'Pending') return null;
   const current = await readVehicles(db, true);
@@ -1422,24 +1500,47 @@ export async function acceptSellRequest(db: D1Database, id: string) {
     existingPosition >= 0
       ? current.map((item, index) => (index === existingPosition ? car : item))
       : [...current, car];
-  await db.batch([
-    vehicleStatement(db, car, position),
-    ...vehicleMediaStatements(db, car),
-    db
-      .prepare(
-        `UPDATE sell_requests SET status = 'Accepted'
+  try {
+    await db.batch([
+      db
+        .prepare(
+          `UPDATE marketplace_state
+           SET revision = CASE
+                 WHEN revision = ? AND EXISTS (
+                   SELECT 1 FROM sell_requests
+                   WHERE id = ? AND status = 'Pending'
+                 ) THEN revision + 1
+                 ELSE NULL
+               END,
+               updated_at = CURRENT_TIMESTAMP
+           WHERE id = 1`,
+        )
+        .bind(baseRevision, id),
+      vehicleStatement(db, car, position),
+      ...vehicleMediaStatements(db, car),
+      db
+        .prepare(
+          `UPDATE sell_requests SET status = 'Accepted'
          WHERE id = ? AND status = 'Pending'`,
-      )
-      .bind(id),
-    db
-      .prepare(
-        `INSERT INTO marketplace_state
+        )
+        .bind(id),
+      db
+        .prepare(
+          `INSERT INTO marketplace_state
        (id, inventory, part_requests, seller_inquiries, storefront_content)
        VALUES (1, ?, '[]', '[]', '{}')
        ON CONFLICT(id) DO UPDATE SET inventory = excluded.inventory,
        updated_at = CURRENT_TIMESTAMP`,
-      )
-      .bind(JSON.stringify(inventory)),
-  ]);
-  return car;
+        )
+        .bind(JSON.stringify(inventory)),
+    ]);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    if (message.includes('marketplace_state.revision'))
+      throw new MarketplaceRevisionConflictError(
+        await readMarketplaceRevision(db),
+      );
+    throw error;
+  }
+  return { car, revision: baseRevision + 1 };
 }

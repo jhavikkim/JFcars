@@ -1,7 +1,13 @@
 'use client';
 
 import Image from 'next/image';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import {
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  useSyncExternalStore,
+} from 'react';
 import {
   ArrowRight,
   CarFront,
@@ -25,6 +31,25 @@ import {
   localeFor,
 } from '@/components/jfcars/config';
 import { useDialog } from '@/components/jfcars/useDialog';
+
+function useMediaQuery(query: string) {
+  const subscribe = useCallback(
+    (onStoreChange: () => void) => {
+      const media = window.matchMedia(query);
+      media.addEventListener('change', onStoreChange);
+      return () => media.removeEventListener('change', onStoreChange);
+    },
+    [query],
+  );
+  const getSnapshot = useCallback(
+    () => window.matchMedia(query).matches,
+    [query],
+  );
+  const getServerSnapshot = useCallback(() => false, []);
+
+  return useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
+}
+
 export function HeroVideo({
   src,
   poster,
@@ -37,22 +62,43 @@ export function HeroVideo({
   pauseLabel: string;
 }) {
   const videoRef = useRef<HTMLVideoElement>(null);
-  const [playing, setPlaying] = useState(true);
+  const heroIsVisible = useMediaQuery('(min-width: 701px)');
+  const reduceMotion = useMediaQuery('(prefers-reduced-motion: reduce)');
+  const videoIsAvailable = heroIsVisible && !reduceMotion;
+  const [playing, setPlaying] = useState(false);
+
   useEffect(() => {
+    if (!videoIsAvailable) return;
+
     const video = videoRef.current;
     if (!video) return;
-    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-      video.pause();
-      return;
-    }
     void video.play().catch(() => setPlaying(false));
-  }, [src]);
+
+    return () => video.pause();
+  }, [src, videoIsAvailable]);
+
   const toggle = () => {
     const video = videoRef.current;
-    if (!video) return;
+    if (!video || !videoIsAvailable) return;
     if (video.paused) void video.play().catch(() => setPlaying(false));
     else video.pause();
   };
+
+  if (!heroIsVisible) return null;
+
+  if (reduceMotion) {
+    return (
+      <Image
+        src={poster}
+        alt=""
+        fill
+        sizes="(min-width: 701px) 46vw, 0px"
+        aria-hidden="true"
+        style={{ objectFit: 'cover', objectPosition: 'center' }}
+      />
+    );
+  }
+
   return (
     <>
       <video

@@ -55,7 +55,11 @@ export type PartRequest = {
   condition: string;
   delivery: string;
   details: string;
+  contactName?: string;
+  contactEmail?: string;
+  contactPhone?: string;
   status: 'Open' | 'In progress' | 'Complete';
+  createdAt?: string;
 };
 
 export type SellerInquiry = {

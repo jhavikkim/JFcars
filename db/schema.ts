@@ -20,6 +20,7 @@ export const marketplaceState = sqliteTable(
     partRequests: text('part_requests').notNull().default('[]'),
     sellerInquiries: text('seller_inquiries').notNull().default('[]'),
     storefrontContent: text('storefront_content').notNull().default('{}'),
+    revision: integer('revision').notNull().default(0),
     updatedAt: text('updated_at')
       .notNull()
       .default(sql`CURRENT_TIMESTAMP`),
@@ -67,6 +68,9 @@ export const partRequests = sqliteTable(
     condition: text('condition').notNull(),
     delivery: text('delivery').notNull(),
     details: text('details').notNull().default(''),
+    contactName: text('contact_name').notNull().default(''),
+    contactEmail: text('contact_email').notNull().default(''),
+    contactPhone: text('contact_phone').notNull().default(''),
     status: text('status').notNull().default('Open'),
     createdAt: text('created_at')
       .notNull()

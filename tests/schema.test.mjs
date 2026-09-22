@@ -13,6 +13,7 @@ const migratedDatabase = () => {
   db.exec(migration('0001_light_magneto.sql'));
   db.exec(migration('0002_brave_nova.sql'));
   db.exec(migration('0003_fearless_genesis.sql'));
+  db.exec(migration('0004_marketplace_sync_contacts.sql'));
   return db;
 };
 
@@ -26,6 +27,45 @@ test('legacy and normalized migrations apply cleanly', () => {
     .all();
   assert.equal(tables.length, 19);
   assert.deepEqual(db.prepare('PRAGMA foreign_key_check').all(), []);
+  db.close();
+});
+
+test('marketplace revisions and part-request contacts are persisted', () => {
+  const db = migratedDatabase();
+  const marketplaceColumns = db
+    .prepare(`PRAGMA table_info('marketplace_state')`)
+    .all()
+    .map((column) => column.name);
+  const partColumns = db
+    .prepare(`PRAGMA table_info('part_requests')`)
+    .all()
+    .map((column) => column.name);
+  assert.ok(marketplaceColumns.includes('revision'));
+  assert.ok(partColumns.includes('contact_name'));
+  assert.ok(partColumns.includes('contact_email'));
+  assert.ok(partColumns.includes('contact_phone'));
+  db.exec(`
+    INSERT INTO part_requests
+      (id, vehicle, part, condition, delivery, contact_name, contact_email)
+    VALUES
+      ('part-1', 'Toyota Hilux', 'Headlamp', 'Any', 'Cameroon',
+       'Ada Buyer', 'ada@example.com');
+  `);
+  assert.deepEqual(
+    {
+      ...db
+        .prepare(
+          `SELECT contact_name, contact_email, contact_phone
+           FROM part_requests WHERE id = 'part-1'`,
+        )
+        .get(),
+    },
+    {
+      contact_name: 'Ada Buyer',
+      contact_email: 'ada@example.com',
+      contact_phone: '',
+    },
+  );
   db.close();
 });
 
@@ -211,6 +251,7 @@ test('currency migration preserves profiles and vehicle lists', () => {
     VALUES ('legacy-user', 8, 'saved');
   `);
   db.exec(migration('0003_fearless_genesis.sql'));
+  db.exec(migration('0004_marketplace_sync_contacts.sql'));
   assert.deepEqual(
     {
       ...db

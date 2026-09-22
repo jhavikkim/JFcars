@@ -1,7 +1,8 @@
 'use client';
 
+/* oxlint-disable next/no-html-link-for-pages */
+
 import Image from 'next/image';
-import Link from 'next/link';
 import { useState } from 'react';
 import {
   ArrowRight,
@@ -292,14 +293,14 @@ export function AccountLayer({
                 {f.create}
               </button>
             </div>
-            <Link
+            <a
               className="auth-submit"
               href="/signin-with-chatgpt?return_to=/"
               target="_top"
             >
               {authMode === 'signin' ? f.signIn : f.create}
               <ArrowRight />
-            </Link>
+            </a>
             <p className="auth-profile-note">
               <User />
               <span>{p.authNote}</span>
@@ -779,14 +780,14 @@ export function AccountLayer({
                 </form>
               )}
             </div>
-            <Link
+            <a
               className="signout"
               href="/signout-with-chatgpt?return_to=/"
               target="_top"
             >
               <LogOut />
               {p.signout}
-            </Link>
+            </a>
           </div>
         )}
       </dialog>

@@ -7,24 +7,33 @@ import {
 import {
   createSellRequest,
   ensureNormalizedData,
+  MarketplaceRevisionConflictError,
   normalizeVehicleList,
+  readMarketplaceRevision,
   readSellRequests,
   readStorefrontContent,
   readVehicles,
   replaceMarketplace,
 } from '@/lib/marketplace-store';
+import { readJsonObject } from '@/lib/request-body';
+import { isValidEmailAddress, normalizePhoneNumber } from '@/lib/contact';
 import { normalizeGalleryRecords } from '@/lib/storefront-content';
 import type { Car } from '@/lib/marketplace/types';
+import { VEHICLE_SELLING_ENABLED } from '@/components/jfcars/config';
 
 export const dynamic = 'force-dynamic';
 
 type MarketplaceState = {
+  revision: number;
   inventory: unknown[] | null;
   partRequests: unknown[];
   sellerInquiries: unknown[];
   sellRequests: unknown[];
   storefrontContent: Record<string, unknown>;
 };
+
+const maximumMarketplaceRequestBytes = 2_000_000;
+const maximumPublicRequestBytes = 50_000;
 
 const marketCities: Record<string, string[]> = {
   'Republic of the Congo': ['Brazzaville', 'Pointe-Noire'],
@@ -56,8 +65,8 @@ const safeUrl = (value: unknown) => {
     return '';
   }
 };
-const oversized = (request: Request, limit = 100_000) =>
-  Number(request.headers.get('content-length') || 0) > limit;
+const validEmail = isValidEmailAddress;
+const validPhone = (value: string) => Boolean(normalizePhoneNumber(value));
 async function rateLimited(
   db: D1Database,
   request: Request,
@@ -106,12 +115,28 @@ async function ensureMarketplaceRow() {
 
 async function readState(includePrivate: boolean): Promise<MarketplaceState> {
   const db = await ensureMarketplaceRow();
-  const [inventory, storefrontContent] = await Promise.all([
-    readVehicles(db, includePrivate),
-    readStorefrontContent(db),
-  ]);
+  let inventory: Awaited<ReturnType<typeof readVehicles>> = [];
+  let storefrontContent: Awaited<ReturnType<typeof readStorefrontContent>> = {};
+  let revision = 0;
+  let stableSnapshot = false;
+  // D1 reads below are separate statements. Bracket them with the revision so
+  // the client never receives a new revision paired with an older snapshot.
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    const before = await readMarketplaceRevision(db);
+    [inventory, storefrontContent] = await Promise.all([
+      readVehicles(db, includePrivate),
+      readStorefrontContent(db),
+    ]);
+    revision = await readMarketplaceRevision(db);
+    if (before === revision) {
+      stableSnapshot = true;
+      break;
+    }
+  }
+  if (!stableSnapshot) throw new Error('Marketplace changed during read');
   if (!includePrivate) {
     return {
+      revision,
       inventory,
       storefrontContent,
       partRequests: [],
@@ -123,17 +148,26 @@ async function readState(includePrivate: boolean): Promise<MarketplaceState> {
   const [parts, inquiries, sellRequests] = await Promise.all([
     db
       .prepare(
-        `SELECT id, vehicle, part, condition, delivery, details, status,
-                created_at
-         FROM part_requests ORDER BY created_at DESC LIMIT 1000`,
+        `SELECT pr.id, pr.user_id, pr.vehicle, pr.part, pr.condition,
+                pr.delivery, pr.details, pr.status, pr.created_at,
+                COALESCE(NULLIF(pr.contact_name, ''), up.name, '') AS contact_name,
+                pr.contact_email,
+                COALESCE(NULLIF(pr.contact_phone, ''), up.phone, '') AS contact_phone
+         FROM part_requests AS pr
+         LEFT JOIN user_profiles AS up ON up.user_id = pr.user_id
+         ORDER BY pr.created_at DESC LIMIT 1000`,
       )
       .all<{
         id: string;
+        user_id: string | null;
         vehicle: string;
         part: string;
         condition: string;
         delivery: string;
         details: string;
+        contact_name: string;
+        contact_email: string;
+        contact_phone: string;
         status: string;
         created_at: string;
       }>(),
@@ -153,6 +187,7 @@ async function readState(includePrivate: boolean): Promise<MarketplaceState> {
     readSellRequests(db),
   ]);
   return {
+    revision,
     inventory,
     storefrontContent,
     partRequests: parts.results.map((item) => ({
@@ -162,6 +197,9 @@ async function readState(includePrivate: boolean): Promise<MarketplaceState> {
       condition: item.condition,
       delivery: item.delivery,
       details: item.details,
+      contactName: item.contact_name,
+      contactEmail: item.contact_email,
+      contactPhone: item.contact_phone,
       status: item.status,
       createdAt: item.created_at,
     })),
@@ -186,19 +224,25 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
-  if (oversized(request))
-    return json({ error: 'Request is too large' }, { status: 413 });
-  let body: Record<string, unknown>;
-  try {
-    body = (await request.json()) as Record<string, unknown>;
-  } catch {
-    return json({ error: 'Invalid request body' }, { status: 400 });
-  }
+  const adminRequest = isAdminRequest(request);
+  const parsed = await readJsonObject(
+    request,
+    adminRequest ? maximumMarketplaceRequestBytes : maximumPublicRequestBytes,
+  );
+  if (!parsed.ok)
+    return json({ error: parsed.error }, { status: parsed.status });
+  const body = parsed.value;
 
   try {
     const db = await ensureMarketplaceRow();
     const action = safeText(body.action, 40);
-    const userId = requestUser(request)?.id || null;
+    const authenticatedUser = requestUser(request);
+    const userId = authenticatedUser?.id || null;
+    if (action === 'sell-request' && !VEHICLE_SELLING_ENABLED)
+      return json(
+        { error: 'Vehicle selling is not available' },
+        { status: 403 },
+      );
     const publicLimit =
       action === 'sell-request'
         ? 5
@@ -214,7 +258,26 @@ export async function POST(request: Request) {
       );
 
     if (action === 'part-request') {
-      const payload = body.payload as Record<string, unknown>;
+      const payload =
+        body.payload &&
+        typeof body.payload === 'object' &&
+        !Array.isArray(body.payload)
+          ? (body.payload as Record<string, unknown>)
+          : {};
+      const profile = userId
+        ? await db
+            .prepare(`SELECT name, phone FROM user_profiles WHERE user_id = ?`)
+            .bind(userId)
+            .first<{ name: string; phone: string }>()
+        : null;
+      const suppliedEmail = safeText(
+        payload.contactEmail ?? payload.email,
+        254,
+      ).toLowerCase();
+      const suppliedPhone = normalizePhoneNumber(
+        safeText(payload.contactPhone ?? payload.phone, 60),
+      );
+      const profilePhone = normalizePhoneNumber(safeText(profile?.phone, 60));
       const item = {
         id: crypto.randomUUID(),
         vehicle: safeText(payload?.vehicle, 120),
@@ -222,18 +285,32 @@ export async function POST(request: Request) {
         condition: safeText(payload?.condition, 40),
         delivery: safeText(payload?.delivery, 80),
         details: safeText(payload?.details, 1000),
+        contactName:
+          safeText(payload.contactName ?? payload.customer, 100) ||
+          safeText(profile?.name, 100) ||
+          safeText(authenticatedUser?.name, 100),
+        contactEmail: validEmail(suppliedEmail)
+          ? suppliedEmail
+          : safeText(authenticatedUser?.email, 254).toLowerCase(),
+        contactPhone: suppliedPhone || profilePhone,
         status: 'Open',
       };
-      if (!item.vehicle || !item.part)
+      if (
+        !item.vehicle ||
+        !item.part ||
+        !item.contactName ||
+        (!validEmail(item.contactEmail) && !validPhone(item.contactPhone))
+      )
         return json(
-          { error: 'Vehicle and part are required' },
+          { error: 'Vehicle, part and usable contact details are required' },
           { status: 400 },
         );
       await db
         .prepare(
           `INSERT INTO part_requests
-           (id, user_id, vehicle, part, condition, delivery, details, status)
-           VALUES (?, ?, ?, ?, ?, ?, ?, 'Open')`,
+           (id, user_id, vehicle, part, condition, delivery, details,
+            contact_name, contact_email, contact_phone, status)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'Open')`,
         )
         .bind(
           item.id,
@@ -243,6 +320,9 @@ export async function POST(request: Request) {
           item.condition,
           item.delivery,
           item.details,
+          item.contactName,
+          item.contactEmail,
+          item.contactPhone,
         )
         .run();
       return json({ ok: true, item });
@@ -427,12 +507,31 @@ export async function POST(request: Request) {
           { error: 'Marketplace update is too large' },
           { status: 413 },
         );
-      await replaceMarketplace(db, normalizedInventory, storefrontContent);
-      return json({ ok: true });
+      const baseRevision = Number(body.baseRevision);
+      if (!Number.isSafeInteger(baseRevision) || baseRevision < 0)
+        return json(
+          { error: 'A valid marketplace base revision is required' },
+          { status: 400 },
+        );
+      const result = await replaceMarketplace(
+        db,
+        normalizedInventory,
+        storefrontContent,
+        baseRevision,
+      );
+      return json({ ok: true, revision: result.revision });
     }
 
     return json({ error: 'Unknown action' }, { status: 400 });
-  } catch {
+  } catch (error) {
+    if (error instanceof MarketplaceRevisionConflictError)
+      return json(
+        {
+          error: 'Marketplace data changed. Reload before saving again.',
+          currentRevision: error.currentRevision,
+        },
+        { status: 409 },
+      );
     return json({ error: 'Marketplace service unavailable' }, { status: 503 });
   }
 }
