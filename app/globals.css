@@ -6258,8 +6258,8 @@ body {
   position: absolute;
   z-index: 0;
   top: 50%;
-  right: clamp(-24px, -1vw, -8px);
-  width: min(47%, 330px);
+  right: clamp(-42px, -2vw, -18px);
+  width: min(72%, 480px);
   aspect-ratio: 384 / 420;
   transform: translateY(-50%);
   background: url('/central-africa-map.svg') center / contain no-repeat;
