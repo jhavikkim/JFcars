@@ -1,13 +1,7 @@
 'use client';
 
 import Image from 'next/image';
-import {
-  type Dispatch,
-  type SetStateAction,
-  useCallback,
-  useMemo,
-  useState,
-} from 'react';
+import { type Dispatch, type SetStateAction, useMemo, useState } from 'react';
 import {
   ArrowRight,
   Check,
@@ -75,10 +69,20 @@ export function VehicleDetails({
   const [contactBusy, setContactBusy] = useState(false);
   const [contactError, setContactError] = useState(false);
   const [viewerOpen, setViewerOpen] = useState(false);
-  const closeVehicleLayer = useCallback(() => {
+  const detailThumbnailStart = Math.min(
+    Math.max(photoView - 3, 0),
+    Math.max(images.length - 8, 0),
+  );
+  const detailThumbnails = images
+    .slice(detailThumbnailStart, detailThumbnailStart + 8)
+    .map((image, offset) => ({
+      image,
+      index: detailThumbnailStart + offset,
+    }));
+  const closeVehicleLayer = () => {
     if (viewerOpen) setViewerOpen(false);
     else close();
-  }, [viewerOpen, close]);
+  };
   useDialog(closeVehicleLayer);
   const labels = {
     en: {
@@ -375,7 +379,10 @@ export function VehicleDetails({
               alt={`${car.make} ${car.model} — ${labels.gallery[photoView] || labels.photos}`}
               width={1400}
               height={900}
-              unoptimized
+              unoptimized={images[photoView].startsWith('http')}
+              loading="eager"
+              decoding="async"
+              sizes="(max-width: 760px) 100vw, 62vw"
             />
             <button
               className="view-all-photos"
@@ -385,20 +392,25 @@ export function VehicleDetails({
             </button>
           </div>
           <div className="detail-thumbnails">
-            {images.map((image, i) => (
+            {detailThumbnails.map(({ image, index }) => (
               <button
-                key={`${image}-${i}`}
-                className={photoView === i ? 'active' : ''}
-                onClick={() => setPhotoView(i)}
+                key={`${image}-${index}`}
+                className={photoView === index ? 'active' : ''}
+                onClick={() => setPhotoView(index)}
               >
                 <Image
                   src={image}
                   alt=""
                   width={260}
                   height={170}
-                  unoptimized
+                  unoptimized={image.startsWith('http')}
+                  loading="lazy"
+                  decoding="async"
+                  sizes="130px"
                 />
-                <span>{labels.gallery[i] || `${labels.photos} ${i + 1}`}</span>
+                <span>
+                  {labels.gallery[index] || `${labels.photos} ${index + 1}`}
+                </span>
               </button>
             ))}
           </div>
@@ -688,6 +700,13 @@ function PhotoViewer({
   close: () => void;
 }) {
   useDialog(close);
+  const thumbnailStart = Math.min(
+    Math.max(photoView - 3, 0),
+    Math.max(images.length - 7, 0),
+  );
+  const thumbnails = images
+    .slice(thumbnailStart, thumbnailStart + 7)
+    .map((image, offset) => ({ image, index: thumbnailStart + offset }));
   return (
     <dialog open className="photo-viewer" aria-label={viewAllLabel}>
       <button className="viewer-close" onClick={close} aria-label={closeLabel}>
@@ -714,7 +733,10 @@ function PhotoViewer({
           alt={`${makeModel} — ${galleryLabels[photoView] || photosLabel}`}
           width={1600}
           height={1000}
-          unoptimized
+          unoptimized={images[photoView].startsWith('http')}
+          loading="eager"
+          decoding="async"
+          sizes="(max-width: 760px) 100vw, 86vw"
         />
         <figcaption>
           <span>
@@ -739,7 +761,7 @@ function PhotoViewer({
         <span />
       )}
       <div>
-        {images.map((image, index) => (
+        {thumbnails.map(({ image, index }) => (
           <button
             key={`${image}-${index}`}
             className={photoView === index ? 'active' : ''}
@@ -750,7 +772,10 @@ function PhotoViewer({
               alt={galleryLabels[index] || `${photosLabel} ${index + 1}`}
               width={240}
               height={150}
-              unoptimized
+              unoptimized={image.startsWith('http')}
+              loading="lazy"
+              decoding="async"
+              sizes="120px"
             />
           </button>
         ))}
@@ -782,7 +807,10 @@ export function VehicleRecommendationCard({
           alt={`${car.make} ${car.model}`}
           width={720}
           height={460}
-          unoptimized
+          unoptimized={car.image.startsWith('http')}
+          loading="lazy"
+          decoding="async"
+          sizes="(max-width: 760px) 82vw, 28vw"
         />
       </button>
       <div>
@@ -860,7 +888,10 @@ export function ComparePanel({
                 alt=""
                 width={640}
                 height={400}
-                unoptimized
+                unoptimized={c.image.startsWith('http')}
+                loading="lazy"
+                decoding="async"
+                sizes="(max-width: 760px) 82vw, 32vw"
               />
               <p>
                 {c.year} · {localize(c.fuel, lang)}

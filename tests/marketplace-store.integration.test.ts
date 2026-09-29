@@ -26,6 +26,7 @@ const migrations = [
   '0002_brave_nova.sql',
   '0003_fearless_genesis.sql',
   '0004_marketplace_sync_contacts.sql',
+  '0005_natural_the_watchers.sql',
 ];
 
 async function applyMigrations(db: D1Database, names: string[]) {
@@ -259,6 +260,23 @@ void test('normalized storefront content and gallery round-trip', async () => {
             pt: 'Contentor verificado',
           },
         },
+        {
+          id: 'load-video-1',
+          image: 'https://example.com/loading.mp4',
+          mediaType: 'video',
+          status: 'loaded',
+          date: '2026-09-22',
+          location: 'Antwerp',
+          reference: 'JF-LOAD-1',
+          captions: {
+            en: 'Loading complete',
+            fr: 'Chargement terminé',
+          },
+          comments: {
+            en: 'Final container check',
+            fr: 'Contrôle final du conteneur',
+          },
+        },
       ],
     });
     const content = await readStorefrontContent(db);
@@ -267,7 +285,44 @@ void test('normalized storefront content and gallery round-trip', async () => {
     assert.equal(content.pt?.headline, 'Automóveis para a África Central');
     assert.equal(content.gallery?.[0]?.captions.fr, 'Prêt à expédier');
     assert.equal(content.gallery?.[0]?.captions.pt, 'Pronto para envio');
+    assert.equal(content.gallery?.[0]?.mediaType, 'image');
+    assert.equal(content.gallery?.[1]?.mediaType, 'video');
+    assert.equal(content.gallery?.[1]?.image, 'https://example.com/loading.mp4');
     assert.equal((await readVehicles(db, true)).length, 1);
+  } finally {
+    await dispose();
+  }
+});
+
+void test('large media collections persist without silently dropping records', async () => {
+  const { db, dispose } = await database();
+  try {
+    const car = validCar();
+    car.images = Array.from({ length: 60 }, (_, index) =>
+      index === 0
+        ? car.image
+        : `https://example.com/hilux-${index}.webp`,
+    );
+    const gallery = Array.from({ length: 500 }, (_, index) => ({
+      id: `shipment-${index}`,
+      image: `https://example.com/shipment-${index}.webp`,
+      status: 'in_transit' as const,
+      date: '2026-09-22',
+      location: 'Atlantic route',
+      reference: `JF-SHIP-${index}`,
+      captions: { en: `Shipment ${index}`, fr: `Expédition ${index}` },
+      comments: { en: 'Tracking update', fr: 'Mise à jour du suivi' },
+    }));
+
+    await replaceMarketplace(db, [car], { gallery });
+
+    const [vehicles, content] = await Promise.all([
+      readVehicles(db, true),
+      readStorefrontContent(db),
+    ]);
+    assert.equal(vehicles[0]?.images?.length, 60);
+    assert.equal(content.gallery?.length, 500);
+    assert.equal(content.gallery?.[499]?.reference, 'JF-SHIP-499');
   } finally {
     await dispose();
   }

@@ -13,6 +13,7 @@ import {
   isSafeImageSource,
   isSafeMediaSource,
   normalizeGalleryRecords,
+  vehicleImageLimit,
 } from '@/lib/storefront-content';
 import { parseJson } from '@/lib/json';
 
@@ -69,7 +70,7 @@ const uniqueImages = (value: unknown, mainImage: string) => {
         .filter(isSafeImageSource)
         .map((image) => cleanText(image, 1_000)),
     ),
-  ).slice(0, 20);
+  ).slice(0, vehicleImageLimit);
 };
 
 export function normalizeVehicle(value: unknown, position = 0): Car | null {
@@ -439,8 +440,13 @@ export async function readVehicles(db: D1Database, includeHidden = false) {
       .all<VehicleRow>(),
     db
       .prepare(
-        `SELECT vehicle_id, purpose, position, url
-         FROM vehicle_media ORDER BY vehicle_id, purpose, position`,
+        `SELECT vehicle_media.vehicle_id, vehicle_media.purpose,
+                vehicle_media.position, vehicle_media.url
+         FROM vehicle_media
+         JOIN vehicles ON vehicles.id = vehicle_media.vehicle_id
+         ${includeHidden ? '' : 'WHERE vehicles.hidden = 0'}
+         ORDER BY vehicle_media.vehicle_id, vehicle_media.purpose,
+                  vehicle_media.position`,
       )
       .all<VehicleMediaRow>(),
   ]);
@@ -549,9 +555,10 @@ function storefrontReplacement(
     db
       .prepare(
         `INSERT INTO gallery_items
-         (id, image_url, status, event_date, departure_date, eta_date,
+         (id, image_url, media_type, status, event_date, departure_date, eta_date,
           location, reference, sort_position, updated_at)
          SELECT json_extract(value, '$.id'), json_extract(value, '$.image'),
+                COALESCE(json_extract(value, '$.mediaType'), 'image'),
                 json_extract(value, '$.status'),
                 COALESCE(json_extract(value, '$.date'), ''),
                 COALESCE(json_extract(value, '$.departureDate'), ''),
@@ -602,13 +609,14 @@ export async function readStorefrontContent(db: D1Database) {
       }>(),
     db
       .prepare(
-        `SELECT id, image_url, status, event_date, departure_date, eta_date,
+        `SELECT id, image_url, media_type, status, event_date, departure_date, eta_date,
                 location, reference
          FROM gallery_items ORDER BY sort_position, id`,
       )
       .all<{
         id: string;
         image_url: string;
+        media_type: 'image' | 'video';
         status: GalleryItem['status'];
         event_date: string;
         departure_date: string;
@@ -661,6 +669,7 @@ export async function readStorefrontContent(db: D1Database) {
       return {
         id: row.id,
         image: row.image_url,
+        mediaType: row.media_type,
         captions: translation.captions,
         comments: translation.comments,
         status: row.status,

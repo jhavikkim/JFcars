@@ -4,6 +4,7 @@ import Image from 'next/image';
 import {
   useCallback,
   useEffect,
+  useMemo,
   useRef,
   useState,
   useSyncExternalStore,
@@ -31,6 +32,36 @@ import {
   localeFor,
 } from '@/components/jfcars/config';
 import { useDialog } from '@/components/jfcars/useDialog';
+
+function GalleryMediaTile({
+  item,
+  alt,
+  videoLabel,
+}: {
+  item: GalleryItem;
+  alt: string;
+  videoLabel: string;
+}) {
+  if (item.mediaType === 'video')
+    return (
+      <span className="gallery-video-tile" aria-hidden="true">
+        <Play />
+        <b>{videoLabel}</b>
+      </span>
+    );
+  return (
+    <Image
+      src={item.image}
+      alt={alt}
+      width={900}
+      height={650}
+      unoptimized={item.image.startsWith('http')}
+      loading="lazy"
+      decoding="async"
+      sizes="(max-width: 600px) 100vw, (max-width: 900px) 50vw, 34vw"
+    />
+  );
+}
 
 function useMediaQuery(query: string) {
   const subscribe = useCallback(
@@ -72,9 +103,27 @@ export function HeroVideo({
 
     const video = videoRef.current;
     if (!video) return;
-    void video.play().catch(() => setPlaying(false));
+    let intersects = false;
+    const syncPlayback = () => {
+      if (intersects && !document.hidden)
+        void video.play().catch(() => setPlaying(false));
+      else video.pause();
+    };
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        intersects = entry.isIntersecting;
+        syncPlayback();
+      },
+      { rootMargin: '160px 0px', threshold: 0.05 },
+    );
+    observer.observe(video);
+    document.addEventListener('visibilitychange', syncPlayback);
 
-    return () => video.pause();
+    return () => {
+      observer.disconnect();
+      document.removeEventListener('visibilitychange', syncPlayback);
+      video.pause();
+    };
   }, [src, videoIsAvailable]);
 
   const toggle = () => {
@@ -93,6 +142,7 @@ export function HeroVideo({
         alt=""
         fill
         sizes="(min-width: 701px) 46vw, 0px"
+        priority
         aria-hidden="true"
         style={{ objectFit: 'cover', objectPosition: 'center' }}
       />
@@ -104,12 +154,11 @@ export function HeroVideo({
       <video
         ref={videoRef}
         key={src}
-        autoPlay
         muted
         loop
         playsInline
         poster={poster}
-        preload="metadata"
+        preload="none"
         aria-hidden="true"
         onPlay={() => setPlaying(true)}
         onPause={() => setPlaying(false)}
@@ -337,6 +386,9 @@ export function InformationPage({
             src="/jfcars-central-africa-hero.webp"
             width={1200}
             height={800}
+            sizes="(max-width: 820px) 100vw, 48vw"
+            priority
+            decoding="async"
             alt={
               lang === 'fr'
                 ? 'L’équipe JFcars avec un véhicule'
@@ -489,44 +541,60 @@ export function MainGallery({
   const [viewerOpen, setViewerOpen] = useState(false);
   const [viewerItems, setViewerItems] = useState<GalleryItem[]>([]);
   const closeViewer = useCallback(() => setViewerOpen(false), []);
-  const section =
-    gallerySections.find((entry) => entry.id === activeSection) ||
-    gallerySections[0];
-  const visibleItems = items.filter((item) =>
-    section.statuses.includes(item.status),
+  const section = useMemo(
+    () =>
+      gallerySections.find((entry) => entry.id === activeSection) ||
+      gallerySections[0],
+    [activeSection],
   );
-  const albums = Array.from(
-    visibleItems.reduce((groups, item) => {
-      const key = item.reference.trim() || item.id;
-      const group = groups.get(key) || [];
-      group.push(item);
-      groups.set(key, group);
-      return groups;
-    }, new Map<string, GalleryItem[]>()),
-  ).map(([reference, photos]) => ({ reference, photos, cover: photos[0] }));
+  const visibleItems = useMemo(
+    () => items.filter((item) => section.statuses.includes(item.status)),
+    [items, section],
+  );
+  const albums = useMemo(
+    () =>
+      Array.from(
+        visibleItems.reduce((groups, item) => {
+          const key = item.reference.trim() || item.id;
+          const group = groups.get(key) || [];
+          group.push(item);
+          groups.set(key, group);
+          return groups;
+        }, new Map<string, GalleryItem[]>()),
+      ).map(([reference, photos]) => ({
+        reference,
+        photos,
+        cover: photos[0],
+      })),
+    [visibleItems],
+  );
   const displayedAlbums = albums.slice(0, visibleCount);
   const resultCount =
     activeSection === 'all' ? visibleItems.length : albums.length;
+  // Keep the animated cover set bounded. The viewer still exposes every item,
+  // but a 500-photo journal should not gradually download all originals while
+  // it sits unattended on the page.
+  const mosaicRotationItems = visibleItems.slice(0, 24);
   const mosaicItems = Array.from(
-    { length: Math.min(5, visibleItems.length) },
+    { length: Math.min(5, mosaicRotationItems.length) },
     (_, offset) => {
-      const index = (mosaicStart + offset) % visibleItems.length;
-      return { item: visibleItems[index], index };
+      const index = (mosaicStart + offset) % mosaicRotationItems.length;
+      return { item: mosaicRotationItems[index], index };
     },
   );
   useEffect(() => {
     if (
       activeSection !== 'all' ||
-      visibleItems.length <= 5 ||
+      mosaicRotationItems.length <= 5 ||
       window.matchMedia('(prefers-reduced-motion: reduce)').matches
     )
       return;
     const timer = window.setInterval(
-      () => setMosaicStart((start) => (start + 1) % visibleItems.length),
+      () => setMosaicStart((start) => (start + 1) % mosaicRotationItems.length),
       5500,
     );
     return () => window.clearInterval(timer);
-  }, [activeSection, visibleItems.length]);
+  }, [activeSection, mosaicRotationItems.length]);
   const caption = (item: GalleryItem) =>
     item.captions[lang] || item.captions.en || labels.untitled;
   const selectSection = (next: GallerySection) => {
@@ -592,12 +660,10 @@ export function MainGallery({
                 }}
                 aria-label={`${labels.open}: ${caption(item)}`}
               >
-                <Image
-                  src={item.image}
+                <GalleryMediaTile
+                  item={item}
                   alt={caption(item)}
-                  width={900}
-                  height={650}
-                  unoptimized
+                  videoLabel={labels.video}
                 />
               </button>
             ))}
@@ -615,12 +681,10 @@ export function MainGallery({
                 }}
                 aria-label={`${labels.open}: ${caption(album.cover)}`}
               >
-                <Image
-                  src={album.cover.image}
+                <GalleryMediaTile
+                  item={album.cover}
                   alt={caption(album.cover)}
-                  width={900}
-                  height={650}
-                  unoptimized
+                  videoLabel={labels.video}
                 />
               </button>
             ))}
@@ -690,6 +754,13 @@ export function GalleryViewer({
       : '';
   const move = (direction: number) =>
     setActive((active + direction + items.length) % items.length);
+  const thumbnailStart = Math.min(
+    Math.max(active - 3, 0),
+    Math.max(items.length - 7, 0),
+  );
+  const thumbnailItems = items
+    .slice(thumbnailStart, thumbnailStart + 7)
+    .map((entry, offset) => ({ entry, index: thumbnailStart + offset }));
   useDialog(close);
   return (
     <div
@@ -718,13 +789,28 @@ export function GalleryViewer({
           <ChevronLeft />
         </button>
         <figure aria-live="polite">
-          <Image
-            src={item.image}
-            alt={caption(item)}
-            width={1536}
-            height={1024}
-            unoptimized
-          />
+          {item.mediaType === 'video' ? (
+            <video
+              key={item.id}
+              src={item.image}
+              aria-label={caption(item)}
+              controls
+              muted
+              playsInline
+              preload="none"
+            />
+          ) : (
+            <Image
+              src={item.image}
+              alt={caption(item)}
+              width={1536}
+              height={1024}
+              unoptimized={item.image.startsWith('http')}
+              loading="eager"
+              decoding="async"
+              sizes="(max-width: 760px) 100vw, 82vw"
+            />
+          )}
           <figcaption>
             <span className="viewer-copy">
               <small className={`gallery-status status-${item.status}`}>
@@ -779,20 +865,29 @@ export function GalleryViewer({
           <ChevronRight />
         </button>
         <div>
-          {items.map((entry, index) => (
+          {thumbnailItems.map(({ entry, index }) => (
             <button
               key={entry.id}
               className={active === index ? 'active' : ''}
               onClick={() => setActive(index)}
               aria-label={caption(entry)}
             >
-              <Image
-                src={entry.image}
-                alt=""
-                width={240}
-                height={150}
-                unoptimized
-              />
+              {entry.mediaType === 'video' ? (
+                <span className="gallery-video-thumbnail" aria-hidden="true">
+                  <Play />
+                </span>
+              ) : (
+                <Image
+                  src={entry.image}
+                  alt=""
+                  width={240}
+                  height={150}
+                  unoptimized={entry.image.startsWith('http')}
+                  loading="lazy"
+                  decoding="async"
+                  sizes="120px"
+                />
+              )}
             </button>
           ))}
         </div>

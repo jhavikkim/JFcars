@@ -20,19 +20,12 @@ export type JsonObjectResult =
     }
   | RequestBodyError;
 
-export type FormDataResult =
-  | {
-      ok: true;
-      value: FormData;
-      byteLength: number;
-    }
-  | RequestBodyError;
-
-type LimitedRequestBodyResult =
+export type LimitedRequestBodyResult =
   | {
       ok: true;
       stream: ReadableStream<Uint8Array<ArrayBuffer>>;
       byteLength: () => number;
+      declaredLength: number | null;
       limitExceeded: () => boolean;
     }
   | RequestBodyError;
@@ -41,34 +34,56 @@ type LimitedRequestBodyResult =
  * Wraps the request stream with an actual byte counter.
  * Content-Length is only an early rejection hint: clients may omit or forge it.
  */
-function limitRequestBody(
+export function limitRequestBody(
   request: Request,
   maximumBytes: number,
 ): LimitedRequestBodyResult {
-  const declaredLength = Number(request.headers.get('content-length'));
-  if (Number.isFinite(declaredLength) && declaredLength > maximumBytes)
-    return { ok: false, error: 'Request is too large', status: 413 };
+  const declaredValue = request.headers.get('content-length');
+  let declaredLength: number | null = null;
+  if (declaredValue !== null) {
+    if (!/^\d+$/.test(declaredValue))
+      return { ok: false, error: 'Invalid request body', status: 400 };
+    declaredLength = Number(declaredValue);
+    if (!Number.isSafeInteger(declaredLength))
+      return { ok: false, error: 'Invalid request body', status: 400 };
+    if (declaredLength > maximumBytes)
+      return { ok: false, error: 'Request is too large', status: 413 };
+  }
 
   if (!request.body)
     return { ok: false, error: 'Invalid request body', status: 400 };
 
   let byteLength = 0;
   let exceeded = false;
+  const reader = request.body.getReader();
   let stream: ReadableStream<Uint8Array<ArrayBuffer>>;
   try {
-    stream = request.body.pipeThrough(
-      new TransformStream<Uint8Array<ArrayBuffer>, Uint8Array<ArrayBuffer>>({
-        transform(chunk, controller) {
-          byteLength += chunk.byteLength;
+    stream = new ReadableStream<Uint8Array<ArrayBuffer>>({
+      async pull(controller) {
+        try {
+          const next = await reader.read();
+          if (next.done) {
+            controller.close();
+            return;
+          }
+          byteLength += next.value.byteLength;
           if (byteLength > maximumBytes) {
             exceeded = true;
-            throw new Error('Request body limit exceeded');
+            await reader.cancel('Request body limit exceeded');
+            controller.error(new Error('Request body limit exceeded'));
+            return;
           }
-          controller.enqueue(chunk);
-        },
-      }),
-    );
+          controller.enqueue(next.value);
+        } catch (error) {
+          controller.error(error);
+        }
+      },
+      async cancel(reason) {
+        await reader.cancel(reason);
+      },
+    });
   } catch {
+    void reader.cancel('Invalid request body');
     return { ok: false, error: 'Invalid request body', status: 400 };
   }
 
@@ -76,6 +91,7 @@ function limitRequestBody(
     ok: true,
     stream,
     byteLength: () => byteLength,
+    declaredLength,
     limitExceeded: () => exceeded,
   };
 }
@@ -120,29 +136,5 @@ export async function readJsonObject(
     };
   } catch {
     return { ok: false, error: 'Invalid request body', status: 400 };
-  }
-}
-
-/** Reads multipart form data after bounding the complete request body. */
-export async function readFormData(
-  request: Request,
-  maximumBytes: number,
-): Promise<FormDataResult> {
-  const limited = limitRequestBody(request, maximumBytes);
-  if (!limited.ok) return limited;
-
-  const contentType = request.headers.get('content-type');
-  if (!contentType)
-    return { ok: false, error: 'Invalid request body', status: 400 };
-
-  try {
-    const value = await new Response(limited.stream, {
-      headers: { 'content-type': contentType },
-    }).formData();
-    return { ok: true, value, byteLength: limited.byteLength() };
-  } catch {
-    return limited.limitExceeded()
-      ? { ok: false, error: 'Request is too large', status: 413 }
-      : { ok: false, error: 'Invalid request body', status: 400 };
   }
 }

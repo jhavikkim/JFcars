@@ -14,6 +14,7 @@ const migratedDatabase = () => {
   db.exec(migration('0002_brave_nova.sql'));
   db.exec(migration('0003_fearless_genesis.sql'));
   db.exec(migration('0004_marketplace_sync_contacts.sql'));
+  db.exec(migration('0005_natural_the_watchers.sql'));
   return db;
 };
 
@@ -65,6 +66,37 @@ test('marketplace revisions and part-request contacts are persisted', () => {
       contact_email: 'ada@example.com',
       contact_phone: '',
     },
+  );
+  db.close();
+});
+
+test('gallery media type migration preserves images and constrains videos', () => {
+  const db = migratedDatabase();
+  db.exec(`
+    INSERT INTO gallery_items (id, image_url, status)
+    VALUES ('legacy-image', 'https://example.com/photo.webp', 'in_store');
+    INSERT INTO gallery_items (id, image_url, media_type, status)
+    VALUES ('loading-video', 'https://example.com/loading.mp4', 'video', 'loaded');
+  `);
+  assert.equal(
+    db
+      .prepare(`SELECT media_type FROM gallery_items WHERE id = 'legacy-image'`)
+      .get().media_type,
+    'image',
+  );
+  assert.equal(
+    db
+      .prepare(`SELECT media_type FROM gallery_items WHERE id = 'loading-video'`)
+      .get().media_type,
+    'video',
+  );
+  assert.throws(() =>
+    db
+      .prepare(
+        `INSERT INTO gallery_items (id, image_url, media_type, status)
+         VALUES ('bad-media', 'https://example.com/file.bin', 'document', 'loaded')`,
+      )
+      .run(),
   );
   db.close();
 });
@@ -252,6 +284,7 @@ test('currency migration preserves profiles and vehicle lists', () => {
   `);
   db.exec(migration('0003_fearless_genesis.sql'));
   db.exec(migration('0004_marketplace_sync_contacts.sql'));
+  db.exec(migration('0005_natural_the_watchers.sql'));
   assert.deepEqual(
     {
       ...db

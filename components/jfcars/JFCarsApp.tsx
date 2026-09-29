@@ -2,7 +2,16 @@
 
 import Image from 'next/image';
 import { isSafeMediaSource } from '@/lib/storefront-content';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import type { AdminPersistenceStatus } from '@/components/jfcars/admin';
+import {
+  lazy,
+  Suspense,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import {
   ArrowRight,
   CarFront,
@@ -67,6 +76,15 @@ import {
   flowCopy,
   profileCopy,
 } from '@/components/jfcars/config';
+
+function LayerLoading({ label }: { label: string }) {
+  return (
+    <div className="lazy-layer-loading" aria-live="polite" aria-busy="true">
+      <span aria-hidden="true" />
+      <b>{label}</b>
+    </div>
+  );
+}
 
 function PriceRangeInputs({
   currency,
@@ -198,6 +216,8 @@ export default function JFCarsApp() {
     [accountReady, setAccountReady] = useState(false),
     [adminRevision, setAdminRevision] = useState(0),
     [marketplaceRevision, setMarketplaceRevision] = useState(0),
+    [adminSyncStatus, setAdminSyncStatus] =
+      useState<AdminPersistenceStatus>('saved'),
     [adminSyncError, setAdminSyncError] = useState(false),
     [adminSyncConflict, setAdminSyncConflict] = useState(false),
     [userOrders, setUserOrders] = useState<OrderRecord[]>([]),
@@ -221,6 +241,12 @@ export default function JFCarsApp() {
     m = marketCopy[lang],
     f = flowCopy[lang],
     a = accessibilityCopy[lang];
+  const loadingLabel = {
+    en: 'Loading…',
+    fr: 'Chargement…',
+    es: 'Cargando…',
+    pt: 'A carregar…',
+  }[lang];
   const changeLanguage = (next: Lang) => {
     setLang(next);
     setUser((current) =>
@@ -495,6 +521,7 @@ export default function JFCarsApp() {
         const data = marketplaceResult.value;
         const loadedInventory = loadedInventoryForSession;
         if (Array.isArray(data.inventory)) setInventory(data.inventory);
+        setAdminSyncStatus('saved');
         const liveIds = new Set(
           loadedInventory.filter((car) => !car.hidden).map((car) => car.id),
         );
@@ -765,12 +792,16 @@ export default function JFCarsApp() {
     };
   }, [authenticated, accountReady, user, cart, rentalCart, saved, currency]);
   const syncLatestAdminState = useCallback(async () => {
-    if (adminSyncConflictRef.current) return;
+    if (adminSyncConflictRef.current) {
+      setAdminSyncStatus('error');
+      return;
+    }
     if (adminSyncInFlightRef.current) {
       adminSyncQueuedRef.current = true;
       return;
     }
     adminSyncInFlightRef.current = true;
+    setAdminSyncStatus('saving');
     try {
       do {
         adminSyncQueuedRef.current = false;
@@ -797,6 +828,7 @@ export default function JFCarsApp() {
             setAdminSyncConflict(true);
           }
           setAdminSyncError(true);
+          setAdminSyncStatus('error');
           adminSyncQueuedRef.current = false;
           break;
         }
@@ -808,9 +840,11 @@ export default function JFCarsApp() {
         adminSyncConflictRef.current = false;
         setAdminSyncConflict(false);
         setAdminSyncError(false);
+        setAdminSyncStatus('saved');
       } while (adminSyncQueuedRef.current);
     } catch {
       setAdminSyncError(true);
+      setAdminSyncStatus('error');
       adminSyncQueuedRef.current = false;
     } finally {
       adminSyncInFlightRef.current = false;
@@ -820,7 +854,7 @@ export default function JFCarsApp() {
     if (!isAdmin || !remoteReady || adminRevision === 0) return;
     const timeout = window.setTimeout(() => {
       void syncLatestAdminState();
-    }, 300);
+    }, 750);
     return () => window.clearTimeout(timeout);
   }, [adminRevision, isAdmin, remoteReady, syncLatestAdminState]);
   const filtered = useMemo(() => {
@@ -2330,7 +2364,10 @@ export default function JFCarsApp() {
                             alt={`${car.make} ${car.model}`}
                             width={960}
                             height={600}
-                            unoptimized
+                            unoptimized={car.image.startsWith('http')}
+                            loading="lazy"
+                            decoding="async"
+                            sizes="(max-width: 700px) 50vw, (max-width: 1100px) 42vw, 30vw"
                           />
                           <button
                             className="details-hitbox"
@@ -2591,130 +2628,142 @@ export default function JFCarsApp() {
         </div>
       )}
       {compareOpen && (
-        <ComparePanel
-          cars={modeInventory.filter((c) => compare.includes(c.id))}
-          close={() => setCompareOpen(false)}
-          remove={(id) => {
-            const next = compare.filter((x) => x !== id);
-            setCompare(next);
-            if (next.length < 2) setCompareOpen(false);
-          }}
-          add={(id) =>
-            mode === 'rent'
-              ? setRentalCart((items) =>
-                  items.includes(id) ? items : [...items, id],
-                )
-              : setCart((items) =>
-                  items.includes(id) ? items : [...items, id],
-                )
-          }
-          lang={lang}
-          currency={currency}
-          mode={mode}
-        />
+        <Suspense fallback={<LayerLoading label={loadingLabel} />}>
+          <LazyComparePanel
+            cars={modeInventory.filter((c) => compare.includes(c.id))}
+            close={() => setCompareOpen(false)}
+            remove={(id) => {
+              const next = compare.filter((x) => x !== id);
+              setCompare(next);
+              if (next.length < 2) setCompareOpen(false);
+            }}
+            add={(id) =>
+              mode === 'rent'
+                ? setRentalCart((items) =>
+                    items.includes(id) ? items : [...items, id],
+                  )
+                : setCart((items) =>
+                    items.includes(id) ? items : [...items, id],
+                  )
+            }
+            lang={lang}
+            currency={currency}
+            mode={mode}
+          />
+        </Suspense>
       )}
       {selectedCar && (
-        <VehicleDetails
-          key={`${mode}-${selectedCar.id}`}
-          car={selectedCar}
-          inventory={modeInventory.filter(
-            (candidate) => !candidate.hidden && candidate.available !== false,
-          )}
-          user={user}
-          lang={lang}
-          currency={currency}
-          mode={mode}
-          inCart={(mode === 'rent' ? rentalCart : cart).includes(
-            selectedCar.id,
-          )}
-          close={closeVehicle}
-          selectVehicle={openVehicle}
-          add={() =>
-            mode === 'rent'
-              ? setRentalCart((s) =>
-                  s.includes(selectedCar.id) ? s : [...s, selectedCar.id],
-                )
-              : setCart((s) =>
-                  s.includes(selectedCar.id) ? s : [...s, selectedCar.id],
-                )
-          }
-          onInquiry={async (inquiry) => {
-            try {
-              const response = await fetch('/api/marketplace', {
-                method: 'POST',
-                headers: { 'content-type': 'application/json' },
-                body: JSON.stringify({
-                  action: 'seller-inquiry',
-                  payload: inquiry,
-                }),
-              });
-              if (!response.ok) return false;
-              const data = (await response.json()) as {
-                item: SellerInquiry;
-              };
-              setSellerInquiries((items) => [data.item, ...items]);
-              return true;
-            } catch {
-              return false;
+        <Suspense fallback={<LayerLoading label={loadingLabel} />}>
+          <LazyVehicleDetails
+            key={`${mode}-${selectedCar.id}`}
+            car={selectedCar}
+            inventory={modeInventory.filter(
+              (candidate) => !candidate.hidden && candidate.available !== false,
+            )}
+            user={user}
+            lang={lang}
+            currency={currency}
+            mode={mode}
+            inCart={(mode === 'rent' ? rentalCart : cart).includes(
+              selectedCar.id,
+            )}
+            close={closeVehicle}
+            selectVehicle={openVehicle}
+            add={() =>
+              mode === 'rent'
+                ? setRentalCart((s) =>
+                    s.includes(selectedCar.id) ? s : [...s, selectedCar.id],
+                  )
+                : setCart((s) =>
+                    s.includes(selectedCar.id) ? s : [...s, selectedCar.id],
+                  )
             }
-          }}
-        />
+            onInquiry={async (inquiry) => {
+              try {
+                const response = await fetch('/api/marketplace', {
+                  method: 'POST',
+                  headers: { 'content-type': 'application/json' },
+                  body: JSON.stringify({
+                    action: 'seller-inquiry',
+                    payload: inquiry,
+                  }),
+                });
+                if (!response.ok) return false;
+                const data = (await response.json()) as {
+                  item: SellerInquiry;
+                };
+                setSellerInquiries((items) => [data.item, ...items]);
+                return true;
+              } catch {
+                return false;
+              }
+            }}
+          />
+        </Suspense>
       )}
       {panel && panel !== 'admin' && (
-        <AccountLayer
-          panel={panel}
-          close={() => setPanel(null)}
-          goAuth={() => setPanel('auth')}
-          user={user}
-          setUser={setUser}
-          authMode={authMode}
-          setAuthMode={setAuthMode}
-          cart={cart}
-          setCart={setCart}
-          rentalCart={rentalCart}
-          setRentalCart={setRentalCart}
-          inventory={inventory}
-          saved={saved}
-          partRequestCount={
-            authenticated ? accountPartRequestCount : partRequests.length
-          }
-          orders={userOrders}
-          setOrders={setUserOrders}
-          lang={lang}
-          currency={currency}
-          onCurrencyChange={changeCurrency}
-          onLanguageChange={changeLanguage}
-        />
+        <Suspense fallback={<LayerLoading label={loadingLabel} />}>
+          <LazyAccountLayer
+            panel={panel}
+            close={() => setPanel(null)}
+            goAuth={() => setPanel('auth')}
+            user={user}
+            setUser={setUser}
+            authMode={authMode}
+            setAuthMode={setAuthMode}
+            cart={cart}
+            setCart={setCart}
+            rentalCart={rentalCart}
+            setRentalCart={setRentalCart}
+            inventory={inventory}
+            saved={saved}
+            partRequestCount={
+              authenticated ? accountPartRequestCount : partRequests.length
+            }
+            orders={userOrders}
+            setOrders={setUserOrders}
+            lang={lang}
+            currency={currency}
+            onCurrencyChange={changeCurrency}
+            onLanguageChange={changeLanguage}
+          />
+        </Suspense>
       )}{' '}
       {panel === 'admin' && isAdmin && (
-        <AdminPanel
-          inventory={inventory}
-          setInventory={(items) => {
-            setInventory(items);
-            setAdminRevision((revision) => revision + 1);
-          }}
-          partRequests={partRequests}
-          setPartRequests={setPartRequests}
-          sellerInquiries={sellerInquiries}
-          setSellerInquiries={setSellerInquiries}
-          storefrontContent={storefrontContent}
-          setStorefrontContent={(content) => {
-            setStorefrontContent(content);
-            setAdminRevision((revision) => revision + 1);
-          }}
-          orders={orders}
-          setOrders={setOrders}
-          sellRequests={sellRequests}
-          setSellRequests={setSellRequests}
-          onMarketplaceRevision={(revision) => {
-            marketplaceRevisionRef.current = revision;
-            setMarketplaceRevision(revision);
-          }}
-          persistenceError={adminSyncError}
-          persistenceConflict={adminSyncConflict}
-          reloadMarketplace={() => window.location.reload()}
-          close={() => setPanel(null)}
-        />
+        <Suspense fallback={<LayerLoading label={loadingLabel} />}>
+          <LazyAdminPanel
+            inventory={inventory}
+            setInventory={(items) => {
+              setInventory(items);
+              setAdminSyncStatus('saving');
+              setAdminRevision((revision) => revision + 1);
+            }}
+            partRequests={partRequests}
+            setPartRequests={setPartRequests}
+            sellerInquiries={sellerInquiries}
+            setSellerInquiries={setSellerInquiries}
+            storefrontContent={storefrontContent}
+            setStorefrontContent={(content) => {
+              setStorefrontContent(content);
+              setAdminSyncStatus('saving');
+              setAdminRevision((revision) => revision + 1);
+            }}
+            orders={orders}
+            setOrders={setOrders}
+            sellRequests={sellRequests}
+            setSellRequests={setSellRequests}
+            onMarketplaceRevision={(revision) => {
+              marketplaceRevisionRef.current = revision;
+              setMarketplaceRevision(revision);
+              setAdminSyncStatus('saved');
+            }}
+            persistenceStatus={adminSyncStatus}
+            persistenceError={adminSyncError}
+            persistenceConflict={adminSyncConflict}
+            reloadMarketplace={() => window.location.reload()}
+            close={() => setPanel(null)}
+          />
+        </Suspense>
       )}
       {VEHICLE_SELLING_ENABLED && sellOpen && (
         <SellCarPanel
@@ -2817,8 +2866,6 @@ export default function JFCarsApp() {
   );
 }
 
-import { AccountLayer } from '@/components/jfcars/account';
-import { AdminPanel } from '@/components/jfcars/admin';
 import {
   HeroVideo,
   InformationPage,
@@ -2832,4 +2879,29 @@ import {
   PartsPanel,
   SellCarPanel,
 } from '@/components/jfcars/marketplace-panels';
-import { ComparePanel, VehicleDetails } from '@/components/jfcars/vehicle';
+
+const LazyAccountLayer = lazy(() =>
+  import('@/components/jfcars/account').then(({ AccountLayer }) => ({
+    default: AccountLayer,
+  })),
+);
+
+const LazyAdminPanel = lazy(() =>
+  import('@/components/jfcars/admin').then(({ AdminPanel }) => ({
+    default: AdminPanel,
+  })),
+);
+
+const loadVehicleInterfaces = () => import('@/components/jfcars/vehicle');
+
+const LazyComparePanel = lazy(() =>
+  loadVehicleInterfaces().then(({ ComparePanel }) => ({
+    default: ComparePanel,
+  })),
+);
+
+const LazyVehicleDetails = lazy(() =>
+  loadVehicleInterfaces().then(({ VehicleDetails }) => ({
+    default: VehicleDetails,
+  })),
+);

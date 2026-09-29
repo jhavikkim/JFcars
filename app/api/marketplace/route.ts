@@ -17,7 +17,11 @@ import {
 } from '@/lib/marketplace-store';
 import { readJsonObject } from '@/lib/request-body';
 import { isValidEmailAddress, normalizePhoneNumber } from '@/lib/contact';
-import { normalizeGalleryRecords } from '@/lib/storefront-content';
+import {
+  galleryItemLimit,
+  normalizeGalleryRecords,
+  vehicleImageLimit,
+} from '@/lib/storefront-content';
 import type { Car } from '@/lib/marketplace/types';
 import { VEHICLE_SELLING_ENABLED } from '@/components/jfcars/config';
 
@@ -32,8 +36,13 @@ type MarketplaceState = {
   storefrontContent: Record<string, unknown>;
 };
 
-const maximumMarketplaceRequestBytes = 2_000_000;
+// Admin sync carries only catalog metadata and R2 URLs, never media bytes.
+// Keep it bounded well below the Worker memory limit while leaving room for
+// the supported 500 gallery records and expanded vehicle photo sets.
+const maximumMarketplaceRequestBytes = 20_000_000;
 const maximumPublicRequestBytes = 50_000;
+const maximumMarketplacePayloadBytes = 19_000_000;
+const maximumStorefrontContentBytes = 6_000_000;
 
 const marketCities: Record<string, string[]> = {
   'Republic of the Congo': ['Brazzaville', 'Pointe-Noire'],
@@ -372,7 +381,10 @@ export async function POST(request: Request) {
       const city = safeText(payload?.city, 80);
       const image = safeUrl(payload?.image);
       const extraImages = Array.isArray(payload?.images)
-        ? payload.images.map(safeUrl).filter(Boolean).slice(0, 8)
+        ? payload.images
+            .map(safeUrl)
+            .filter(Boolean)
+            .slice(0, vehicleImageLimit)
         : [];
       const car: Car = {
         id: Date.now() + Math.floor(Math.random() * 1000),
@@ -481,7 +493,7 @@ export async function POST(request: Request) {
       if ('gallery' in rawStorefrontContent) {
         const gallery = normalizeGalleryRecords(
           rawStorefrontContent.gallery,
-          8,
+          galleryItemLimit,
         );
         if (
           !Array.isArray(rawStorefrontContent.gallery) ||
@@ -500,8 +512,9 @@ export async function POST(request: Request) {
         serializedInventory + serializedContent,
       ).byteLength;
       if (
-        encodedSize > 1_900_000 ||
-        new TextEncoder().encode(serializedContent).byteLength > 50_000
+        encodedSize > maximumMarketplacePayloadBytes ||
+        new TextEncoder().encode(serializedContent).byteLength >
+          maximumStorefrontContentBytes
       )
         return json(
           { error: 'Marketplace update is too large' },

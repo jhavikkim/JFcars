@@ -1,27 +1,24 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-import { readFormData, readJsonObject } from '../lib/request-body';
+import { limitRequestBody, readJsonObject } from '../lib/request-body';
 
-const multipartBody = [
-  '--test-boundary',
-  'Content-Disposition: form-data; name="purpose"',
-  '',
-  'gallery',
-  '--test-boundary--',
-  '',
-].join('\r\n');
-
-function multipartRequest(contentLength?: string) {
-  const headers = new Headers({
-    'content-type': 'multipart/form-data; boundary=test-boundary',
+function streamedRequest(chunks: string[], contentLength?: string) {
+  const headers = new Headers();
+  if (contentLength !== undefined) headers.set('content-length', contentLength);
+  const encoder = new TextEncoder();
+  const body = new ReadableStream<Uint8Array>({
+    start(controller) {
+      for (const chunk of chunks) controller.enqueue(encoder.encode(chunk));
+      controller.close();
+    },
   });
-  if (contentLength) headers.set('content-length', contentLength);
   return new Request('https://example.com/api/media', {
     method: 'POST',
     headers,
-    body: multipartBody,
-  });
+    body,
+    duplex: 'half',
+  } as RequestInit & { duplex: 'half' });
 }
 
 void test('JSON body reader accepts objects and reports actual bytes', async () => {
@@ -65,32 +62,48 @@ void test('JSON body reader rejects non-object JSON', async () => {
   });
 });
 
-void test('form-data reader parses a body within the streamed byte limit', async () => {
-  const result = await readFormData(multipartRequest(), 1_000);
-  assert.equal(result.ok, true);
-  if (result.ok) {
-    assert.equal(result.value.get('purpose'), 'gallery');
-    assert.equal(
-      result.byteLength,
-      new TextEncoder().encode(multipartBody).byteLength,
+void test('streaming limiter preserves chunks without buffering the body', async () => {
+  const limited = limitRequestBody(streamedRequest(['abc', 'def'], '6'), 6);
+  assert.equal(limited.ok, true);
+  if (!limited.ok) return;
+
+  assert.equal(limited.byteLength(), 0);
+  assert.equal(await new Response(limited.stream).text(), 'abcdef');
+  assert.equal(limited.byteLength(), 6);
+  assert.equal(limited.declaredLength, 6);
+  assert.equal(limited.limitExceeded(), false);
+});
+
+void test('streaming limiter rejects declared oversized bodies before consumption', () => {
+  assert.deepEqual(limitRequestBody(streamedRequest(['body'], '101'), 100), {
+    ok: false,
+    error: 'Request is too large',
+    status: 413,
+  });
+});
+
+void test('streaming limiter rejects invalid Content-Length', () => {
+  assert.deepEqual(limitRequestBody(streamedRequest(['body'], '-1'), 100), {
+    ok: false,
+    error: 'Invalid request body',
+    status: 400,
+  });
+});
+
+for (const scenario of [
+  { name: 'without Content-Length', length: undefined },
+  { name: 'with a forged low Content-Length', length: '1' },
+]) {
+  void test(`streaming limiter enforces actual bytes ${scenario.name}`, async () => {
+    const limited = limitRequestBody(
+      streamedRequest(['1234', '5678'], scenario.length),
+      7,
     );
-  }
-});
+    assert.equal(limited.ok, true);
+    if (!limited.ok) return;
 
-void test('form-data reader rejects oversized streamed bytes without Content-Length', async () => {
-  const request = multipartRequest();
-  assert.equal(request.headers.has('content-length'), false);
-  assert.deepEqual(await readFormData(request, 16), {
-    ok: false,
-    error: 'Request is too large',
-    status: 413,
+    await assert.rejects(new Response(limited.stream).arrayBuffer());
+    assert.equal(limited.byteLength(), 8);
+    assert.equal(limited.limitExceeded(), true);
   });
-});
-
-void test('form-data reader rejects oversized streamed bytes with a forged Content-Length', async () => {
-  assert.deepEqual(await readFormData(multipartRequest('1'), 16), {
-    ok: false,
-    error: 'Request is too large',
-    status: 413,
-  });
-});
+}

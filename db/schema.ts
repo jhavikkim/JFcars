@@ -245,6 +245,7 @@ export const galleryItems = sqliteTable(
   {
     id: text('id').primaryKey(),
     imageUrl: text('image_url').notNull(),
+    mediaType: text('media_type').notNull().default('image'),
     status: text('status').notNull(),
     eventDate: text('event_date').notNull().default(''),
     departureDate: text('departure_date').notNull().default(''),
@@ -260,6 +261,10 @@ export const galleryItems = sqliteTable(
       .default(sql`CURRENT_TIMESTAMP`),
   },
   (table) => [
+    check(
+      'gallery_media_type_check',
+      sql`${table.mediaType} IN ('image', 'video')`,
+    ),
     check(
       'gallery_status_check',
       sql`${table.status} IN ('ready_to_load', 'loaded', 'ready_to_ship', 'shipped_out', 'in_transit', 'arrived_unloaded', 'in_store')`,

@@ -9,14 +9,18 @@ export const galleryStatuses = [
 ] as const;
 
 export const galleryItemLimit = 500;
+export const vehicleImageLimit = 60;
 
 export type GalleryStatus = (typeof galleryStatuses)[number];
+export type GalleryMediaType = 'image' | 'video';
 export type StorefrontLang = 'en' | 'fr' | 'es' | 'pt';
 export type LocalizedText = Partial<Record<StorefrontLang, string>>;
 
 export type GalleryItemRecord = {
   id: string;
   image: string;
+  /** Defaults to image so records created before gallery video support remain valid. */
+  mediaType?: GalleryMediaType;
   captions: LocalizedText;
   comments: LocalizedText;
   status: GalleryStatus;
@@ -101,7 +105,14 @@ export function normalizeGalleryRecords(
     const item = raw as Record<string, unknown>;
     const id = text(item.id, 80);
     const image = item.image;
-    if (!id || ids.has(id) || !isSafeImageSource(image)) continue;
+    if (!id || ids.has(id) || !isSafeMediaSource(image)) continue;
+    const suppliedMediaType = text(item.mediaType, 10);
+    if (
+      suppliedMediaType &&
+      suppliedMediaType !== 'image' &&
+      suppliedMediaType !== 'video'
+    )
+      continue;
     const suppliedStatus = text(item.status, 40);
     if (
       suppliedStatus &&
@@ -118,6 +129,7 @@ export function normalizeGalleryRecords(
     records.push({
       id,
       image,
+      mediaType: (suppliedMediaType as GalleryMediaType) || 'image',
       captions: localized(item.captions, 140),
       comments: localized(item.comments, 600),
       status: (suppliedStatus as GalleryStatus) || inferredStatus(id),
