@@ -6248,10 +6248,6 @@ body {
 }
 .hero {
   background-color: var(--hero-background);
-  background-image:
-    linear-gradient(135deg, #e5b83b12 25%, transparent 25%),
-    linear-gradient(225deg, #db5b2a10 25%, transparent 25%);
-  background-size: 34px 34px;
 }
 .hero-art img {
   object-position: center;
@@ -6266,8 +6262,6 @@ body {
   position: relative;
   overflow: hidden;
 }
-.trust:before,
-.brand-search:before,
 .sell-band:before {
   content: '';
   position: absolute;
@@ -7021,9 +7015,6 @@ footer .logo {
     border: 0;
     border-radius: 0;
     background: #fff;
-  }
-  .brand-search:before {
-    display: none;
   }
   .mode-tabs {
     gap: 4px;
