@@ -164,7 +164,11 @@ function PriceRangeInputs({
   );
 }
 
-export default function JFCarsApp() {
+export default function JFCarsApp({
+  initialStorefrontContent = {},
+}: {
+  initialStorefrontContent?: StorefrontContent;
+}) {
   const [lang, setLang] = useState<Lang>('en'),
     [currency, setCurrency] = useState<Currency>('XAF'),
     [query, setQuery] = useState(''),
@@ -216,7 +220,9 @@ export default function JFCarsApp() {
     [sellerInquiries, setSellerInquiries] = useState<SellerInquiry[]>([]),
     [sellRequests, setSellRequests] = useState<SellRequest[]>([]),
     [accountPartRequestCount, setAccountPartRequestCount] = useState(0),
-    [storefrontContent, setStorefrontContent] = useState<StorefrontContent>({}),
+    [storefrontContent, setStorefrontContent] = useState<StorefrontContent>(
+      initialStorefrontContent,
+    ),
     [authenticated, setAuthenticated] = useState(false),
     [isAdmin, setIsAdmin] = useState(false),
     [remoteReady, setRemoteReady] = useState(false),

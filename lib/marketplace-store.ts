@@ -622,8 +622,35 @@ async function writeStorefrontTables(db: D1Database, value: unknown) {
   return content;
 }
 
-export async function readStorefrontContent(db: D1Database) {
-  const [settings, translations, items, itemTranslations] = await Promise.all([
+type StorefrontSettingsRow = {
+  hero_video_url: string | null;
+  hero_image_url: string | null;
+  whatsapp_number: string;
+  hero_background: string;
+  brand_search_background: string;
+  primary_color: string;
+  accent_color: string;
+  header_background: string;
+  button_color: string;
+  text_color: string;
+};
+
+type StorefrontTranslationRow = {
+  locale: Lang;
+  headline: string;
+  description: string;
+  gallery_title: string;
+  gallery_description: string;
+};
+
+/**
+ * Read only the content needed for the first painted storefront frame.
+ * Keeping gallery records out of the RSC payload avoids delaying hydration as
+ * the media library grows, while still preventing the saved theme and hero
+ * copy from flashing back to their built-in defaults on a hard refresh.
+ */
+export async function readStorefrontPresentation(db: D1Database) {
+  const [settings, translations] = await Promise.all([
     db
       .prepare(
         `SELECT hero_video_url, hero_image_url, whatsapp_number, hero_background,
@@ -631,30 +658,47 @@ export async function readStorefrontContent(db: D1Database) {
                 header_background, button_color, text_color
          FROM storefront_settings WHERE id = 1`,
       )
-      .first<{
-        hero_video_url: string | null;
-        hero_image_url: string | null;
-        whatsapp_number: string;
-        hero_background: string;
-        brand_search_background: string;
-        primary_color: string;
-        accent_color: string;
-        header_background: string;
-        button_color: string;
-        text_color: string;
-      }>(),
+      .first<StorefrontSettingsRow>(),
     db
       .prepare(
         `SELECT locale, headline, description, gallery_title, gallery_description
          FROM storefront_translations`,
       )
-      .all<{
-        locale: Lang;
-        headline: string;
-        description: string;
-        gallery_title: string;
-        gallery_description: string;
-      }>(),
+      .all<StorefrontTranslationRow>(),
+  ]);
+  const content: StorefrontContent = {};
+  if (settings?.hero_video_url) content.heroVideo = settings.hero_video_url;
+  if (settings?.hero_image_url) content.heroImage = settings.hero_image_url;
+  if (settings?.whatsapp_number)
+    content.whatsappNumber = settings.whatsapp_number;
+  content.theme = normalizeStorefrontTheme(
+    settings
+      ? {
+          heroBackground: settings.hero_background,
+          brandSearchBackground: settings.brand_search_background,
+          primaryColor: settings.primary_color,
+          accentColor: settings.accent_color,
+          headerBackground: settings.header_background,
+          buttonColor: settings.button_color,
+          textColor: settings.text_color,
+        }
+      : undefined,
+  );
+  for (const row of translations.results) {
+    if (!locales.includes(row.locale)) continue;
+    content[row.locale] = {
+      headline: row.headline,
+      description: row.description,
+      galleryTitle: row.gallery_title,
+      galleryDescription: row.gallery_description,
+    };
+  }
+  return content;
+}
+
+export async function readStorefrontContent(db: D1Database) {
+  const [content, items, itemTranslations] = await Promise.all([
+    readStorefrontPresentation(db),
     db
       .prepare(
         `SELECT id, image_url, media_type, status, event_date, departure_date, eta_date,
@@ -684,33 +728,6 @@ export async function readStorefrontContent(db: D1Database) {
         comment: string;
       }>(),
   ]);
-  const content: StorefrontContent = {};
-  if (settings?.hero_video_url) content.heroVideo = settings.hero_video_url;
-  if (settings?.hero_image_url) content.heroImage = settings.hero_image_url;
-  if (settings?.whatsapp_number)
-    content.whatsappNumber = settings.whatsapp_number;
-  content.theme = normalizeStorefrontTheme(
-    settings
-      ? {
-          heroBackground: settings.hero_background,
-          brandSearchBackground: settings.brand_search_background,
-          primaryColor: settings.primary_color,
-          accentColor: settings.accent_color,
-          headerBackground: settings.header_background,
-          buttonColor: settings.button_color,
-          textColor: settings.text_color,
-        }
-      : undefined,
-  );
-  for (const row of translations.results) {
-    if (!locales.includes(row.locale)) continue;
-    content[row.locale] = {
-      headline: row.headline,
-      description: row.description,
-      galleryTitle: row.gallery_title,
-      galleryDescription: row.gallery_description,
-    };
-  }
   const localized = new Map<
     string,
     { captions: GalleryItem['captions']; comments: GalleryItem['comments'] }

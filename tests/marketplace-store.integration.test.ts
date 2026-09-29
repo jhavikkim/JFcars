@@ -14,6 +14,7 @@ import {
   readOrders,
   readSellRequests,
   readStorefrontContent,
+  readStorefrontPresentation,
   readVehicles,
   replaceMarketplace,
   saveAccountState,
@@ -293,6 +294,7 @@ void test('normalized storefront content and gallery round-trip', async () => {
       ],
     });
     const content = await readStorefrontContent(db);
+    const presentation = await readStorefrontPresentation(db);
     assert.equal(content.heroVideo, 'https://example.com/hero.mp4');
     assert.equal(content.heroImage, 'https://example.com/hero.webp');
     assert.equal(content.whatsappNumber, '+244 912 345 678');
@@ -309,6 +311,9 @@ void test('normalized storefront content and gallery round-trip', async () => {
       content.gallery?.[1]?.image,
       'https://example.com/loading.mp4',
     );
+    assert.equal(presentation.theme?.heroBackground, '#112233');
+    assert.equal(presentation.en?.headline, 'Cars for Central Africa');
+    assert.equal(presentation.gallery, undefined);
     assert.equal((await readVehicles(db, true)).length, 1);
   } finally {
     await dispose();
