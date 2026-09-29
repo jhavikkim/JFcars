@@ -57,7 +57,7 @@ import {
 } from '@/components/jfcars/config';
 import { useDialog } from '@/components/jfcars/useDialog';
 import { BrandLogo } from '@/components/jfcars/marketplace-panels';
-import { mailtoHref, telHref } from '@/lib/contact';
+import { mailtoHref, normalizeWhatsAppNumber, telHref } from '@/lib/contact';
 
 const galleryUploadConcurrency = 3;
 const maximumGalleryFileBytes = 20 * 1024 * 1024;
@@ -379,6 +379,7 @@ export function AdminPanel({
       heroImage: isSafeMediaSource(storefrontContent.heroImage)
         ? storefrontContent.heroImage
         : defaultHeroImage,
+      whatsappNumber: storefrontContent.whatsappNumber || '',
       theme: {
         ...defaultStorefrontTheme,
         ...storefrontContent.theme,
@@ -1675,6 +1676,34 @@ export function AdminPanel({
             {tab === 'content' && (
               <section className="admin-card content-form">
                 <h3>Storefront content</h3>
+                <label>
+                  Business WhatsApp number
+                  <input
+                    type="tel"
+                    value={contentDraft.whatsappNumber || ''}
+                    placeholder="+244 912 345 678"
+                    autoComplete="tel"
+                    onChange={(event) => {
+                      setContentSaved(false);
+                      setContentDraft({
+                        ...contentDraft,
+                        whatsappNumber: event.target.value,
+                      });
+                    }}
+                  />
+                  <small>
+                    Use the international country code. Leave this blank to hide
+                    WhatsApp buttons from the public site.
+                  </small>
+                  {Boolean(contentDraft.whatsappNumber) &&
+                    !normalizeWhatsAppNumber(
+                      contentDraft.whatsappNumber || '',
+                    ) && (
+                      <span className="form-notice error">
+                        Enter a valid international phone number.
+                      </span>
+                    )}
+                </label>
                 <div
                   className="content-language-tabs"
                   aria-label="Content language"
@@ -2336,6 +2365,10 @@ export function AdminPanel({
                     !isSafeMediaSource(contentDraft.heroVideo) ||
                     (Boolean(contentDraft.heroImage) &&
                       !isSafeMediaSource(contentDraft.heroImage)) ||
+                    (Boolean(contentDraft.whatsappNumber) &&
+                      !normalizeWhatsAppNumber(
+                        contentDraft.whatsappNumber || '',
+                      )) ||
                     galleryDraft.some((item) => !isSafeMediaSource(item.image))
                   }
                   onClick={() => {

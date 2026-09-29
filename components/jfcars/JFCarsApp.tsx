@@ -30,6 +30,7 @@ import {
   Languages,
   MapPin,
   Menu,
+  MessageCircle,
   Search,
   ShoppingBag,
   ShoppingCart,
@@ -81,6 +82,7 @@ import {
   flowCopy,
   profileCopy,
 } from '@/components/jfcars/config';
+import { whatsappHref } from '@/lib/contact';
 
 function LayerLoading({ label }: { label: string }) {
   return (
@@ -1281,6 +1283,16 @@ export default function JFCarsApp() {
     '--hero-background': storefrontTheme.heroBackground,
     '--brand-search-background': storefrontTheme.brandSearchBackground,
   } as CSSProperties;
+  const whatsappMessage = {
+    en: 'Hello JFcars, I would like more information.',
+    fr: 'Bonjour JFcars, je souhaite obtenir plus d’informations.',
+    es: 'Hola JFcars, me gustaría recibir más información.',
+    pt: 'Olá JFcars, gostaria de obter mais informações.',
+  }[lang];
+  const whatsappLink = whatsappHref(
+    storefrontContent.whatsappNumber || '',
+    whatsappMessage,
+  );
   return (
     <main style={storefrontStyle}>
       <header className="topbar">
@@ -2615,7 +2627,11 @@ export default function JFCarsApp() {
         />
       )}
       {(sitePage === 'about' || sitePage === 'contact') && (
-        <InformationPage lang={lang} page={sitePage} />
+        <InformationPage
+          lang={lang}
+          page={sitePage}
+          whatsappNumber={storefrontContent.whatsappNumber}
+        />
       )}
       {VEHICLE_SELLING_ENABLED && (
         <section className="sell-band">
@@ -2686,6 +2702,7 @@ export default function JFCarsApp() {
             lang={lang}
             currency={currency}
             mode={mode}
+            whatsappNumber={storefrontContent.whatsappNumber}
             inCart={(mode === 'rent' ? rentalCart : cart).includes(
               selectedCar.id,
             )}
@@ -2815,6 +2832,18 @@ export default function JFCarsApp() {
           topic={infoTopic}
           close={() => setInfoTopic(null)}
         />
+      )}
+      {whatsappLink && (
+        <a
+          className="whatsapp-float"
+          href={whatsappLink}
+          target="_blank"
+          rel="noopener noreferrer"
+          aria-label="WhatsApp"
+        >
+          <MessageCircle />
+          <span>WhatsApp</span>
+        </a>
       )}
       <footer className="site-footer">
         <div className="footer-main">

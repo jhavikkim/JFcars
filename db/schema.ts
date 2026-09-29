@@ -216,6 +216,7 @@ export const storefrontSettings = sqliteTable('storefront_settings', {
   id: integer('id').primaryKey(),
   heroVideoUrl: text('hero_video_url'),
   heroImageUrl: text('hero_image_url'),
+  whatsappNumber: text('whatsapp_number').notNull().default(''),
   heroBackground: text('hero_background').notNull().default('#f8f1e3'),
   brandSearchBackground: text('brand_search_background')
     .notNull()

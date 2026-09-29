@@ -17,6 +17,7 @@ import {
   ChevronRight,
   Images,
   MapPin,
+  MessageCircle,
   Package,
   Pause,
   Play,
@@ -32,6 +33,7 @@ import {
   localeFor,
 } from '@/components/jfcars/config';
 import { useDialog } from '@/components/jfcars/useDialog';
+import { whatsappHref } from '@/lib/contact';
 
 function GalleryMediaTile({
   item,
@@ -180,9 +182,11 @@ export function HeroVideo({
 export function InformationPage({
   lang,
   page,
+  whatsappNumber,
 }: {
   lang: Lang;
   page: 'about' | 'contact';
+  whatsappNumber?: string;
 }) {
   const [sent, setSent] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -227,6 +231,9 @@ export function InformationPage({
       success: 'Thank you. The JFcars team has received your message.',
       error: 'We could not send your message. Please try again.',
       response: 'We usually respond within one business day.',
+      whatsapp: 'Chat with JFcars on WhatsApp',
+      whatsappMessage:
+        'Hello JFcars, I would like help with a vehicle, part or shipment.',
       regional: 'Regional support',
       regionalText:
         'Tell us your country and city so the right team can respond.',
@@ -237,7 +244,8 @@ export function InformationPage({
     },
     fr: {
       aboutKicker: 'Un héritage familial de plus de 25 ans',
-      aboutTitle: 'Des racines locales. Une ouverture mondiale. Une vision familiale.',
+      aboutTitle:
+        'Des racines locales. Une ouverture mondiale. Une vision familiale.',
       aboutIntro:
         'JFcars est née de plus de 25 ans d’expérience concrète sur le marché automobile d’Afrique centrale. L’activité fondée par nos pères est aujourd’hui portée par la nouvelle génération, avec le même savoir-faire, les mêmes relations de confiance et le même engagement envers nos communautés.',
       storyTitle: 'De l’activité de nos pères à un réseau ouvert sur le monde',
@@ -274,6 +282,9 @@ export function InformationPage({
       success: 'Merci. L’équipe JFcars a bien reçu votre message.',
       error: 'Votre message n’a pas pu être envoyé. Réessayez.',
       response: 'Nous répondons généralement sous un jour ouvré.',
+      whatsapp: 'Discuter avec JFcars sur WhatsApp',
+      whatsappMessage:
+        'Bonjour JFcars, je souhaite obtenir de l’aide pour un véhicule, une pièce ou une expédition.',
       regional: 'Assistance régionale',
       regionalText:
         'Indiquez votre pays et votre ville pour être orienté vers la bonne équipe.',
@@ -323,6 +334,9 @@ export function InformationPage({
       success: 'Gracias. El equipo de JFcars ha recibido tu mensaje.',
       error: 'No pudimos enviar tu mensaje. Inténtalo de nuevo.',
       response: 'Normalmente respondemos en un día laborable.',
+      whatsapp: 'Hablar con JFcars por WhatsApp',
+      whatsappMessage:
+        'Hola JFcars, necesito ayuda con un vehículo, un repuesto o un envío.',
       regional: 'Asistencia regional',
       regionalText:
         'Indica tu país y ciudad para que responda el equipo adecuado.',
@@ -371,6 +385,9 @@ export function InformationPage({
       success: 'Obrigado. A equipa da JFcars recebeu a sua mensagem.',
       error: 'Não foi possível enviar a sua mensagem. Tente novamente.',
       response: 'Normalmente respondemos no prazo de um dia útil.',
+      whatsapp: 'Falar com a JFcars no WhatsApp',
+      whatsappMessage:
+        'Olá JFcars, preciso de ajuda com um veículo, uma peça ou uma expedição.',
       regional: 'Apoio regional',
       regionalText:
         'Indique o seu país e cidade para que a equipa certa possa responder.',
@@ -382,6 +399,10 @@ export function InformationPage({
         'Inclua a referência da expedição ou do lote, se tiver uma.',
     },
   }[lang];
+  const whatsappLink = whatsappHref(
+    whatsappNumber || '',
+    words.whatsappMessage,
+  );
 
   if (page === 'about')
     return (
@@ -441,6 +462,17 @@ export function InformationPage({
         <small>{words.contactKicker}</small>
         <h1>{words.contactTitle}</h1>
         <p>{words.contactIntro}</p>
+        {whatsappLink && (
+          <a
+            className="contact-whatsapp"
+            href={whatsappLink}
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            <MessageCircle />
+            {words.whatsapp}
+          </a>
+        )}
       </header>
       <div className="contact-page-grid">
         <form

@@ -28,6 +28,7 @@ const migrations = [
   '0004_marketplace_sync_contacts.sql',
   '0005_natural_the_watchers.sql',
   '0006_minor_wild_child.sql',
+  '0007_cloudy_thanos.sql',
 ];
 
 async function applyMigrations(db: D1Database, names: string[]) {
@@ -231,6 +232,7 @@ void test('normalized storefront content and gallery round-trip', async () => {
     await replaceMarketplace(db, [validCar()], {
       heroVideo: 'https://example.com/hero.mp4',
       heroImage: 'https://example.com/hero.webp',
+      whatsappNumber: '+244 912 345 678',
       theme: {
         heroBackground: '#112233',
         brandSearchBackground: '#223344',
@@ -293,6 +295,7 @@ void test('normalized storefront content and gallery round-trip', async () => {
     const content = await readStorefrontContent(db);
     assert.equal(content.heroVideo, 'https://example.com/hero.mp4');
     assert.equal(content.heroImage, 'https://example.com/hero.webp');
+    assert.equal(content.whatsappNumber, '+244 912 345 678');
     assert.equal(content.theme?.heroBackground, '#112233');
     assert.equal(content.theme?.brandSearchBackground, '#223344');
     assert.equal(content.theme?.buttonColor, '#667788');

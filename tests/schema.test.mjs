@@ -16,6 +16,7 @@ const migratedDatabase = () => {
   db.exec(migration('0004_marketplace_sync_contacts.sql'));
   db.exec(migration('0005_natural_the_watchers.sql'));
   db.exec(migration('0006_minor_wild_child.sql'));
+  db.exec(migration('0007_cloudy_thanos.sql'));
   return db;
 };
 
@@ -324,6 +325,7 @@ test('currency migration preserves profiles and vehicle lists', () => {
   db.exec(migration('0004_marketplace_sync_contacts.sql'));
   db.exec(migration('0005_natural_the_watchers.sql'));
   db.exec(migration('0006_minor_wild_child.sql'));
+  db.exec(migration('0007_cloudy_thanos.sql'));
   assert.deepEqual(
     {
       ...db

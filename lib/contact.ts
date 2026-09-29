@@ -43,3 +43,20 @@ export function telHref(value: string) {
   const digits = normalized.replace(/\D/g, '');
   return `tel:${normalized.startsWith('+') ? '+' : ''}${digits}`;
 }
+
+/** Validates the international number length accepted by WhatsApp. */
+export function normalizeWhatsAppNumber(value: string) {
+  const normalized = normalizePhoneNumber(value);
+  if (!normalized) return '';
+  const digitCount = normalized.replace(/\D/g, '').length;
+  return digitCount >= 7 && digitCount <= 15 ? normalized : '';
+}
+
+/** Builds a direct WhatsApp conversation URL from a validated phone number. */
+export function whatsappHref(value: string, message = '') {
+  const normalized = normalizeWhatsAppNumber(value);
+  if (!normalized) return '';
+  const digits = normalized.replace(/\D/g, '');
+  const safeMessage = message.trim().slice(0, 500);
+  return `https://wa.me/${digits}${safeMessage ? `?text=${encodeURIComponent(safeMessage)}` : ''}`;
+}

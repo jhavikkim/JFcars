@@ -102,6 +102,7 @@ export type StorefrontContent = Partial<
   gallery?: GalleryItem[];
   heroVideo?: string;
   heroImage?: string;
+  whatsappNumber?: string;
   theme?: StorefrontTheme;
 };
 

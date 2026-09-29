@@ -9,6 +9,7 @@ import {
   ChevronRight,
   Images,
   MapPin,
+  MessageCircle,
   ShoppingCart,
   X,
 } from 'lucide-react';
@@ -32,6 +33,7 @@ import {
   compareCopy,
 } from '@/components/jfcars/config';
 import { useDialog } from '@/components/jfcars/useDialog';
+import { whatsappHref } from '@/lib/contact';
 export function VehicleDetails({
   car,
   inventory,
@@ -44,6 +46,7 @@ export function VehicleDetails({
   add,
   inCart,
   onInquiry,
+  whatsappNumber,
 }: {
   car: Car;
   inventory: Car[];
@@ -56,6 +59,7 @@ export function VehicleDetails({
   add: () => void;
   inCart: boolean;
   onInquiry: (inquiry: SellerInquiry) => Promise<boolean>;
+  whatsappNumber?: string;
 }) {
   const u = ui[lang];
   const m = marketCopy[lang];
@@ -117,6 +121,8 @@ export function VehicleDetails({
       send: 'Send request',
       sent: 'Request sent. The seller will contact you shortly.',
       added: 'Added to cart',
+      whatsapp: 'Chat on WhatsApp',
+      whatsappMessage: `Hello JFcars, I am interested in the ${car.year} ${car.make} ${car.model}.`,
       abs: 'ABS braking system',
       airConditioning: 'Air conditioning',
       bluetooth: 'Bluetooth',
@@ -162,6 +168,8 @@ export function VehicleDetails({
       send: 'Envoyer la demande',
       sent: 'Demande envoyée. Le vendeur vous contactera rapidement.',
       added: 'Ajouté au panier',
+      whatsapp: 'Discuter sur WhatsApp',
+      whatsappMessage: `Bonjour JFcars, je suis intéressé(e) par le véhicule ${car.year} ${car.make} ${car.model}.`,
       abs: 'Système de freinage ABS',
       airConditioning: 'Climatisation',
       bluetooth: 'Bluetooth',
@@ -207,6 +215,8 @@ export function VehicleDetails({
       send: 'Enviar solicitud',
       sent: 'Solicitud enviada. El vendedor se pondrá en contacto pronto.',
       added: 'Añadido al carrito',
+      whatsapp: 'Hablar por WhatsApp',
+      whatsappMessage: `Hola JFcars, me interesa el vehículo ${car.year} ${car.make} ${car.model}.`,
       abs: 'Sistema de frenado ABS',
       airConditioning: 'Aire acondicionado',
       bluetooth: 'Bluetooth',
@@ -252,6 +262,8 @@ export function VehicleDetails({
       send: 'Enviar pedido',
       sent: 'Pedido enviado. O vendedor entrará em contacto brevemente.',
       added: 'Adicionado ao carrinho',
+      whatsapp: 'Falar pelo WhatsApp',
+      whatsappMessage: `Olá JFcars, tenho interesse no veículo ${car.year} ${car.make} ${car.model}.`,
       abs: 'Sistema de travagem ABS',
       airConditioning: 'Ar condicionado',
       bluetooth: 'Bluetooth',
@@ -266,6 +278,10 @@ export function VehicleDetails({
       ],
     },
   }[lang];
+  const whatsappLink = whatsappHref(
+    whatsappNumber || '',
+    labels.whatsappMessage,
+  );
   const recommendations = useMemo(() => {
     const unique = new Map<number, Car>();
     inventory.forEach((candidate) => {
@@ -461,6 +477,17 @@ export function VehicleDetails({
             {added ? labels.added : mode === 'rent' ? u.book : u.addCart}
             {added ? <Check /> : <ShoppingCart />}
           </button>
+          {whatsappLink && (
+            <a
+              className="detail-whatsapp"
+              href={whatsappLink}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <MessageCircle />
+              {labels.whatsapp}
+            </a>
+          )}
           <button
             className="contact-seller"
             onClick={() => setContactOpen((v) => !v)}

@@ -17,6 +17,7 @@ import {
   vehicleImageLimit,
 } from '@/lib/storefront-content';
 import { parseJson } from '@/lib/json';
+import { normalizeWhatsAppNumber } from '@/lib/contact';
 
 const locales: Lang[] = ['en', 'fr', 'es', 'pt'];
 const profileLanguages = new Set<Lang>(locales);
@@ -186,6 +187,10 @@ export function normalizeStorefrontContent(value: unknown): StorefrontContent {
     content.heroVideo = cleanText(input.heroVideo, 1_000);
   if (isSafeImageSource(input.heroImage))
     content.heroImage = cleanText(input.heroImage, 1_000);
+  const whatsappNumber = normalizeWhatsAppNumber(
+    typeof input.whatsappNumber === 'string' ? input.whatsappNumber : '',
+  );
+  if (whatsappNumber) content.whatsappNumber = whatsappNumber;
   content.theme = normalizeStorefrontTheme(input.theme);
   const gallery = normalizeGalleryRecords(input.gallery, galleryItemLimit);
   if (gallery.length) content.gallery = gallery;
@@ -537,12 +542,13 @@ function storefrontReplacement(
     db
       .prepare(
         `INSERT INTO storefront_settings
-         (id, hero_video_url, hero_image_url, hero_background,
+         (id, hero_video_url, hero_image_url, whatsapp_number, hero_background,
           brand_search_background, primary_color, accent_color,
           header_background, button_color, text_color, updated_at)
-         VALUES (1, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+         VALUES (1, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
          ON CONFLICT(id) DO UPDATE SET hero_video_url = excluded.hero_video_url,
          hero_image_url = excluded.hero_image_url,
+         whatsapp_number = excluded.whatsapp_number,
          hero_background = excluded.hero_background,
          brand_search_background = excluded.brand_search_background,
          primary_color = excluded.primary_color,
@@ -555,6 +561,7 @@ function storefrontReplacement(
       .bind(
         content.heroVideo || null,
         content.heroImage || null,
+        content.whatsappNumber || '',
         content.theme?.heroBackground,
         content.theme?.brandSearchBackground,
         content.theme?.primaryColor,
@@ -619,7 +626,7 @@ export async function readStorefrontContent(db: D1Database) {
   const [settings, translations, items, itemTranslations] = await Promise.all([
     db
       .prepare(
-        `SELECT hero_video_url, hero_image_url, hero_background,
+        `SELECT hero_video_url, hero_image_url, whatsapp_number, hero_background,
                 brand_search_background, primary_color, accent_color,
                 header_background, button_color, text_color
          FROM storefront_settings WHERE id = 1`,
@@ -627,6 +634,7 @@ export async function readStorefrontContent(db: D1Database) {
       .first<{
         hero_video_url: string | null;
         hero_image_url: string | null;
+        whatsapp_number: string;
         hero_background: string;
         brand_search_background: string;
         primary_color: string;
@@ -679,6 +687,8 @@ export async function readStorefrontContent(db: D1Database) {
   const content: StorefrontContent = {};
   if (settings?.hero_video_url) content.heroVideo = settings.hero_video_url;
   if (settings?.hero_image_url) content.heroImage = settings.hero_image_url;
+  if (settings?.whatsapp_number)
+    content.whatsappNumber = settings.whatsapp_number;
   content.theme = normalizeStorefrontTheme(
     settings
       ? {
