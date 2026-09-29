@@ -744,6 +744,7 @@ export function PartsPanel({
           src="/jfcars-parts-market.webp"
           width={1200}
           height={720}
+          unoptimized
           alt={
             lang === 'fr'
               ? 'Phare, freins, batterie et pièces d’entretien'

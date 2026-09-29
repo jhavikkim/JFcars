@@ -57,7 +57,7 @@ function GalleryMediaTile({
       alt={alt}
       width={900}
       height={650}
-      unoptimized={item.image.startsWith('http')}
+      unoptimized
       loading="lazy"
       decoding="async"
       sizes="(max-width: 600px) 100vw, (max-width: 900px) 50vw, 34vw"
@@ -143,6 +143,7 @@ export function HeroVideo({
         src={poster}
         alt=""
         fill
+        unoptimized
         sizes="(min-width: 701px) 46vw, 0px"
         priority
         aria-hidden="true"
@@ -417,6 +418,7 @@ export function InformationPage({
             src="/jfcars-central-africa-hero.webp"
             width={1200}
             height={800}
+            unoptimized
             sizes="(max-width: 820px) 100vw, 48vw"
             priority
             decoding="async"
@@ -848,7 +850,7 @@ export function GalleryViewer({
               alt={caption(item)}
               width={1536}
               height={1024}
-              unoptimized={item.image.startsWith('http')}
+              unoptimized
               loading="eager"
               decoding="async"
               sizes="(max-width: 760px) 100vw, 82vw"
@@ -925,7 +927,7 @@ export function GalleryViewer({
                   alt=""
                   width={240}
                   height={150}
-                  unoptimized={entry.image.startsWith('http')}
+                  unoptimized
                   loading="lazy"
                   decoding="async"
                   sizes="120px"

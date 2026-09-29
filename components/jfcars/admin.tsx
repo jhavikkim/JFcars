@@ -240,7 +240,7 @@ function VehicleMediaEditor({
                 alt=""
                 width={180}
                 height={120}
-                unoptimized={image.startsWith('http')}
+                unoptimized
                 loading="lazy"
                 decoding="async"
                 sizes="90px"
@@ -1312,7 +1312,7 @@ export function AdminPanel({
                           alt=""
                           width={160}
                           height={100}
-                          unoptimized={c.image.startsWith('http')}
+                          unoptimized
                           loading="lazy"
                           decoding="async"
                           sizes="80px"
@@ -1605,7 +1605,7 @@ export function AdminPanel({
                         alt=""
                         width={160}
                         height={100}
-                        unoptimized={request.car.image.startsWith('http')}
+                        unoptimized
                         loading="lazy"
                         decoding="async"
                         sizes="80px"
@@ -1821,9 +1821,7 @@ export function AdminPanel({
                       alt="Hero poster preview"
                       width={360}
                       height={220}
-                      unoptimized={Boolean(
-                        contentDraft.heroImage?.startsWith('http'),
-                      )}
+                      unoptimized
                       sizes="240px"
                     />
                   </div>
@@ -1902,9 +1900,7 @@ export function AdminPanel({
                     alt="Current homepage hero poster"
                     width={640}
                     height={420}
-                    unoptimized={Boolean(
-                      contentDraft.heroImage?.startsWith('http'),
-                    )}
+                    unoptimized
                     sizes="320px"
                   />
                   <div>
@@ -2162,7 +2158,7 @@ export function AdminPanel({
                             alt=""
                             width={300}
                             height={200}
-                            unoptimized={item.image.startsWith('http')}
+                            unoptimized
                             loading="lazy"
                             decoding="async"
                             sizes="130px"

@@ -395,7 +395,7 @@ export function VehicleDetails({
               alt={`${car.make} ${car.model} — ${labels.gallery[photoView] || labels.photos}`}
               width={1400}
               height={900}
-              unoptimized={images[photoView].startsWith('http')}
+              unoptimized
               loading="eager"
               decoding="async"
               sizes="(max-width: 760px) 100vw, 62vw"
@@ -419,7 +419,7 @@ export function VehicleDetails({
                   alt=""
                   width={260}
                   height={170}
-                  unoptimized={image.startsWith('http')}
+                  unoptimized
                   loading="lazy"
                   decoding="async"
                   sizes="130px"
@@ -760,7 +760,7 @@ function PhotoViewer({
           alt={`${makeModel} — ${galleryLabels[photoView] || photosLabel}`}
           width={1600}
           height={1000}
-          unoptimized={images[photoView].startsWith('http')}
+          unoptimized
           loading="eager"
           decoding="async"
           sizes="(max-width: 760px) 100vw, 86vw"
@@ -799,7 +799,7 @@ function PhotoViewer({
               alt={galleryLabels[index] || `${photosLabel} ${index + 1}`}
               width={240}
               height={150}
-              unoptimized={image.startsWith('http')}
+              unoptimized
               loading="lazy"
               decoding="async"
               sizes="120px"
@@ -834,7 +834,7 @@ export function VehicleRecommendationCard({
           alt={`${car.make} ${car.model}`}
           width={720}
           height={460}
-          unoptimized={car.image.startsWith('http')}
+          unoptimized
           loading="lazy"
           decoding="async"
           sizes="(max-width: 760px) 82vw, 28vw"
@@ -915,7 +915,7 @@ export function ComparePanel({
                 alt=""
                 width={640}
                 height={400}
-                unoptimized={c.image.startsWith('http')}
+                unoptimized
                 loading="lazy"
                 decoding="async"
                 sizes="(max-width: 760px) 82vw, 32vw"

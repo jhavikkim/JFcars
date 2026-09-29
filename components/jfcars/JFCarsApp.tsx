@@ -2404,7 +2404,7 @@ export default function JFCarsApp({
                             alt={`${car.make} ${car.model}`}
                             width={960}
                             height={600}
-                            unoptimized={car.image.startsWith('http')}
+                            unoptimized
                             loading="lazy"
                             decoding="async"
                             sizes="(max-width: 700px) 50vw, (max-width: 1100px) 42vw, 30vw"

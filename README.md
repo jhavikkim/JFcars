@@ -4,26 +4,43 @@ JFcars is a multilingual vehicle marketplace for Central African markets. It
 supports buying, local rentals, parts requests, shipment updates, account
 management, and an authenticated admin workspace.
 
-## Development
+## Docker deployment
 
-Docker Compose is the canonical local development workflow. It provisions the
-Linux-specific Node dependencies, applies every D1 migration, and persists the
-local D1/R2 state in named volumes:
+Docker Compose builds the application once and runs the compiled worker. It
+applies every D1 migration before startup and persists the local D1/R2 state in
+named volumes. Copy `.env.example` to `.env`, then start the service:
 
 ```bash
+cp .env.example .env
 docker compose up --build
 ```
 
-Open <http://localhost:3000>. Stop the stack with `docker compose down`. Add
-`-v` only when you intentionally want to erase the local database, uploaded
-media, and other Miniflare state. Override the host port with
-`JFCARS_PORT=3001 docker compose up --build`.
+Open <http://127.0.0.1:3010>. The port is loopback-only so public traffic must
+arrive through Nginx or another reverse proxy. Stop the stack with
+`docker compose down`. Add `-v` only when you intentionally want to erase the
+local database, uploaded media, and other Miniflare state.
 
-Source is copied into the image deliberately so macOS and Linux native
-dependencies cannot overwrite one another. Re-run `docker compose up --build`
-after changing application code.
+For server updates, pull the new revision and rebuild without deleting the
+named volume:
 
-For direct host development when Docker is unavailable:
+```bash
+git pull --ff-only origin main
+docker compose up -d --build
+```
+
+The production container serves prebuilt assets and does not run Vite HMR or
+compile pages on demand. Bundled images are served directly instead of through
+the framework image-optimizer endpoint.
+
+The OpenAI Sites host supplies authenticated-user headers automatically, but a
+self-hosted Nginx deployment does not. Keep `NODE_ENV=production`; the
+development-only `Local Admin` identity grants administrator access and must
+never be exposed publicly. Configure a real self-hosted identity provider
+before enabling account and admin access on an external domain.
+
+## Development
+
+Run the live development server directly on a development workstation:
 
 ```bash
 npm install
