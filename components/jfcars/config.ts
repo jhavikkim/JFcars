@@ -1932,7 +1932,7 @@ export const flowCopy = {
     helpText:
       'Browse, compare, rent or request a part. For transaction support, use the seller form on any listing.',
     aboutText:
-      'JFcars connects buyers and renters with vehicles, parts and shipment updates across our Central African markets. We focus on clear information, local support and visible logistics from departure to arrival.',
+      'JFcars is a second-generation family business built on more than 25 years of experience in Central Africa’s automotive market. We source vehicles, car parts and motorcycle parts worldwide to address local shortages, with clear guidance and shipment updates through delivery.',
     contactText:
       'Tell our team how we can help. For a specific vehicle, include its make or listing name in your message.',
     contactName: 'Your name',
@@ -2008,7 +2008,7 @@ export const flowCopy = {
     helpText:
       'Parcourez, comparez, louez ou demandez une pièce. Pour une transaction, utilisez le formulaire vendeur de l’annonce.',
     aboutText:
-      'JFcars met en relation les acheteurs et les locataires avec des véhicules, des pièces et le suivi des expéditions sur nos marchés d’Afrique centrale. Nous privilégions des informations claires, un accompagnement local et une logistique visible du départ à l’arrivée.',
+      'JFcars est une entreprise familiale de deuxième génération, fondée sur plus de 25 ans d’expérience du marché automobile d’Afrique centrale. Nous recherchons dans le monde entier des véhicules, des pièces automobiles et des pièces de moto afin de répondre aux pénuries locales, avec un accompagnement clair jusqu’à la livraison.',
     contactText:
       'Expliquez à notre équipe comment nous pouvons vous aider. Pour un véhicule précis, indiquez sa marque ou le nom de l’annonce.',
     contactName: 'Votre nom',
@@ -2082,7 +2082,7 @@ export const flowCopy = {
     helpText:
       'Explora, compara, alquila o solicita una pieza. Para una operación, usa el formulario del vendedor en el anuncio.',
     aboutText:
-      'JFcars conecta a compradores y arrendatarios con vehículos, repuestos y el seguimiento de envíos en nuestros mercados de África Central. Priorizamos la información clara, la asistencia local y una logística visible desde la salida hasta la llegada.',
+      'JFcars es una empresa familiar de segunda generación, construida sobre más de 25 años de experiencia en el mercado automotor de África Central. Buscamos vehículos y repuestos para automóviles y motocicletas en todo el mundo para responder a la escasez local, con orientación clara hasta la entrega.',
     contactText:
       'Cuéntale a nuestro equipo cómo podemos ayudarte. Para un vehículo concreto, incluye la marca o el nombre del anuncio.',
     contactName: 'Tu nombre',
@@ -2158,7 +2158,7 @@ export const flowCopy = {
     helpText:
       'Explore, compare, alugue ou peça uma peça. Para apoio numa transação, utilize o formulário do vendedor em qualquer anúncio.',
     aboutText:
-      'A JFcars liga compradores e clientes de aluguer a veículos, peças e atualizações de expedição nos nossos mercados da África Central. Damos prioridade a informações claras, apoio local e logística visível desde a partida até à chegada.',
+      'A JFcars é uma empresa familiar de segunda geração, construída sobre mais de 25 anos de experiência no mercado automóvel da África Central. Procuramos veículos e peças para automóveis e motociclos em todo o mundo para responder à escassez local, com orientação clara até à entrega.',
     contactText:
       'Diga à nossa equipa como podemos ajudar. Para um veículo específico, indique a marca ou o nome do anúncio na sua mensagem.',
     contactName: 'O seu nome',

@@ -189,30 +189,32 @@ export function InformationPage({
   const [error, setError] = useState(false);
   const words = {
     en: {
-      aboutKicker: 'Built for Central African roads',
-      aboutTitle: 'Buying a car should feel personal.',
+      aboutKicker: 'A family legacy built over 25+ years',
+      aboutTitle: 'Local roots. Global reach. One family vision.',
       aboutIntro:
-        'JFcars brings vehicles, parts and real shipment updates into one trusted place—with people on the ground to help at every step.',
-      storyTitle: 'A marketplace with a human connection',
+        'JFcars grew from more than 25 years of hands-on experience in Central Africa’s automotive market. What began with our fathers is now carried forward by the next generation—with the same practical knowledge, trusted relationships and commitment to serving our communities.',
+      storyTitle: 'From our fathers’ business to a wider world',
       story:
-        'We created JFcars to make distance feel smaller. Buyers can see clear vehicle details, follow real shipping photos and speak directly with people who understand their market.',
+        'For decades, our family worked directly with drivers, mechanics and businesses in the local market. We saw the same challenge again and again: dependable parts for many vehicle brands were difficult to find, and motorcycle parts were even harder to source.',
+      storySecond:
+        'JFcars was created to close that gap. We connect customers in Central Africa with vehicles and mechanical parts sourced from markets around the world. From the first request to sourcing, shipping and arrival, our team keeps every order clear, personal and within the agreed timeframe.',
       values: [
         [
-          'Clear from the start',
-          'Honest details, visible availability and no hidden online payment step.',
+          '25+ years, locally rooted',
+          'Experience passed from one generation to the next, grounded in the realities of our local markets.',
         ],
         [
-          'Local understanding',
-          'Support shaped around the roads, cities and needs of each market.',
+          'Worldwide sourcing',
+          'Vehicles, car parts and motorcycle parts sourced across international markets to answer local needs.',
         ],
         [
-          'Updates you can see',
-          'Real photos from preparation, loading, transit and arrival.',
+          'Delivery you can follow',
+          'Clear expectations, agreed timeframes and visible updates from preparation through arrival.',
         ],
       ],
-      markets: 'Serving five regional markets',
+      markets: 'years of local market experience',
       marketList:
-        'Republic of the Congo · Cameroon · Gabon · Cabinda · DR Congo',
+        'Serving the Republic of the Congo · Cameroon · Gabon · Cabinda · DR Congo',
       contactKicker: 'Talk to a real person',
       contactTitle: 'How can we help?',
       contactIntro:
@@ -234,29 +236,32 @@ export function InformationPage({
       shipmentText: 'Include your shipment or batch reference if you have one.',
     },
     fr: {
-      aboutKicker: 'Pensé pour les routes d’Afrique centrale',
-      aboutTitle: 'Acheter une voiture doit rester humain.',
+      aboutKicker: 'Un héritage familial de plus de 25 ans',
+      aboutTitle: 'Des racines locales. Une ouverture mondiale. Une vision familiale.',
       aboutIntro:
-        'JFcars réunit véhicules, pièces et suivi réel des expéditions dans un espace fiable, avec une équipe locale présente à chaque étape.',
-      storyTitle: 'Une place de marché avec un vrai contact humain',
+        'JFcars est née de plus de 25 ans d’expérience concrète sur le marché automobile d’Afrique centrale. L’activité fondée par nos pères est aujourd’hui portée par la nouvelle génération, avec le même savoir-faire, les mêmes relations de confiance et le même engagement envers nos communautés.',
+      storyTitle: 'De l’activité de nos pères à un réseau ouvert sur le monde',
       story:
-        'Nous avons créé JFcars pour réduire les distances. Les acheteurs consultent des informations claires, suivent les expéditions en photos et échangent avec des personnes qui connaissent leur marché.',
+        'Pendant des décennies, notre famille a travaillé directement avec les conducteurs, les mécaniciens et les entreprises du marché local. Un problème revenait sans cesse : les pièces fiables pour de nombreuses marques étaient difficiles à trouver, et les pièces de moto l’étaient davantage encore.',
+      storySecond:
+        'JFcars a été créée pour combler ce manque. Nous mettons les clients d’Afrique centrale en relation avec des véhicules et des pièces mécaniques provenant de marchés du monde entier. De la demande initiale à la recherche, l’expédition et l’arrivée, notre équipe assure un suivi clair, humain et conforme au délai convenu.',
       values: [
         [
-          'Clair dès le départ',
-          'Des informations honnêtes, une disponibilité visible et aucun paiement caché en ligne.',
+          'Plus de 25 ans d’ancrage local',
+          'Une expérience transmise d’une génération à l’autre et fondée sur les réalités de nos marchés.',
         ],
         [
-          'Une connaissance locale',
-          'Un accompagnement adapté aux routes, aux villes et aux besoins de chaque marché.',
+          'Un approvisionnement mondial',
+          'Des véhicules, des pièces automobiles et des pièces de moto recherchés sur les marchés internationaux selon les besoins locaux.',
         ],
         [
-          'Des nouvelles en images',
-          'De vraies photos de la préparation, du chargement, du transit et de l’arrivée.',
+          'Une livraison que vous pouvez suivre',
+          'Des délais convenus, des informations claires et un suivi visible de la préparation jusqu’à l’arrivée.',
         ],
       ],
-      markets: 'Présents sur cinq marchés régionaux',
-      marketList: 'République du Congo · Cameroun · Gabon · Cabinda · RD Congo',
+      markets: 'ans d’expérience sur le marché local',
+      marketList:
+        'Au service de la République du Congo · Cameroun · Gabon · Cabinda · RD Congo',
       contactKicker: 'Parlez à une vraie personne',
       contactTitle: 'Comment pouvons-nous vous aider ?',
       contactIntro:
@@ -280,30 +285,32 @@ export function InformationPage({
         'Ajoutez votre référence d’expédition ou de lot si vous en avez une.',
     },
     es: {
-      aboutKicker: 'Creado para las carreteras de África Central',
-      aboutTitle: 'Comprar un coche debe sentirse personal.',
+      aboutKicker: 'Un legado familiar de más de 25 años',
+      aboutTitle: 'Raíces locales. Alcance mundial. Una visión familiar.',
       aboutIntro:
-        'JFcars reúne vehículos, repuestos y seguimiento real de envíos en un lugar de confianza, con personas locales que ayudan en cada paso.',
-      storyTitle: 'Un mercado con conexión humana',
+        'JFcars nació de más de 25 años de experiencia práctica en el mercado automotor de África Central. El negocio iniciado por nuestros padres continúa hoy en manos de la nueva generación, con el mismo conocimiento, las mismas relaciones de confianza y el mismo compromiso con nuestras comunidades.',
+      storyTitle: 'Del negocio de nuestros padres a una red mundial',
       story:
-        'Creamos JFcars para acortar distancias. Los compradores ven información clara, siguen los envíos con fotos reales y hablan con personas que conocen su mercado.',
+        'Durante décadas, nuestra familia trabajó directamente con conductores, mecánicos y empresas del mercado local. Encontramos siempre el mismo problema: era difícil conseguir repuestos fiables para muchas marcas de vehículos, y las piezas de motocicleta eran aún más escasas.',
+      storySecond:
+        'JFcars se creó para cerrar esa brecha. Conectamos a los clientes de África Central con vehículos y piezas mecánicas procedentes de mercados de todo el mundo. Desde la primera solicitud hasta la búsqueda, el envío y la llegada, nuestro equipo mantiene cada pedido claro, cercano y dentro del plazo acordado.',
       values: [
         [
-          'Claridad desde el principio',
-          'Datos honestos, disponibilidad visible y ningún pago oculto en línea.',
+          'Más de 25 años de raíces locales',
+          'Experiencia transmitida de una generación a otra y basada en la realidad de nuestros mercados.',
         ],
         [
-          'Conocimiento local',
-          'Ayuda adaptada a las carreteras, ciudades y necesidades de cada mercado.',
+          'Abastecimiento mundial',
+          'Vehículos y repuestos para automóviles y motocicletas procedentes de mercados internacionales para responder a las necesidades locales.',
         ],
         [
-          'Novedades que puedes ver',
-          'Fotos reales de preparación, carga, tránsito y llegada.',
+          'Una entrega que puedes seguir',
+          'Expectativas claras, plazos acordados y actualizaciones visibles desde la preparación hasta la llegada.',
         ],
       ],
-      markets: 'Presentes en cinco mercados regionales',
+      markets: 'años de experiencia en el mercado local',
       marketList:
-        'República del Congo · Camerún · Gabón · Cabinda · RD del Congo',
+        'Al servicio de República del Congo · Camerún · Gabón · Cabinda · RD del Congo',
       contactKicker: 'Habla con una persona real',
       contactTitle: '¿Cómo podemos ayudarte?',
       contactIntro:
@@ -326,29 +333,32 @@ export function InformationPage({
       shipmentText: 'Incluye la referencia del envío o lote si la tienes.',
     },
     pt: {
-      aboutKicker: 'Criado para as estradas da África Central',
-      aboutTitle: 'Comprar um automóvel deve ser uma experiência pessoal.',
+      aboutKicker: 'Um legado familiar com mais de 25 anos',
+      aboutTitle: 'Raízes locais. Alcance mundial. Uma visão familiar.',
       aboutIntro:
-        'A JFcars reúne veículos, peças e atualizações reais sobre expedições num só espaço de confiança, com pessoas no terreno a ajudar em cada etapa.',
-      storyTitle: 'Um mercado com uma ligação humana',
+        'A JFcars nasceu de mais de 25 anos de experiência prática no mercado automóvel da África Central. O negócio iniciado pelos nossos pais é hoje continuado pela nova geração, com o mesmo conhecimento, as mesmas relações de confiança e o mesmo compromisso com as nossas comunidades.',
+      storyTitle: 'Do negócio dos nossos pais para uma rede mundial',
       story:
-        'Criámos a JFcars para encurtar distâncias. Os compradores consultam informações claras sobre os veículos, acompanham as expedições com fotografias reais e falam diretamente com pessoas que conhecem o seu mercado.',
+        'Durante décadas, a nossa família trabalhou diretamente com condutores, mecânicos e empresas do mercado local. Encontrámos repetidamente o mesmo desafio: era difícil obter peças fiáveis para muitas marcas de veículos, e as peças para motociclos eram ainda mais escassas.',
+      storySecond:
+        'A JFcars foi criada para preencher essa lacuna. Ligamos clientes da África Central a veículos e peças mecânicas provenientes de mercados de todo o mundo. Desde o primeiro pedido até à procura, expedição e chegada, a nossa equipa mantém cada encomenda clara, próxima e dentro do prazo acordado.',
       values: [
         [
-          'Clareza desde o início',
-          'Informações honestas, disponibilidade visível e nenhum pagamento online escondido.',
+          'Mais de 25 anos de raízes locais',
+          'Experiência transmitida de uma geração para a seguinte e baseada na realidade dos nossos mercados.',
         ],
         [
-          'Conhecimento local',
-          'Apoio adaptado às estradas, cidades e necessidades de cada mercado.',
+          'Fornecimento mundial',
+          'Veículos e peças para automóveis e motociclos provenientes de mercados internacionais para responder às necessidades locais.',
         ],
         [
-          'Atualizações que pode ver',
-          'Fotografias reais da preparação, do carregamento, do trânsito e da chegada.',
+          'Uma entrega que pode acompanhar',
+          'Expectativas claras, prazos acordados e atualizações visíveis desde a preparação até à chegada.',
         ],
       ],
-      markets: 'Presentes em cinco mercados regionais',
-      marketList: 'República do Congo · Camarões · Gabão · Cabinda · RD Congo',
+      markets: 'anos de experiência no mercado local',
+      marketList:
+        'Ao serviço de República do Congo · Camarões · Gabão · Cabinda · RD Congo',
       contactKicker: 'Fale com uma pessoa real',
       contactTitle: 'Como podemos ajudar?',
       contactIntro:
@@ -405,9 +415,10 @@ export function InformationPage({
             <small>JFCARS</small>
             <h2>{words.storyTitle}</h2>
             <p>{words.story}</p>
+            <p>{words.storySecond}</p>
           </div>
           <aside>
-            <b>5</b>
+            <b>25+</b>
             <span>{words.markets}</span>
             <p>{words.marketList}</p>
           </aside>
