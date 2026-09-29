@@ -2880,7 +2880,27 @@ export default function JFCarsApp() {
           </nav>
         </div>
         <div className="footer-bottom">
-          <p>{footerCopy[lang].notice}</p>
+          <div>
+            <p>{footerCopy[lang].notice}</p>
+            <p className="map-attribution">
+              Central Africa map:{' '}
+              <a
+                href="https://commons.wikimedia.org/wiki/File:Africa-countries-central.svg"
+                target="_blank"
+                rel="noreferrer"
+              >
+                ReneeWrites / Wikimedia Commons
+              </a>{' '}
+              ·{' '}
+              <a
+                href="https://creativecommons.org/licenses/by/4.0/"
+                target="_blank"
+                rel="noreferrer"
+              >
+                CC BY 4.0
+              </a>
+            </p>
+          </div>
           <span>© 2026 JFcars. {footerCopy[lang].copyright}</span>
         </div>
       </footer>

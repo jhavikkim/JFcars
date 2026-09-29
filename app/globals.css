@@ -6249,6 +6249,27 @@ body {
 .hero {
   background-color: var(--hero-background);
 }
+.hero-copy {
+  position: relative;
+  isolation: isolate;
+}
+.hero-copy::before {
+  content: '';
+  position: absolute;
+  z-index: 0;
+  top: 50%;
+  right: clamp(-24px, -1vw, -8px);
+  width: min(47%, 330px);
+  aspect-ratio: 384 / 420;
+  transform: translateY(-50%);
+  background: url('/central-africa-map.svg') center / contain no-repeat;
+  opacity: 0.075;
+  pointer-events: none;
+}
+.hero-copy > * {
+  position: relative;
+  z-index: 1;
+}
 .hero-art img {
   object-position: center;
 }
@@ -6435,6 +6456,23 @@ footer .logo {
   color: #a9bdb5;
   font-size: 10px;
   line-height: 1.6;
+}
+.footer-bottom > div {
+  min-width: 0;
+}
+.footer-bottom .map-attribution {
+  margin-top: 6px;
+  color: #8fa79d;
+}
+.map-attribution a {
+  color: inherit;
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 2px;
+}
+.map-attribution a:hover,
+.map-attribution a:focus-visible {
+  color: white;
 }
 .footer-bottom > span {
   flex: 0 0 auto;
@@ -6969,6 +7007,9 @@ footer .logo {
   .hero-copy {
     max-width: none;
     padding: 0;
+  }
+  .hero-copy::before {
+    display: none;
   }
   .hero-copy > .eyebrow,
   .hero-copy > h1,
