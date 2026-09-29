@@ -7,6 +7,8 @@
   },
   "scripts": {
     "dev": "vinext dev",
+    "docker:dev": "npm run db:local:migrate && npm run dev",
+    "db:local:migrate": "wrangler d1 migrations apply site-creator-d1 --local --config wrangler.local.jsonc",
     "build": "vinext build",
     "start": "wrangler dev --config dist/server/wrangler.json",
     "typecheck": "tsc --noEmit --incremental false",

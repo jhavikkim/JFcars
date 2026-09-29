@@ -6,8 +6,28 @@ management, and an authenticated admin workspace.
 
 ## Development
 
+Docker Compose is the canonical local development workflow. It provisions the
+Linux-specific Node dependencies, applies every D1 migration, and persists the
+local D1/R2 state in named volumes:
+
+```bash
+docker compose up --build
+```
+
+Open <http://localhost:3000>. Stop the stack with `docker compose down`. Add
+`-v` only when you intentionally want to erase the local database, uploaded
+media, and other Miniflare state. Override the host port with
+`JFCARS_PORT=3001 docker compose up --build`.
+
+Source is copied into the image deliberately so macOS and Linux native
+dependencies cannot overwrite one another. Re-run `docker compose up --build`
+after changing application code.
+
+For direct host development when Docker is unavailable:
+
 ```bash
 npm install
+npm run db:local:migrate
 npm run dev
 npm run typecheck
 npm run lint
@@ -22,6 +42,10 @@ npm run db:generate
 ```
 
 Never edit an already-deployed migration. Add a new one instead.
+
+The database diagram, table ownership, constraints, runtime bindings, and
+planned eBuy persistence boundary are documented in
+[`docs/database-architecture.md`](docs/database-architecture.md).
 
 ## Frontend structure
 
