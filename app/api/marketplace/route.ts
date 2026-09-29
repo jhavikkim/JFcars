@@ -1,9 +1,4 @@
-import {
-  ensureDatabase,
-  isAdminRequest,
-  json,
-  requestUser,
-} from '@/lib/site-db';
+import { ensureDatabase, json, requestUser } from '@/lib/site-db';
 import {
   createSellRequest,
   ensureNormalizedData,
@@ -81,9 +76,10 @@ async function rateLimited(
   request: Request,
   action: string,
   limit: number,
+  userId?: string | null,
 ) {
   const identity =
-    requestUser(request)?.id ||
+    userId ||
     request.headers.get('cf-connecting-ip') ||
     request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ||
     'anonymous';
@@ -226,14 +222,16 @@ async function readState(includePrivate: boolean): Promise<MarketplaceState> {
 
 export async function GET(request: Request) {
   try {
-    return json(await readState(isAdminRequest(request)));
+    const user = await requestUser(request);
+    return json(await readState(user?.role === 'admin'));
   } catch {
     return json({ error: 'Marketplace service unavailable' }, { status: 503 });
   }
 }
 
 export async function POST(request: Request) {
-  const adminRequest = isAdminRequest(request);
+  const authenticatedUser = await requestUser(request);
+  const adminRequest = authenticatedUser?.role === 'admin';
   const parsed = await readJsonObject(
     request,
     adminRequest ? maximumMarketplaceRequestBytes : maximumPublicRequestBytes,
@@ -245,7 +243,6 @@ export async function POST(request: Request) {
   try {
     const db = await ensureMarketplaceRow();
     const action = safeText(body.action, 40);
-    const authenticatedUser = requestUser(request);
     const userId = authenticatedUser?.id || null;
     if (action === 'sell-request' && !VEHICLE_SELLING_ENABLED)
       return json(
@@ -260,7 +257,10 @@ export async function POST(request: Request) {
           : action === 'seller-inquiry'
             ? 30
             : 0;
-    if (publicLimit && (await rateLimited(db, request, action, publicLimit)))
+    if (
+      publicLimit &&
+      (await rateLimited(db, request, action, publicLimit, userId))
+    )
       return json(
         { error: 'Too many requests. Please try again later.' },
         { status: 429 },
@@ -448,7 +448,7 @@ export async function POST(request: Request) {
     }
 
     if (action === 'admin-sync') {
-      if (!isAdminRequest(request))
+      if (!adminRequest)
         return json({ error: 'Admin authorization required' }, { status: 403 });
       const inventory = Array.isArray(body.inventory)
         ? body.inventory.slice(0, 2000)

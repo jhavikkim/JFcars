@@ -243,7 +243,7 @@ export async function HEAD(request: Request) {
 }
 
 export async function POST(request: Request) {
-  if (!isAdminRequest(request))
+  if (!(await isAdminRequest(request)))
     return json({ error: 'Admin authorization required' }, { status: 403 });
 
   const purpose = requestedPurpose(request);
@@ -312,7 +312,7 @@ export async function POST(request: Request) {
     if (!upload)
       return json({ error: 'The file content is not valid' }, { status: 400 });
     const key = `storefront/${purpose}/${Date.now()}-${crypto.randomUUID()}.${rule.extension}`;
-    const uploader = requestUser(request);
+    const uploader = await requestUser(request);
     // Transformed streams have an unknown length in Workers. Re-attach the
     // validated HTTP length so R2 can ingest the body without buffering it.
     const fixed = new FixedLengthStream(limited.declaredLength);

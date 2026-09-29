@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import './globals.css';
 export const metadata: Metadata = {
-  metadataBase: new URL('https://jfcars.jhavik-kim.chatgpt.site'),
+  metadataBase: new URL('https://jfcars.4rbl.com'),
   title: 'JFcars — Cars, rentals and parts in Central Africa',
   description:
     'Search, compare, buy or rent cars and request auto parts across Central African markets.',

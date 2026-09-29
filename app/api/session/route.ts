@@ -1,19 +1,16 @@
-import { isAdminRequest, json, requestUser } from '@/lib/site-db';
+import { json, requestUser } from '@/lib/site-db';
 
 export const dynamic = 'force-dynamic';
 
 export async function GET(request: Request) {
-  if (process.env.NODE_ENV === 'development') {
+  try {
+    const user = await requestUser(request);
     return json({
-      authenticated: true,
-      isAdmin: true,
-      user: { name: 'Local Admin', email: 'admin@jfcars.local' },
+      authenticated: Boolean(user),
+      isAdmin: user?.role === 'admin',
+      user: user ? { name: user.name, email: user.email } : null,
     });
+  } catch {
+    return json({ error: 'Session service unavailable' }, { status: 503 });
   }
-  const user = requestUser(request);
-  return json({
-    authenticated: Boolean(user),
-    isAdmin: isAdminRequest(request),
-    user: user ? { name: user.name, email: user.email } : null,
-  });
 }

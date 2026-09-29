@@ -32,11 +32,19 @@ The production container serves prebuilt assets and does not run Vite HMR or
 compile pages on demand. Bundled images are served directly instead of through
 the framework image-optimizer endpoint.
 
-The OpenAI Sites host supplies authenticated-user headers automatically, but a
-self-hosted Nginx deployment does not. Keep `NODE_ENV=production`; the
-development-only `Local Admin` identity grants administrator access and must
-never be exposed publicly. Configure a real self-hosted identity provider
-before enabling account and admin access on an external domain.
+JFcars owns its email/password authentication and server-side sessions. New
+accounts receive the customer role. After creating the owner account through
+the website, promote that exact email to the administrator role on the server:
+
+```bash
+docker compose exec web npm exec -- wrangler d1 execute site-creator-d1 \
+  --local --persist-to /app/.wrangler/state --config wrangler.local.jsonc \
+  --command "UPDATE auth_users SET role='admin' WHERE email='owner@example.com';"
+```
+
+Replace `owner@example.com` with the normalized owner email. Reload the site;
+the existing session reads the updated role immediately. There is no local or
+development administrator shortcut.
 
 ## Development
 
@@ -100,3 +108,6 @@ The runtime backfill and bulk admin writes use bounded, set-based D1 queries.
 The test suite replays every migration and exercises backfill idempotency,
 explicitly empty inventory, malformed legacy records, transactional rollbacks,
 storefront round-trips, and high-volume order-history reads in Miniflare.
+
+Migration `0008` adds first-party users and hashed server-side sessions. Raw
+passwords and raw session tokens are never stored in the database.

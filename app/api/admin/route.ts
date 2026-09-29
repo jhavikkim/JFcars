@@ -11,7 +11,7 @@ import { VEHICLE_SELLING_ENABLED } from '@/components/jfcars/config';
 export const dynamic = 'force-dynamic';
 
 export async function GET(request: Request) {
-  if (!isAdminRequest(request))
+  if (!(await isAdminRequest(request)))
     return json({ error: 'Admin authorization required' }, { status: 403 });
   try {
     const db = await ensureDatabase();
@@ -23,7 +23,7 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
-  if (!isAdminRequest(request))
+  if (!(await isAdminRequest(request)))
     return json({ error: 'Admin authorization required' }, { status: 403 });
   const parsed = await readJsonObject(request, 20_000);
   if (!parsed.ok)

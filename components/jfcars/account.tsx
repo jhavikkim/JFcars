@@ -1,7 +1,5 @@
 'use client';
 
-/* oxlint-disable next/no-html-link-for-pages */
-
 import Image from 'next/image';
 import { useState } from 'react';
 import {
@@ -102,11 +100,43 @@ export function AccountLayer({
   const [rentalConsent, setRentalConsent] = useState(false);
   const [profileSaving, setProfileSaving] = useState(false);
   const [profileSaveFailed, setProfileSaveFailed] = useState(false);
+  const [authBusy, setAuthBusy] = useState(false);
+  const [authError, setAuthError] = useState('');
   const f = flowCopy[lang];
   const u = ui[lang];
   const p = profileCopy[lang];
   const a = accessibilityCopy[lang];
   const m = marketCopy[lang];
+  const authText = {
+    en: {
+      passwordHint: 'Use 10–128 characters.',
+      genericError: 'We could not complete this request. Please try again.',
+      existing: 'An account already exists for this email.',
+      invalid: 'Email or password is incorrect.',
+      busy: 'Please wait…',
+    },
+    fr: {
+      passwordHint: 'Utilisez entre 10 et 128 caractères.',
+      genericError: 'Impossible de terminer cette demande. Réessayez.',
+      existing: 'Un compte existe déjà pour cette adresse e-mail.',
+      invalid: 'L’adresse e-mail ou le mot de passe est incorrect.',
+      busy: 'Veuillez patienter…',
+    },
+    es: {
+      passwordHint: 'Usa entre 10 y 128 caracteres.',
+      genericError: 'No pudimos completar la solicitud. Inténtalo de nuevo.',
+      existing: 'Ya existe una cuenta con este correo.',
+      invalid: 'El correo o la contraseña son incorrectos.',
+      busy: 'Espera un momento…',
+    },
+    pt: {
+      passwordHint: 'Utilize entre 10 e 128 caracteres.',
+      genericError: 'Não foi possível concluir o pedido. Tente novamente.',
+      existing: 'Já existe uma conta com este e-mail.',
+      invalid: 'O e-mail ou a palavra-passe está incorreto.',
+      busy: 'Aguarde…',
+    },
+  }[lang];
   const completion = profileCompletion(user);
   const profileComplete = completion === 100;
   const today = new Date().toISOString().slice(0, 10);
@@ -136,6 +166,50 @@ export function AccountLayer({
         amount: rentalRate(car) * rentalDays,
       })),
   ];
+  const submitAuth = async (event: React.SyntheticEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const data = new FormData(event.currentTarget);
+    setAuthBusy(true);
+    setAuthError('');
+    try {
+      const response = await fetch('/api/auth', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({
+          action: authMode,
+          name: formValue(data, 'authName'),
+          email: formValue(data, 'authEmail'),
+          password: formValue(data, 'authPassword'),
+        }),
+      });
+      if (!response.ok) {
+        setAuthError(
+          response.status === 409
+            ? authText.existing
+            : response.status === 401
+              ? authText.invalid
+              : authText.genericError,
+        );
+        return;
+      }
+      window.location.reload();
+    } catch {
+      setAuthError(authText.genericError);
+    } finally {
+      setAuthBusy(false);
+    }
+  };
+  const signOut = async () => {
+    try {
+      await fetch('/api/auth', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ action: 'signout' }),
+      });
+    } finally {
+      window.location.reload();
+    }
+  };
   const saveProfile = async (event: React.SyntheticEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (!user) return;
@@ -282,25 +356,74 @@ export function AccountLayer({
             <div className="auth-tabs">
               <button
                 className={authMode === 'signin' ? 'active' : ''}
-                onClick={() => setAuthMode('signin')}
+                onClick={() => {
+                  setAuthError('');
+                  setAuthMode('signin');
+                }}
               >
                 {f.signIn}
               </button>
               <button
                 className={authMode === 'signup' ? 'active' : ''}
-                onClick={() => setAuthMode('signup')}
+                onClick={() => {
+                  setAuthError('');
+                  setAuthMode('signup');
+                }}
               >
                 {f.create}
               </button>
             </div>
-            <a
-              className="auth-submit"
-              href="/signin-with-chatgpt?return_to=/"
-              target="_top"
-            >
-              {authMode === 'signin' ? f.signIn : f.create}
-              <ArrowRight />
-            </a>
+            <form onSubmit={submitAuth}>
+              {authMode === 'signup' && (
+                <label>
+                  {f.name}
+                  <input
+                    name="authName"
+                    autoComplete="name"
+                    minLength={2}
+                    maxLength={100}
+                    required
+                  />
+                </label>
+              )}
+              <label>
+                {f.email}
+                <input
+                  name="authEmail"
+                  type="email"
+                  autoComplete="email"
+                  maxLength={254}
+                  required
+                />
+              </label>
+              <label>
+                {f.password}
+                <input
+                  name="authPassword"
+                  type="password"
+                  autoComplete={
+                    authMode === 'signin' ? 'current-password' : 'new-password'
+                  }
+                  minLength={10}
+                  maxLength={128}
+                  required
+                />
+                <small className="auth-hint">{authText.passwordHint}</small>
+              </label>
+              {authError && (
+                <p className="auth-error" role="alert">
+                  {authError}
+                </p>
+              )}
+              <button className="auth-submit" disabled={authBusy}>
+                {authBusy
+                  ? authText.busy
+                  : authMode === 'signin'
+                    ? f.signIn
+                    : f.create}
+                {!authBusy && <ArrowRight />}
+              </button>
+            </form>
             <p className="auth-profile-note">
               <User />
               <span>{p.authNote}</span>
@@ -780,14 +903,10 @@ export function AccountLayer({
                 </form>
               )}
             </div>
-            <a
-              className="signout"
-              href="/signout-with-chatgpt?return_to=/"
-              target="_top"
-            >
+            <button className="signout" onClick={signOut}>
               <LogOut />
               {p.signout}
-            </a>
+            </button>
           </div>
         )}
       </dialog>

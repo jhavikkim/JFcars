@@ -61,14 +61,10 @@ const normalizeProfile = (input: StoredProfile, fallbackName: string) => {
 };
 
 export async function GET(request: Request) {
-  const user = requestUser(request);
-  if (!user && process.env.NODE_ENV !== 'development')
+  const user = await requestUser(request);
+  if (!user)
     return json({ error: 'Sign in required' }, { status: 401 });
-  const identity = user ?? {
-    id: 'local-admin',
-    email: 'admin@jfcars.local',
-    name: 'Local Admin',
-  };
+  const identity = user;
   try {
     const db = await ensureDatabase();
     await ensureNormalizedData(db);
@@ -111,13 +107,10 @@ export async function GET(request: Request) {
 }
 
 export async function PUT(request: Request) {
-  const user = requestUser(request);
-  if (!user && process.env.NODE_ENV !== 'development')
+  const user = await requestUser(request);
+  if (!user)
     return json({ error: 'Sign in required' }, { status: 401 });
-  const identity = user ?? {
-    id: 'local-admin',
-    email: 'admin@jfcars.local',
-  };
+  const identity = user;
   const parsed = await readJsonObject(request, 100_000);
   if (!parsed.ok)
     return json({ error: parsed.error }, { status: parsed.status });

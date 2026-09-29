@@ -9,6 +9,8 @@ of truth; append-only migrations live in `drizzle/`.
 ```mermaid
 erDiagram
     VEHICLES ||--o{ VEHICLE_MEDIA : has
+    AUTH_USERS ||--o{ AUTH_SESSIONS : owns
+    AUTH_USERS o|--o| USER_PROFILES : configures
     VEHICLES o|--o{ ORDER_ITEMS : referenced_by
     VEHICLES ||--o{ USER_VEHICLE_LISTS : saved_in
     USER_PROFILES ||--o{ USER_VEHICLE_LISTS : owns
@@ -37,6 +39,23 @@ erDiagram
         text purpose PK
         integer position PK
         text url
+    }
+    AUTH_USERS {
+        text id PK
+        text email UK
+        text name
+        text password_hash
+        text password_salt
+        integer password_iterations
+        text role
+        boolean disabled
+        text last_login_at
+    }
+    AUTH_SESSIONS {
+        text token_hash PK
+        text user_id FK
+        integer expires_at
+        text created_at
     }
     USER_PROFILES {
         text user_id PK
@@ -169,11 +188,18 @@ erDiagram
     }
 ```
 
-The diagram shows physical foreign keys. `user_id` values in orders, requests,
-and inquiries refer to the authenticated Sites identity but are intentionally
-not database foreign keys, so historical and guest records remain available.
+The diagram shows physical foreign keys except for the logical user/profile
+link. `user_id` values in profiles, orders, requests, and inquiries refer to
+the JFcars user identifier but are intentionally not database foreign keys, so
+historical and guest records remain available.
 Vehicle prices, order totals, and item amounts use XAF as their canonical
 stored currency; the selected display currency is a presentation preference.
+
+Passwords are derived with PBKDF2-SHA-256 using a unique random salt and
+310,000 iterations. The browser receives an HttpOnly, SameSite=Lax cookie;
+only its SHA-256 token digest is stored in `auth_sessions`. Sessions expire
+after 30 days. New accounts always receive the `user` role and an existing
+administrator promotes an owner explicitly in D1.
 
 ## Supporting and transition tables
 
@@ -189,16 +215,16 @@ transition and rollback compatibility and should not receive new features.
 
 ## Runtime settings
 
-| Setting             | Local/Docker                                  | Hosted Sites                             |
-| ------------------- | --------------------------------------------- | ---------------------------------------- |
-| Structured database | Local Miniflare D1                            | `DB` D1 binding                          |
-| Uploaded media      | Local Miniflare R2                            | `MEDIA` R2 binding                       |
-| Schema definition   | `db/schema.ts`                                | Same committed schema                    |
-| Migrations          | `drizzle/*.sql`                               | Applied in order at deployment           |
-| Admin authorization | Development mode permits local administration | `JFCARS_ADMIN_USER_IDS` runtime variable |
-| User identity       | Development fallback                          | Sites authenticated-user headers         |
-| Languages           | `en`, `fr`, `es`, `pt`                        | Same                                     |
-| Currencies          | `XAF`, `USD`, `EUR`, `AOA`                    | Same; canonical stored prices remain XAF |
+| Setting             | Local/Docker                                      | Production                                       |
+| ------------------- | ------------------------------------------------- | ------------------------------------------------ |
+| Structured database | Local Miniflare D1                                | Persistent Miniflare D1 volume                   |
+| Uploaded media      | Local Miniflare R2                                | Persistent Miniflare R2 volume                   |
+| Schema definition   | `db/schema.ts`                                    | Same committed schema                            |
+| Migrations          | `drizzle/*.sql` applied before startup            | Same, applied before every container startup     |
+| Admin authorization | `auth_users.role = 'admin'`                       | Same; there is no development bypass             |
+| User identity       | JFcars email/password and `auth_sessions`          | Same, through an HttpOnly secure session cookie  |
+| Languages           | `en`, `fr`, `es`, `pt`                            | Same                                             |
+| Currencies          | `XAF`, `USD`, `EUR`, `AOA`                        | Same; canonical stored prices remain XAF         |
 
 Media objects are stored in R2 under validated `storefront/` keys. D1 stores
 only their URLs and metadata. Current upload ceilings are 20 MiB for images and

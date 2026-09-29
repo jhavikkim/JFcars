@@ -39,6 +39,51 @@ export const accountState = sqliteTable('account_state', {
     .default(sql`CURRENT_TIMESTAMP`),
 });
 
+export const authUsers = sqliteTable(
+  'auth_users',
+  {
+    id: text('id').primaryKey(),
+    email: text('email').notNull(),
+    name: text('name').notNull(),
+    passwordHash: text('password_hash').notNull(),
+    passwordSalt: text('password_salt').notNull(),
+    passwordIterations: integer('password_iterations').notNull(),
+    role: text('role').notNull().default('user'),
+    disabled: integer('disabled', { mode: 'boolean' })
+      .notNull()
+      .default(false),
+    createdAt: text('created_at')
+      .notNull()
+      .default(sql`CURRENT_TIMESTAMP`),
+    updatedAt: text('updated_at')
+      .notNull()
+      .default(sql`CURRENT_TIMESTAMP`),
+    lastLoginAt: text('last_login_at'),
+  },
+  (table) => [
+    uniqueIndex('auth_users_email_idx').on(table.email),
+    check('auth_users_role_check', sql`${table.role} IN ('user', 'admin')`),
+  ],
+);
+
+export const authSessions = sqliteTable(
+  'auth_sessions',
+  {
+    tokenHash: text('token_hash').primaryKey(),
+    userId: text('user_id')
+      .notNull()
+      .references(() => authUsers.id, { onDelete: 'cascade' }),
+    expiresAt: integer('expires_at').notNull(),
+    createdAt: text('created_at')
+      .notNull()
+      .default(sql`CURRENT_TIMESTAMP`),
+  },
+  (table) => [
+    index('auth_sessions_user_idx').on(table.userId),
+    index('auth_sessions_expires_idx').on(table.expiresAt),
+  ],
+);
+
 export const orders = sqliteTable(
   'orders',
   {
