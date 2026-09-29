@@ -1,10 +1,12 @@
 import {
   createAuthSession,
+  createEmailVerificationToken,
   destroyAuthSession,
   hashPassword,
   normalizeAuthEmail,
   verifyPassword,
 } from '@/lib/auth';
+import { sendVerificationEmail, type EmailLanguage } from '@/lib/email';
 import { ensureDatabase, json } from '@/lib/site-db';
 import { readJsonObject } from '@/lib/request-body';
 
@@ -103,7 +105,11 @@ export async function POST(request: Request) {
       );
     }
 
-    if (action !== 'signin' && action !== 'signup')
+    if (
+      action !== 'signin' &&
+      action !== 'signup' &&
+      action !== 'resend-verification'
+    )
       return json({ error: 'Unknown authentication action' }, { status: 400 });
 
     const email = normalizeAuthEmail(body.email);
@@ -113,7 +119,7 @@ export async function POST(request: Request) {
         { error: 'Enter a valid email and a password of 10–128 characters.' },
         { status: 400 },
       );
-    const limit = action === 'signup' ? 5 : 20;
+    const limit = action === 'signin' ? 20 : 5;
     if (await rateLimited(db, request, action, email, limit))
       return json(
         { error: 'Too many attempts. Please try again later.' },
@@ -122,6 +128,13 @@ export async function POST(request: Request) {
 
     if (action === 'signup') {
       const name = safeName(body.name);
+      const language = (
+        body.language === 'fr' ||
+        body.language === 'es' ||
+        body.language === 'pt'
+          ? body.language
+          : 'en'
+      ) as EmailLanguage;
       if (name.length < 2)
         return json({ error: 'Enter your full name.' }, { status: 400 });
       const existing = await db
@@ -159,17 +172,31 @@ export async function POST(request: Request) {
           )
           .bind(userId, name),
       ]);
-      const cookie = await createAuthSession(db, request, userId);
+      const token = await createEmailVerificationToken(db, userId);
+      try {
+        await sendVerificationEmail({ to: email, name, token, language });
+      } catch (error) {
+        await db.batch([
+          db
+            .prepare(`DELETE FROM email_verification_tokens WHERE user_id = ?`)
+            .bind(userId),
+          db
+            .prepare(`DELETE FROM user_profiles WHERE user_id = ?`)
+            .bind(userId),
+          db.prepare(`DELETE FROM auth_users WHERE id = ?`).bind(userId),
+        ]);
+        throw error;
+      }
       return json(
-        { ok: true, user: { name, email, role: 'user' } },
-        { headers: { 'set-cookie': cookie }, status: 201 },
+        { ok: true, verificationRequired: true },
+        { status: 201 },
       );
     }
 
     const user = await db
       .prepare(
         `SELECT id, email, name, password_hash, password_salt,
-                password_iterations, role, disabled
+                password_iterations, role, disabled, email_verified_at
          FROM auth_users WHERE email = ?`,
       )
       .bind(email)
@@ -182,6 +209,7 @@ export async function POST(request: Request) {
         password_iterations: number;
         role: 'user' | 'admin';
         disabled: number;
+        email_verified_at: string | null;
       }>();
     let valid = false;
     if (user)
@@ -197,6 +225,34 @@ export async function POST(request: Request) {
         { error: 'Email or password is incorrect.' },
         { status: 401 },
       );
+    if (!user.email_verified_at) {
+      if (action === 'resend-verification') {
+        const language = (
+          body.language === 'fr' ||
+          body.language === 'es' ||
+          body.language === 'pt'
+            ? body.language
+            : 'en'
+        ) as EmailLanguage;
+        const token = await createEmailVerificationToken(db, user.id);
+        await sendVerificationEmail({
+          to: user.email,
+          name: user.name,
+          token,
+          language,
+        });
+        return json({ ok: true, verificationRequired: true }, { status: 200 });
+      }
+      return json(
+        {
+          error: 'Verify your email before signing in.',
+          code: 'email_unverified',
+        },
+        { status: 403 },
+      );
+    }
+    if (action === 'resend-verification')
+      return json({ ok: true, alreadyVerified: true }, { status: 200 });
     await db
       .prepare(
         `UPDATE auth_users

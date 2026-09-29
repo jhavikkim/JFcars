@@ -15,6 +15,19 @@ cp .env.example .env
 docker compose up --build
 ```
 
+Before accepting registrations, configure transactional email in `.env`:
+
+```dotenv
+JFCARS_PUBLIC_URL=https://jfcars.4rbl.com
+RESEND_API_KEY=re_your_server_key
+JFCARS_FROM_EMAIL=JFcars <verify@jfcars.4rbl.com>
+```
+
+Verify the sender domain with the email provider. Never commit `.env`; Docker
+Compose supplies these values to the worker at runtime. Registration fails
+closed if delivery is unavailable, and the incomplete account is removed so
+the visitor can retry.
+
 Open <http://127.0.0.1:3010>. The port is loopback-only so public traffic must
 arrive through Nginx or another reverse proxy. Stop the stack with
 `docker compose down`. Add `-v` only when you intentionally want to erase the
@@ -109,5 +122,8 @@ The test suite replays every migration and exercises backfill idempotency,
 explicitly empty inventory, malformed legacy records, transactional rollbacks,
 storefront round-trips, and high-volume order-history reads in Miniflare.
 
-Migration `0008` adds first-party users and hashed server-side sessions. Raw
-passwords and raw session tokens are never stored in the database.
+Migration `0008` adds first-party users and hashed server-side sessions.
+Migration `0009` adds mandatory email verification for new accounts, with
+one-time token digests and a 60-minute expiry. Existing accounts are marked as
+verified during migration. Raw passwords, session tokens, and verification
+tokens are never stored in the database.

@@ -10,6 +10,7 @@ of truth; append-only migrations live in `drizzle/`.
 erDiagram
     VEHICLES ||--o{ VEHICLE_MEDIA : has
     AUTH_USERS ||--o{ AUTH_SESSIONS : owns
+    AUTH_USERS ||--o{ EMAIL_VERIFICATION_TOKENS : verifies_with
     AUTH_USERS o|--o| USER_PROFILES : configures
     VEHICLES o|--o{ ORDER_ITEMS : referenced_by
     VEHICLES ||--o{ USER_VEHICLE_LISTS : saved_in
@@ -50,8 +51,15 @@ erDiagram
         text role
         boolean disabled
         text last_login_at
+        text email_verified_at
     }
     AUTH_SESSIONS {
+        text token_hash PK
+        text user_id FK
+        integer expires_at
+        text created_at
+    }
+    EMAIL_VERIFICATION_TOKENS {
         text token_hash PK
         text user_id FK
         integer expires_at
@@ -198,8 +206,10 @@ stored currency; the selected display currency is a presentation preference.
 Passwords are derived with PBKDF2-SHA-256 using a unique random salt and
 310,000 iterations. The browser receives an HttpOnly, SameSite=Lax cookie;
 only its SHA-256 token digest is stored in `auth_sessions`. Sessions expire
-after 30 days. New accounts always receive the `user` role and an existing
-administrator promotes an owner explicitly in D1.
+after 30 days. A new account must consume a one-time email verification link
+within 60 minutes before a session can be created. Only the SHA-256 digest of
+that link token is stored. New accounts always receive the `user` role and an
+existing administrator promotes an owner explicitly in D1.
 
 ## Supporting and transition tables
 

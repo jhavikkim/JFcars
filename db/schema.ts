@@ -59,10 +59,29 @@ export const authUsers = sqliteTable(
       .notNull()
       .default(sql`CURRENT_TIMESTAMP`),
     lastLoginAt: text('last_login_at'),
+    emailVerifiedAt: text('email_verified_at'),
   },
   (table) => [
     uniqueIndex('auth_users_email_idx').on(table.email),
     check('auth_users_role_check', sql`${table.role} IN ('user', 'admin')`),
+  ],
+);
+
+export const emailVerificationTokens = sqliteTable(
+  'email_verification_tokens',
+  {
+    tokenHash: text('token_hash').primaryKey(),
+    userId: text('user_id')
+      .notNull()
+      .references(() => authUsers.id, { onDelete: 'cascade' }),
+    expiresAt: integer('expires_at').notNull(),
+    createdAt: text('created_at')
+      .notNull()
+      .default(sql`CURRENT_TIMESTAMP`),
+  },
+  (table) => [
+    index('email_verification_tokens_user_idx').on(table.userId),
+    index('email_verification_tokens_expires_idx').on(table.expiresAt),
   ],
 );
 

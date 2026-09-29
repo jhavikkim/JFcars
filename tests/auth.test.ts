@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import {
   clearAuthCookie,
+  hashOpaqueToken,
   hashPassword,
   normalizeAuthEmail,
   passwordIterations,
@@ -39,6 +40,14 @@ void test('password records are salted and verify without storing plaintext', as
     ),
     false,
   );
+});
+
+void test('opaque verification tokens are stored as stable digests', async () => {
+  const token = 'an-example-verification-token-that-is-never-stored';
+  const digest = await hashOpaqueToken(token);
+  assert.equal(digest, await hashOpaqueToken(token));
+  assert.notEqual(digest, token);
+  assert.match(digest, /^[a-f0-9]{64}$/);
 });
 
 void test('session deletion cookie is host-scoped, HttpOnly and HTTPS-aware', () => {

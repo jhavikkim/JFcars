@@ -20,6 +20,46 @@ const migratedDatabase = () => {
   return db;
 };
 
+const authenticatedDatabase = () => {
+  const db = migratedDatabase();
+  db.exec(migration('0008_shallow_bucky.sql'));
+  db.exec(`
+    INSERT INTO auth_users
+      (id, email, name, password_hash, password_salt, password_iterations)
+    VALUES
+      ('existing-user', 'existing@example.com', 'Existing User', 'hash',
+       'salt', 310000);
+  `);
+  db.exec(migration('0009_email_verification.sql'));
+  return db;
+};
+
+test('email verification migration preserves existing accounts', () => {
+  const db = authenticatedDatabase();
+  const existing = db
+    .prepare(
+      `SELECT email_verified_at FROM auth_users WHERE id = 'existing-user'`,
+    )
+    .get();
+  assert.ok(existing.email_verified_at);
+  db.exec(`
+    INSERT INTO email_verification_tokens
+      (token_hash, user_id, expires_at)
+    VALUES ('digest', 'existing-user', 9999999999);
+    DELETE FROM auth_users WHERE id = 'existing-user';
+  `);
+  assert.equal(
+    db
+      .prepare(
+        `SELECT COUNT(*) AS count FROM email_verification_tokens
+         WHERE user_id = 'existing-user'`,
+      )
+      .get().count,
+    0,
+  );
+  db.close();
+});
+
 test('legacy and normalized migrations apply cleanly', () => {
   const db = migratedDatabase();
   const tables = db

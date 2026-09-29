@@ -8,7 +8,7 @@
   "scripts": {
     "dev": "vinext dev",
     "docker:dev": "npm run db:local:migrate && npm run dev",
-    "docker:start": "npm run db:local:migrate && wrangler dev --config dist/server/wrangler.json --persist-to /app/.wrangler/state --ip 0.0.0.0 --port 3000",
+    "docker:start": "node scripts/docker-start.mjs",
     "db:local:migrate": "wrangler d1 migrations apply site-creator-d1 --local --persist-to .wrangler/state --config wrangler.local.jsonc",
     "build": "vinext build",
     "start": "wrangler dev --config dist/server/wrangler.json",

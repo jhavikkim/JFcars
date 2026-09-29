@@ -1,7 +1,7 @@
 'use client';
 
 import Image from 'next/image';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import {
   ArrowRight,
   CalendarDays,
@@ -69,6 +69,7 @@ export function AccountLayer({
   currency,
   onCurrencyChange,
   onLanguageChange,
+  verificationStatus,
 }: {
   panel: 'auth' | 'cart' | 'profile';
   close: () => void;
@@ -90,6 +91,7 @@ export function AccountLayer({
   currency: Currency;
   onCurrencyChange: (currency: Currency) => void;
   onLanguageChange: (language: Lang) => void;
+  verificationStatus?: 'success' | 'invalid' | null;
 }) {
   const [profileTab, setProfileTab] = useState('overview');
   const [notice, setNotice] = useState('');
@@ -102,6 +104,9 @@ export function AccountLayer({
   const [profileSaveFailed, setProfileSaveFailed] = useState(false);
   const [authBusy, setAuthBusy] = useState(false);
   const [authError, setAuthError] = useState('');
+  const [authNotice, setAuthNotice] = useState('');
+  const [verificationPending, setVerificationPending] = useState(false);
+  const authFormRef = useRef<HTMLFormElement>(null);
   const f = flowCopy[lang];
   const u = ui[lang];
   const p = profileCopy[lang];
@@ -114,6 +119,14 @@ export function AccountLayer({
       existing: 'An account already exists for this email.',
       invalid: 'Email or password is incorrect.',
       busy: 'Please wait…',
+      checkInbox:
+        'Check your inbox and open the verification link before signing in.',
+      verifyFirst: 'Verify your email before signing in.',
+      resend: 'Send verification email again',
+      resent: 'A new verification email has been sent.',
+      verified: 'Your email is verified. You can now sign in.',
+      invalidLink:
+        'This verification link is invalid or expired. Sign in to request another.',
     },
     fr: {
       passwordHint: 'Utilisez entre 10 et 128 caractères.',
@@ -121,6 +134,14 @@ export function AccountLayer({
       existing: 'Un compte existe déjà pour cette adresse e-mail.',
       invalid: 'L’adresse e-mail ou le mot de passe est incorrect.',
       busy: 'Veuillez patienter…',
+      checkInbox:
+        'Consultez votre boîte mail et ouvrez le lien de vérification avant de vous connecter.',
+      verifyFirst: 'Vérifiez votre adresse e-mail avant de vous connecter.',
+      resend: 'Renvoyer l’e-mail de vérification',
+      resent: 'Un nouvel e-mail de vérification a été envoyé.',
+      verified: 'Votre e-mail est vérifié. Vous pouvez maintenant vous connecter.',
+      invalidLink:
+        'Ce lien est invalide ou expiré. Connectez-vous pour en demander un autre.',
     },
     es: {
       passwordHint: 'Usa entre 10 y 128 caracteres.',
@@ -128,6 +149,14 @@ export function AccountLayer({
       existing: 'Ya existe una cuenta con este correo.',
       invalid: 'El correo o la contraseña son incorrectos.',
       busy: 'Espera un momento…',
+      checkInbox:
+        'Revisa tu bandeja de entrada y abre el enlace de verificación antes de iniciar sesión.',
+      verifyFirst: 'Verifica tu correo antes de iniciar sesión.',
+      resend: 'Enviar de nuevo el correo de verificación',
+      resent: 'Se ha enviado un nuevo correo de verificación.',
+      verified: 'Tu correo está verificado. Ya puedes iniciar sesión.',
+      invalidLink:
+        'Este enlace no es válido o ha caducado. Inicia sesión para solicitar otro.',
     },
     pt: {
       passwordHint: 'Utilize entre 10 e 128 caracteres.',
@@ -135,6 +164,14 @@ export function AccountLayer({
       existing: 'Já existe uma conta com este e-mail.',
       invalid: 'O e-mail ou a palavra-passe está incorreto.',
       busy: 'Aguarde…',
+      checkInbox:
+        'Consulte a sua caixa de entrada e abra o link de verificação antes de iniciar sessão.',
+      verifyFirst: 'Verifique o seu e-mail antes de iniciar sessão.',
+      resend: 'Reenviar e-mail de verificação',
+      resent: 'Foi enviado um novo e-mail de verificação.',
+      verified: 'O seu e-mail foi verificado. Já pode iniciar sessão.',
+      invalidLink:
+        'Este link é inválido ou expirou. Inicie sessão para pedir outro.',
     },
   }[lang];
   const completion = profileCompletion(user);
@@ -171,6 +208,8 @@ export function AccountLayer({
     const data = new FormData(event.currentTarget);
     setAuthBusy(true);
     setAuthError('');
+    setAuthNotice('');
+    setVerificationPending(false);
     try {
       const response = await fetch('/api/auth', {
         method: 'POST',
@@ -180,9 +219,19 @@ export function AccountLayer({
           name: formValue(data, 'authName'),
           email: formValue(data, 'authEmail'),
           password: formValue(data, 'authPassword'),
+          language: lang,
         }),
       });
+      const result = (await response.json().catch(() => ({}))) as {
+        code?: string;
+        verificationRequired?: boolean;
+      };
       if (!response.ok) {
+        if (response.status === 403 && result.code === 'email_unverified') {
+          setAuthError(authText.verifyFirst);
+          setVerificationPending(true);
+          return;
+        }
         setAuthError(
           response.status === 409
             ? authText.existing
@@ -192,7 +241,43 @@ export function AccountLayer({
         );
         return;
       }
+      if (result.verificationRequired) {
+        setAuthNotice(authText.checkInbox);
+        setVerificationPending(false);
+        return;
+      }
       window.location.reload();
+    } catch {
+      setAuthError(authText.genericError);
+    } finally {
+      setAuthBusy(false);
+    }
+  };
+  const resendVerification = async () => {
+    if (!authFormRef.current) return;
+    const data = new FormData(authFormRef.current);
+    setAuthBusy(true);
+    setAuthError('');
+    setAuthNotice('');
+    try {
+      const response = await fetch('/api/auth', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({
+          action: 'resend-verification',
+          email: formValue(data, 'authEmail'),
+          password: formValue(data, 'authPassword'),
+          language: lang,
+        }),
+      });
+      if (!response.ok) {
+        setAuthError(
+          response.status === 401 ? authText.invalid : authText.genericError,
+        );
+        return;
+      }
+      setAuthNotice(authText.resent);
+      setVerificationPending(false);
     } catch {
       setAuthError(authText.genericError);
     } finally {
@@ -358,6 +443,8 @@ export function AccountLayer({
                 className={authMode === 'signin' ? 'active' : ''}
                 onClick={() => {
                   setAuthError('');
+                  setAuthNotice('');
+                  setVerificationPending(false);
                   setAuthMode('signin');
                 }}
               >
@@ -367,13 +454,28 @@ export function AccountLayer({
                 className={authMode === 'signup' ? 'active' : ''}
                 onClick={() => {
                   setAuthError('');
+                  setAuthNotice('');
+                  setVerificationPending(false);
                   setAuthMode('signup');
                 }}
               >
                 {f.create}
               </button>
             </div>
-            <form onSubmit={submitAuth}>
+            {verificationStatus && !authNotice && (
+              <output
+                className={
+                  verificationStatus === 'success'
+                    ? 'auth-success'
+                    : 'auth-error'
+                }
+              >
+                {verificationStatus === 'success'
+                  ? authText.verified
+                  : authText.invalidLink}
+              </output>
+            )}
+            <form ref={authFormRef} onSubmit={submitAuth}>
               {authMode === 'signup' && (
                 <label>
                   {f.name}
@@ -414,6 +516,21 @@ export function AccountLayer({
                 <p className="auth-error" role="alert">
                   {authError}
                 </p>
+              )}
+              {authNotice && (
+                <output className="auth-success">
+                  {authNotice}
+                </output>
+              )}
+              {verificationPending && (
+                <button
+                  type="button"
+                  className="auth-resend"
+                  onClick={resendVerification}
+                  disabled={authBusy}
+                >
+                  {authText.resend}
+                </button>
               )}
               <button className="auth-submit" disabled={authBusy}>
                 {authBusy

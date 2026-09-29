@@ -105,11 +105,35 @@ export async function verifyPassword(
   return difference === 0;
 }
 
-async function sha256Hex(value: string) {
+export async function hashOpaqueToken(value: string) {
   const digest = await crypto.subtle.digest('SHA-256', encoder.encode(value));
   return Array.from(new Uint8Array(digest))
     .map((byte) => byte.toString(16).padStart(2, '0'))
     .join('');
+}
+
+export async function createEmailVerificationToken(
+  db: D1Database,
+  userId: string,
+) {
+  const token = toBase64Url(crypto.getRandomValues(new Uint8Array(32)));
+  const tokenHash = await hashOpaqueToken(token);
+  const now = Math.floor(Date.now() / 1000);
+  await db.batch([
+    db
+      .prepare(`DELETE FROM email_verification_tokens WHERE user_id = ?`)
+      .bind(userId),
+    db
+      .prepare(`DELETE FROM email_verification_tokens WHERE expires_at <= ?`)
+      .bind(now),
+    db
+      .prepare(
+        `INSERT INTO email_verification_tokens
+         (token_hash, user_id, expires_at) VALUES (?, ?, ?)`,
+      )
+      .bind(tokenHash, userId, now + 60 * 60),
+  ]);
+  return token;
 }
 
 function cookies(request: Request) {
@@ -156,14 +180,15 @@ export async function authenticatedUserFromRequest(
 ) {
   const token = cookies(request).get(sessionCookieName);
   if (!token || token.length < 32 || token.length > 200) return null;
-  const tokenHash = await sha256Hex(token);
+  const tokenHash = await hashOpaqueToken(token);
   const now = Math.floor(Date.now() / 1000);
   const row = await db
     .prepare(
       `SELECT u.id, u.email, u.name, u.role
        FROM auth_sessions s
        JOIN auth_users u ON u.id = s.user_id
-       WHERE s.token_hash = ? AND s.expires_at > ? AND u.disabled = 0`,
+       WHERE s.token_hash = ? AND s.expires_at > ?
+         AND u.disabled = 0 AND u.email_verified_at IS NOT NULL`,
     )
     .bind(tokenHash, now)
     .first<{ id: string; email: string; name: string; role: string }>();
@@ -177,7 +202,7 @@ export async function createAuthSession(
   userId: string,
 ) {
   const token = toBase64Url(crypto.getRandomValues(new Uint8Array(32)));
-  const tokenHash = await sha256Hex(token);
+  const tokenHash = await hashOpaqueToken(token);
   const now = Math.floor(Date.now() / 1000);
   await db.batch([
     db.prepare(`DELETE FROM auth_sessions WHERE expires_at <= ?`).bind(now),
@@ -194,7 +219,7 @@ export async function createAuthSession(
 export async function destroyAuthSession(db: D1Database, request: Request) {
   const token = cookies(request).get(sessionCookieName);
   if (token && token.length >= 32 && token.length <= 200) {
-    const tokenHash = await sha256Hex(token);
+    const tokenHash = await hashOpaqueToken(token);
     await db
       .prepare(`DELETE FROM auth_sessions WHERE token_hash = ?`)
       .bind(tokenHash)

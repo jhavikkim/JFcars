@@ -215,6 +215,9 @@ export default function JFCarsApp({
       null,
     ),
     [authMode, setAuthMode] = useState<'signin' | 'signup'>('signin'),
+    [verificationStatus, setVerificationStatus] = useState<
+      'success' | 'invalid' | null
+    >(null),
     [user, setUser] = useState<UserAccount | null>(null),
     [partRequests, setPartRequests] = useState<PartRequest[]>([]),
     [sellerInquiries, setSellerInquiries] = useState<SellerInquiry[]>([]),
@@ -410,6 +413,12 @@ export default function JFCarsApp({
       const hasUrlCurrency = isCurrency(urlCurrency);
       if (hasUrlCurrency) setCurrency(urlCurrency);
       const requestedView = params.get('view');
+      const verified = params.get('emailVerified');
+      if (verified === 'success' || verified === 'invalid') {
+        setVerificationStatus(verified);
+        setAuthMode('signin');
+        setPanel('auth');
+      }
       if (
         requestedView === 'gallery' ||
         requestedView === 'about' ||
@@ -2771,6 +2780,7 @@ export default function JFCarsApp({
             currency={currency}
             onCurrencyChange={changeCurrency}
             onLanguageChange={changeLanguage}
+            verificationStatus={verificationStatus}
           />
         </Suspense>
       )}{' '}

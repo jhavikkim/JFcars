@@ -64,6 +64,13 @@
       "when": 1790675136231,
       "tag": "0008_shallow_bucky",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "6",
+      "when": 1790715992073,
+      "tag": "0009_email_verification",
+      "breakpoints": true
     }
   ]
 }
