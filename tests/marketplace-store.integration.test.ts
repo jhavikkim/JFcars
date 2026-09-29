@@ -27,6 +27,7 @@ const migrations = [
   '0003_fearless_genesis.sql',
   '0004_marketplace_sync_contacts.sql',
   '0005_natural_the_watchers.sql',
+  '0006_minor_wild_child.sql',
 ];
 
 async function applyMigrations(db: D1Database, names: string[]) {
@@ -229,6 +230,16 @@ void test('normalized storefront content and gallery round-trip', async () => {
   try {
     await replaceMarketplace(db, [validCar()], {
       heroVideo: 'https://example.com/hero.mp4',
+      heroImage: 'https://example.com/hero.webp',
+      theme: {
+        heroBackground: '#112233',
+        brandSearchBackground: '#223344',
+        primaryColor: '#334455',
+        accentColor: '#445566',
+        headerBackground: '#556677',
+        buttonColor: '#667788',
+        textColor: '#778899',
+      },
       en: {
         headline: 'Cars for Central Africa',
         description: 'Clear inventory and shipment updates.',
@@ -281,13 +292,20 @@ void test('normalized storefront content and gallery round-trip', async () => {
     });
     const content = await readStorefrontContent(db);
     assert.equal(content.heroVideo, 'https://example.com/hero.mp4');
+    assert.equal(content.heroImage, 'https://example.com/hero.webp');
+    assert.equal(content.theme?.heroBackground, '#112233');
+    assert.equal(content.theme?.brandSearchBackground, '#223344');
+    assert.equal(content.theme?.buttonColor, '#667788');
     assert.equal(content.en?.headline, 'Cars for Central Africa');
     assert.equal(content.pt?.headline, 'Automóveis para a África Central');
     assert.equal(content.gallery?.[0]?.captions.fr, 'Prêt à expédier');
     assert.equal(content.gallery?.[0]?.captions.pt, 'Pronto para envio');
     assert.equal(content.gallery?.[0]?.mediaType, 'image');
     assert.equal(content.gallery?.[1]?.mediaType, 'video');
-    assert.equal(content.gallery?.[1]?.image, 'https://example.com/loading.mp4');
+    assert.equal(
+      content.gallery?.[1]?.image,
+      'https://example.com/loading.mp4',
+    );
     assert.equal((await readVehicles(db, true)).length, 1);
   } finally {
     await dispose();
@@ -299,9 +317,7 @@ void test('large media collections persist without silently dropping records', a
   try {
     const car = validCar();
     car.images = Array.from({ length: 60 }, (_, index) =>
-      index === 0
-        ? car.image
-        : `https://example.com/hilux-${index}.webp`,
+      index === 0 ? car.image : `https://example.com/hilux-${index}.webp`,
     );
     const gallery = Array.from({ length: 500 }, (_, index) => ({
       id: `shipment-${index}`,

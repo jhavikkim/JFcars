@@ -1,9 +1,13 @@
 'use client';
 
 import Image from 'next/image';
-import { isSafeMediaSource } from '@/lib/storefront-content';
+import {
+  defaultStorefrontTheme,
+  isSafeMediaSource,
+} from '@/lib/storefront-content';
 import type { AdminPersistenceStatus } from '@/components/jfcars/admin';
 import {
+  type CSSProperties,
   lazy,
   Suspense,
   useCallback,
@@ -48,6 +52,7 @@ import {
   VEHICLE_SELLING_ENABLED,
   copy,
   galleryCopy,
+  defaultHeroImage,
   defaultHeroVideo,
   normalizeGallery,
   cars,
@@ -1263,8 +1268,21 @@ export default function JFCarsApp() {
     (currentPage - 1) * pageSize,
     currentPage * pageSize,
   );
+  const storefrontTheme = {
+    ...defaultStorefrontTheme,
+    ...storefrontContent.theme,
+  };
+  const storefrontStyle = {
+    '--navy': storefrontTheme.primaryColor,
+    '--ink': storefrontTheme.textColor,
+    '--coral': storefrontTheme.accentColor,
+    '--forest': storefrontTheme.buttonColor,
+    '--header-background': storefrontTheme.headerBackground,
+    '--hero-background': storefrontTheme.heroBackground,
+    '--brand-search-background': storefrontTheme.brandSearchBackground,
+  } as CSSProperties;
   return (
-    <main>
+    <main style={storefrontStyle}>
       <header className="topbar">
         <button
           className="logo"
@@ -1648,7 +1666,11 @@ export default function JFCarsApp() {
                       ? storefrontContent.heroVideo
                       : defaultHeroVideo
                   }
-                  poster="/jfcars-central-africa-hero.webp"
+                  poster={
+                    isSafeMediaSource(storefrontContent.heroImage)
+                      ? storefrontContent.heroImage
+                      : defaultHeroImage
+                  }
                   playLabel={a.playHero}
                   pauseLabel={a.pauseHero}
                 />

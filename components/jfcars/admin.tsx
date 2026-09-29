@@ -22,6 +22,7 @@ import {
   X,
 } from 'lucide-react';
 import {
+  defaultStorefrontTheme,
   galleryItemLimit,
   galleryStatuses,
   type GalleryStatus,
@@ -42,6 +43,7 @@ import {
   galleryCopy,
   type GallerySection,
   gallerySections,
+  defaultHeroImage,
   defaultHeroVideo,
   defaultGalleryItems,
   normalizeGallery,
@@ -80,7 +82,7 @@ type UploadedMedia = {
 
 function uploadMedia(
   file: File,
-  purpose: 'gallery' | 'hero' | 'vehicle',
+  purpose: 'gallery' | 'hero' | 'hero-image' | 'vehicle',
   onProgress?: (loaded: number, total: number) => void,
 ) {
   const isVideo = file.type === 'video/mp4' || file.type === 'video/webm';
@@ -264,6 +266,31 @@ function VehicleMediaEditor({
   );
 }
 
+function ThemeColorControl({
+  label,
+  value,
+  onChange,
+}: {
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+}) {
+  return (
+    <label className="theme-color-control">
+      <span>{label}</span>
+      <span>
+        <input
+          type="color"
+          value={value}
+          aria-label={label}
+          onChange={(event) => onChange(event.target.value)}
+        />
+        <code>{value.toUpperCase()}</code>
+      </span>
+    </label>
+  );
+}
+
 export function AdminPanel({
   inventory,
   setInventory,
@@ -349,6 +376,13 @@ export function AdminPanel({
       heroVideo: isSafeMediaSource(storefrontContent.heroVideo)
         ? storefrontContent.heroVideo
         : defaultHeroVideo,
+      heroImage: isSafeMediaSource(storefrontContent.heroImage)
+        ? storefrontContent.heroImage
+        : defaultHeroImage,
+      theme: {
+        ...defaultStorefrontTheme,
+        ...storefrontContent.theme,
+      },
     });
   const [addVehicleImages, setAddVehicleImages] = useState<string[]>([]);
   const [editVehicleImages, setEditVehicleImages] = useState<string[]>([]);
@@ -363,6 +397,8 @@ export function AdminPanel({
     useState<UploadProgress | null>(null);
   const [heroUploading, setHeroUploading] = useState(false);
   const [heroUploadProgress, setHeroUploadProgress] = useState(0);
+  const [heroImageUploading, setHeroImageUploading] = useState(false);
+  const [heroImageUploadProgress, setHeroImageUploadProgress] = useState(0);
   const [adminGalleryVisibleCount, setAdminGalleryVisibleCount] =
     useState(adminGalleryPageSize);
   const [mediaUploadError, setMediaUploadError] = useState('');
@@ -426,6 +462,24 @@ export function AdminPanel({
     Array.isArray(contentDraft.gallery) && contentDraft.gallery.length
       ? contentDraft.gallery
       : defaultGalleryItems;
+  const themeDraft = {
+    ...defaultStorefrontTheme,
+    ...contentDraft.theme,
+  };
+  const updateThemeColor = (
+    key: keyof typeof defaultStorefrontTheme,
+    value: string,
+  ) => {
+    setContentDraft((current) => ({
+      ...current,
+      theme: {
+        ...defaultStorefrontTheme,
+        ...current.theme,
+        [key]: value,
+      },
+    }));
+    setContentSaved(false);
+  };
   const galleryVideoCount = galleryDraft.filter(
     (item) => item.mediaType === 'video',
   ).length;
@@ -659,6 +713,30 @@ export function AdminPanel({
     } finally {
       setHeroUploading(false);
       setHeroUploadProgress(0);
+    }
+  };
+  const uploadHeroImage = async (file: File) => {
+    setHeroImageUploading(true);
+    setHeroImageUploadProgress(0);
+    setMediaUploadError('');
+    try {
+      const heroImage = await uploadMedia(file, 'hero-image', (loaded, total) =>
+        setHeroImageUploadProgress(
+          total ? Math.min(100, Math.round((loaded / total) * 100)) : 0,
+        ),
+      );
+      setContentDraft((current) => ({
+        ...current,
+        heroImage: heroImage.url,
+      }));
+      setContentSaved(false);
+    } catch (error) {
+      setMediaUploadError(
+        error instanceof Error ? error.message : 'Image upload failed',
+      );
+    } finally {
+      setHeroImageUploading(false);
+      setHeroImageUploadProgress(0);
     }
   };
   const uploadVehiclePhotos = async (files: File[], target: 'add' | 'edit') => {
@@ -1655,6 +1733,193 @@ export function AdminPanel({
                 </label>
                 <div className="content-section-title">
                   <div>
+                    <h4>Theme &amp; appearance</h4>
+                    <p>
+                      These colors and hero media are applied to every visitor
+                      after you save. Use the preview to check contrast before
+                      publishing a change.
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    className="theme-reset-button"
+                    onClick={() => {
+                      setContentDraft((current) => ({
+                        ...current,
+                        theme: { ...defaultStorefrontTheme },
+                      }));
+                      setContentSaved(false);
+                    }}
+                  >
+                    Reset colors
+                  </button>
+                </div>
+                <section
+                  className="theme-live-preview"
+                  aria-label="Theme preview"
+                >
+                  <header style={{ background: themeDraft.headerBackground }}>
+                    <b style={{ color: themeDraft.primaryColor }}>
+                      <i style={{ color: themeDraft.accentColor }}>JF</i>cars.
+                    </b>
+                    <span style={{ color: themeDraft.textColor }}>
+                      Buy · Rent · Parts
+                    </span>
+                  </header>
+                  <div style={{ background: themeDraft.heroBackground }}>
+                    <span>
+                      <small style={{ color: themeDraft.accentColor }}>
+                        CENTRAL AFRICA’S CAR MARKET
+                      </small>
+                      <strong style={{ color: themeDraft.primaryColor }}>
+                        {contentDraft[contentLocale]?.headline ||
+                          copy[contentLocale].hero}
+                      </strong>
+                      <button
+                        type="button"
+                        tabIndex={-1}
+                        style={{ background: themeDraft.buttonColor }}
+                      >
+                        Search cars
+                      </button>
+                    </span>
+                    <Image
+                      src={
+                        isSafeMediaSource(contentDraft.heroImage)
+                          ? contentDraft.heroImage
+                          : defaultHeroImage
+                      }
+                      alt="Hero poster preview"
+                      width={360}
+                      height={220}
+                      unoptimized={Boolean(
+                        contentDraft.heroImage?.startsWith('http'),
+                      )}
+                      sizes="240px"
+                    />
+                  </div>
+                  <footer
+                    style={{ background: themeDraft.brandSearchBackground }}
+                  >
+                    <b style={{ color: themeDraft.textColor }}>Browse makes</b>
+                    <span style={{ color: themeDraft.primaryColor }}>
+                      Toyota · BMW · Mercedes · Audi
+                    </span>
+                  </footer>
+                </section>
+                <div className="theme-color-grid">
+                  <ThemeColorControl
+                    label="Hero background"
+                    value={themeDraft.heroBackground}
+                    onChange={(value) =>
+                      updateThemeColor('heroBackground', value)
+                    }
+                  />
+                  <ThemeColorControl
+                    label="Brand-search background"
+                    value={themeDraft.brandSearchBackground}
+                    onChange={(value) =>
+                      updateThemeColor('brandSearchBackground', value)
+                    }
+                  />
+                  <ThemeColorControl
+                    label="Primary brand color"
+                    value={themeDraft.primaryColor}
+                    onChange={(value) =>
+                      updateThemeColor('primaryColor', value)
+                    }
+                  />
+                  <ThemeColorControl
+                    label="Accent color"
+                    value={themeDraft.accentColor}
+                    onChange={(value) => updateThemeColor('accentColor', value)}
+                  />
+                  <ThemeColorControl
+                    label="Header background"
+                    value={themeDraft.headerBackground}
+                    onChange={(value) =>
+                      updateThemeColor('headerBackground', value)
+                    }
+                  />
+                  <ThemeColorControl
+                    label="Buttons and active tabs"
+                    value={themeDraft.buttonColor}
+                    onChange={(value) => updateThemeColor('buttonColor', value)}
+                  />
+                  <ThemeColorControl
+                    label="Main text color"
+                    value={themeDraft.textColor}
+                    onChange={(value) => updateThemeColor('textColor', value)}
+                  />
+                </div>
+                <div className="content-section-title">
+                  <div>
+                    <h4>Homepage hero poster</h4>
+                    <p>
+                      This image appears while the video loads and whenever a
+                      visitor pauses it. Upload a landscape JPG, PNG, WebP or
+                      AVIF image.
+                    </p>
+                  </div>
+                  <span>{heroImageUploading ? 'Uploading…' : 'Image'}</span>
+                </div>
+                <div className="admin-hero-media admin-hero-image">
+                  <Image
+                    src={
+                      isSafeMediaSource(contentDraft.heroImage)
+                        ? contentDraft.heroImage
+                        : defaultHeroImage
+                    }
+                    alt="Current homepage hero poster"
+                    width={640}
+                    height={420}
+                    unoptimized={Boolean(
+                      contentDraft.heroImage?.startsWith('http'),
+                    )}
+                    sizes="320px"
+                  />
+                  <div>
+                    <label className="media-upload-button">
+                      <Upload />
+                      {heroImageUploading
+                        ? `Uploading image… ${heroImageUploadProgress}%`
+                        : 'Upload hero image'}
+                      <input
+                        type="file"
+                        accept="image/jpeg,image/png,image/webp,image/avif"
+                        disabled={heroImageUploading}
+                        onChange={(event) => {
+                          const file = event.currentTarget.files?.[0];
+                          event.currentTarget.value = '';
+                          if (file) void uploadHeroImage(file);
+                        }}
+                      />
+                    </label>
+                    <label>
+                      Or use a hosted image URL
+                      <input
+                        value={contentDraft.heroImage || ''}
+                        placeholder="https://…/hero.webp"
+                        onChange={(event) => {
+                          setContentDraft({
+                            ...contentDraft,
+                            heroImage: event.target.value,
+                          });
+                          setContentSaved(false);
+                        }}
+                      />
+                    </label>
+                    <small>Maximum 20 MB. WebP is recommended.</small>
+                  </div>
+                </div>
+                {heroImageUploading && (
+                  <output className="media-upload-progress">
+                    <progress max="100" value={heroImageUploadProgress} />
+                    <span>{heroImageUploadProgress}%</span>
+                  </output>
+                )}
+                <div className="content-section-title">
+                  <div>
                     <h4>Homepage hero video</h4>
                     <p>
                       Upload an MP4 or WebM clip. It plays silently and keeps
@@ -1667,7 +1932,7 @@ export function AdminPanel({
                 <div className="admin-hero-media">
                   <video
                     src={contentDraft.heroVideo || defaultHeroVideo}
-                    poster="/jfcars-central-africa-hero.webp"
+                    poster={contentDraft.heroImage || defaultHeroImage}
                     muted
                     loop
                     playsInline
@@ -2067,7 +2332,10 @@ export function AdminPanel({
                   disabled={
                     galleryUploading ||
                     heroUploading ||
+                    heroImageUploading ||
                     !isSafeMediaSource(contentDraft.heroVideo) ||
+                    (Boolean(contentDraft.heroImage) &&
+                      !isSafeMediaSource(contentDraft.heroImage)) ||
                     galleryDraft.some((item) => !isSafeMediaSource(item.image))
                   }
                   onClick={() => {

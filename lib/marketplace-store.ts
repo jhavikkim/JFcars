@@ -10,6 +10,7 @@ import type {
 } from '@/lib/marketplace/types';
 import {
   galleryItemLimit,
+  normalizeStorefrontTheme,
   isSafeImageSource,
   isSafeMediaSource,
   normalizeGalleryRecords,
@@ -183,6 +184,9 @@ export function normalizeStorefrontContent(value: unknown): StorefrontContent {
   }
   if (isSafeMediaSource(input.heroVideo))
     content.heroVideo = cleanText(input.heroVideo, 1_000);
+  if (isSafeImageSource(input.heroImage))
+    content.heroImage = cleanText(input.heroImage, 1_000);
+  content.theme = normalizeStorefrontTheme(input.theme);
   const gallery = normalizeGalleryRecords(input.gallery, galleryItemLimit);
   if (gallery.length) content.gallery = gallery;
   return content;
@@ -532,12 +536,33 @@ function storefrontReplacement(
   const statements = [
     db
       .prepare(
-        `INSERT INTO storefront_settings (id, hero_video_url, updated_at)
-         VALUES (1, ?, CURRENT_TIMESTAMP)
+        `INSERT INTO storefront_settings
+         (id, hero_video_url, hero_image_url, hero_background,
+          brand_search_background, primary_color, accent_color,
+          header_background, button_color, text_color, updated_at)
+         VALUES (1, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
          ON CONFLICT(id) DO UPDATE SET hero_video_url = excluded.hero_video_url,
+         hero_image_url = excluded.hero_image_url,
+         hero_background = excluded.hero_background,
+         brand_search_background = excluded.brand_search_background,
+         primary_color = excluded.primary_color,
+         accent_color = excluded.accent_color,
+         header_background = excluded.header_background,
+         button_color = excluded.button_color,
+         text_color = excluded.text_color,
          updated_at = CURRENT_TIMESTAMP`,
       )
-      .bind(content.heroVideo || null),
+      .bind(
+        content.heroVideo || null,
+        content.heroImage || null,
+        content.theme?.heroBackground,
+        content.theme?.brandSearchBackground,
+        content.theme?.primaryColor,
+        content.theme?.accentColor,
+        content.theme?.headerBackground,
+        content.theme?.buttonColor,
+        content.theme?.textColor,
+      ),
     db.prepare(`DELETE FROM storefront_translations`),
     db
       .prepare(
@@ -593,8 +618,23 @@ async function writeStorefrontTables(db: D1Database, value: unknown) {
 export async function readStorefrontContent(db: D1Database) {
   const [settings, translations, items, itemTranslations] = await Promise.all([
     db
-      .prepare(`SELECT hero_video_url FROM storefront_settings WHERE id = 1`)
-      .first<{ hero_video_url: string | null }>(),
+      .prepare(
+        `SELECT hero_video_url, hero_image_url, hero_background,
+                brand_search_background, primary_color, accent_color,
+                header_background, button_color, text_color
+         FROM storefront_settings WHERE id = 1`,
+      )
+      .first<{
+        hero_video_url: string | null;
+        hero_image_url: string | null;
+        hero_background: string;
+        brand_search_background: string;
+        primary_color: string;
+        accent_color: string;
+        header_background: string;
+        button_color: string;
+        text_color: string;
+      }>(),
     db
       .prepare(
         `SELECT locale, headline, description, gallery_title, gallery_description
@@ -638,6 +678,20 @@ export async function readStorefrontContent(db: D1Database) {
   ]);
   const content: StorefrontContent = {};
   if (settings?.hero_video_url) content.heroVideo = settings.hero_video_url;
+  if (settings?.hero_image_url) content.heroImage = settings.hero_image_url;
+  content.theme = normalizeStorefrontTheme(
+    settings
+      ? {
+          heroBackground: settings.hero_background,
+          brandSearchBackground: settings.brand_search_background,
+          primaryColor: settings.primary_color,
+          accentColor: settings.accent_color,
+          headerBackground: settings.header_background,
+          buttonColor: settings.button_color,
+          textColor: settings.text_color,
+        }
+      : undefined,
+  );
   for (const row of translations.results) {
     if (!locales.includes(row.locale)) continue;
     content[row.locale] = {

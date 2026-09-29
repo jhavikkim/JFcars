@@ -323,6 +323,7 @@ export const gallerySections: {
 
 export const defaultHeroVideo =
   'https://videos.pexels.com/video-files/37074025/15705634_2160_3840_30fps.mp4';
+export const defaultHeroImage = '/jfcars-central-africa-hero.webp';
 export const coreGalleryItems: GalleryItem[] = [
   {
     id: 'shipment-loading',

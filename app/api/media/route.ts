@@ -19,7 +19,7 @@ const mediaTypes = {
 } as const;
 
 type MediaType = keyof typeof mediaTypes;
-type MediaPurpose = 'gallery' | 'hero' | 'vehicle';
+type MediaPurpose = 'gallery' | 'hero' | 'hero-image' | 'vehicle';
 
 function bucket() {
   const media = (env as unknown as RuntimeEnv).MEDIA;
@@ -67,7 +67,10 @@ function requestedPurpose(request: Request): MediaPurpose | null {
   if (headerPurpose && queryPurpose && headerPurpose !== queryPurpose)
     return null;
   const value = headerPurpose || queryPurpose;
-  return value === 'gallery' || value === 'hero' || value === 'vehicle'
+  return value === 'gallery' ||
+    value === 'hero' ||
+    value === 'hero-image' ||
+    value === 'vehicle'
     ? value
     : null;
 }
@@ -263,15 +266,23 @@ export async function POST(request: Request) {
             ? 'The hero requires an MP4 or WebM video'
             : purpose === 'gallery'
               ? 'Use a JPG, PNG, WebP, AVIF, MP4 or WebM file'
-            : 'Use a JPG, PNG, WebP or AVIF image',
+              : 'Use a JPG, PNG, WebP or AVIF image',
       },
       { status: 400 },
     );
   if (purpose === 'hero' && !type.startsWith('video/'))
     return json({ error: 'The hero requires a video file' }, { status: 400 });
-  if (purpose === 'vehicle' && !type.startsWith('image/'))
+  if (
+    (purpose === 'vehicle' || purpose === 'hero-image') &&
+    !type.startsWith('image/')
+  )
     return json(
-      { error: 'Vehicle uploads require image files' },
+      {
+        error:
+          purpose === 'hero-image'
+            ? 'The hero poster requires an image file'
+            : 'Vehicle uploads require image files',
+      },
       { status: 400 },
     );
 

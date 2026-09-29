@@ -215,6 +215,16 @@ export const vehicleMedia = sqliteTable(
 export const storefrontSettings = sqliteTable('storefront_settings', {
   id: integer('id').primaryKey(),
   heroVideoUrl: text('hero_video_url'),
+  heroImageUrl: text('hero_image_url'),
+  heroBackground: text('hero_background').notNull().default('#f8f1e3'),
+  brandSearchBackground: text('brand_search_background')
+    .notNull()
+    .default('#f9f1df'),
+  primaryColor: text('primary_color').notNull().default('#183c36'),
+  accentColor: text('accent_color').notNull().default('#db5b2a'),
+  headerBackground: text('header_background').notNull().default('#fffdf8'),
+  buttonColor: text('button_color').notNull().default('#1f6a4d'),
+  textColor: text('text_color').notNull().default('#193a34'),
   updatedAt: text('updated_at')
     .notNull()
     .default(sql`CURRENT_TIMESTAMP`),

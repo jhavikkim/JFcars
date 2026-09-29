@@ -16,6 +16,37 @@ export type GalleryMediaType = 'image' | 'video';
 export type StorefrontLang = 'en' | 'fr' | 'es' | 'pt';
 export type LocalizedText = Partial<Record<StorefrontLang, string>>;
 
+export const defaultStorefrontTheme = {
+  heroBackground: '#f8f1e3',
+  brandSearchBackground: '#f9f1df',
+  primaryColor: '#183c36',
+  accentColor: '#db5b2a',
+  headerBackground: '#fffdf8',
+  buttonColor: '#1f6a4d',
+  textColor: '#193a34',
+} as const;
+
+export type StorefrontTheme = {
+  [Key in keyof typeof defaultStorefrontTheme]: string;
+};
+
+export function isSafeThemeColor(value: unknown): value is string {
+  return typeof value === 'string' && /^#[0-9a-f]{6}$/i.test(value);
+}
+
+export function normalizeStorefrontTheme(value: unknown): StorefrontTheme {
+  const input =
+    value && typeof value === 'object' && !Array.isArray(value)
+      ? (value as Record<string, unknown>)
+      : {};
+  return Object.fromEntries(
+    Object.entries(defaultStorefrontTheme).map(([key, fallback]) => [
+      key,
+      isSafeThemeColor(input[key]) ? input[key].toLowerCase() : fallback,
+    ]),
+  ) as StorefrontTheme;
+}
+
 export type GalleryItemRecord = {
   id: string;
   image: string;

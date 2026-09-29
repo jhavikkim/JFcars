@@ -1,7 +1,11 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-import { normalizeGalleryRecords } from '../lib/storefront-content';
+import {
+  defaultStorefrontTheme,
+  normalizeGalleryRecords,
+  normalizeStorefrontTheme,
+} from '../lib/storefront-content';
 
 const baseItem = {
   id: 'shipment-media-1',
@@ -34,5 +38,19 @@ void test('gallery normalization rejects unsupported media types', () => {
   assert.deepEqual(
     normalizeGalleryRecords([{ ...baseItem, mediaType: 'document' }]),
     [],
+  );
+});
+
+void test('storefront theme normalization keeps safe colors and restores invalid values', () => {
+  assert.deepEqual(
+    normalizeStorefrontTheme({
+      heroBackground: '#ABCDEF',
+      accentColor: 'javascript:alert(1)',
+      buttonColor: '#12345',
+    }),
+    {
+      ...defaultStorefrontTheme,
+      heroBackground: '#abcdef',
+    },
   );
 });

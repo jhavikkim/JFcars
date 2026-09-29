@@ -86,11 +86,23 @@ export type StorefrontLocaleContent = {
   galleryDescription?: string;
 };
 
+export type StorefrontTheme = {
+  heroBackground: string;
+  brandSearchBackground: string;
+  primaryColor: string;
+  accentColor: string;
+  headerBackground: string;
+  buttonColor: string;
+  textColor: string;
+};
+
 export type StorefrontContent = Partial<
   Record<Lang, StorefrontLocaleContent>
 > & {
   gallery?: GalleryItem[];
   heroVideo?: string;
+  heroImage?: string;
+  theme?: StorefrontTheme;
 };
 
 export type AuthSession = {

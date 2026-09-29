@@ -15,6 +15,7 @@ const migratedDatabase = () => {
   db.exec(migration('0003_fearless_genesis.sql'));
   db.exec(migration('0004_marketplace_sync_contacts.sql'));
   db.exec(migration('0005_natural_the_watchers.sql'));
+  db.exec(migration('0006_minor_wild_child.sql'));
   return db;
 };
 
@@ -70,6 +71,41 @@ test('marketplace revisions and part-request contacts are persisted', () => {
   db.close();
 });
 
+test('storefront appearance migration adds durable hero and theme settings', () => {
+  const db = migratedDatabase();
+  const columns = db
+    .prepare(`PRAGMA table_info('storefront_settings')`)
+    .all()
+    .map((column) => column.name);
+  assert.ok(columns.includes('hero_image_url'));
+  assert.ok(columns.includes('hero_background'));
+  assert.ok(columns.includes('brand_search_background'));
+  assert.ok(columns.includes('header_background'));
+  assert.ok(columns.includes('button_color'));
+  db.exec(`INSERT INTO storefront_settings (id) VALUES (1)`);
+  assert.deepEqual(
+    {
+      ...db
+        .prepare(
+          `SELECT hero_background, brand_search_background, primary_color,
+                  accent_color, header_background, button_color, text_color
+           FROM storefront_settings WHERE id = 1`,
+        )
+        .get(),
+    },
+    {
+      hero_background: '#f8f1e3',
+      brand_search_background: '#f9f1df',
+      primary_color: '#183c36',
+      accent_color: '#db5b2a',
+      header_background: '#fffdf8',
+      button_color: '#1f6a4d',
+      text_color: '#193a34',
+    },
+  );
+  db.close();
+});
+
 test('gallery media type migration preserves images and constrains videos', () => {
   const db = migratedDatabase();
   db.exec(`
@@ -86,7 +122,9 @@ test('gallery media type migration preserves images and constrains videos', () =
   );
   assert.equal(
     db
-      .prepare(`SELECT media_type FROM gallery_items WHERE id = 'loading-video'`)
+      .prepare(
+        `SELECT media_type FROM gallery_items WHERE id = 'loading-video'`,
+      )
       .get().media_type,
     'video',
   );
@@ -285,6 +323,7 @@ test('currency migration preserves profiles and vehicle lists', () => {
   db.exec(migration('0003_fearless_genesis.sql'));
   db.exec(migration('0004_marketplace_sync_contacts.sql'));
   db.exec(migration('0005_natural_the_watchers.sql'));
+  db.exec(migration('0006_minor_wild_child.sql'));
   assert.deepEqual(
     {
       ...db
