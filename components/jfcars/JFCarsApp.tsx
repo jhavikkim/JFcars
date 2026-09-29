@@ -20,6 +20,7 @@ import {
   ArrowRight,
   CarFront,
   Check,
+  ChevronDown,
   ChevronLeft,
   ChevronRight,
   Cog,
@@ -75,6 +76,7 @@ import {
   citiesByCountry,
   profileCompletion,
   countryForCity,
+  languageLabels,
   accessibilityCopy,
   ui,
   marketCopy,
@@ -215,6 +217,7 @@ export default function JFCarsApp({
       null,
     ),
     [authMode, setAuthMode] = useState<'signin' | 'signup'>('signin'),
+    [marketMenuOpen, setMarketMenuOpen] = useState(false),
     [verificationStatus, setVerificationStatus] = useState<
       'success' | 'invalid' | null
     >(null),
@@ -246,6 +249,7 @@ export default function JFCarsApp({
   const filterPanelRef = useRef<HTMLElement>(null);
   const filterCloseRef = useRef<HTMLButtonElement>(null);
   const filterButtonRef = useRef<HTMLButtonElement>(null);
+  const marketSelectorRef = useRef<HTMLDivElement>(null);
   const adminSyncInFlightRef = useRef(false);
   const adminSyncQueuedRef = useRef(false);
   const adminSyncConflictRef = useRef(false);
@@ -275,6 +279,25 @@ export default function JFCarsApp({
       current ? { ...current, preferredCurrency: next } : current,
     );
   };
+  useEffect(() => {
+    if (!marketMenuOpen) return;
+    const closeOutside = (event: PointerEvent) => {
+      if (
+        marketSelectorRef.current &&
+        !marketSelectorRef.current.contains(event.target as Node)
+      )
+        setMarketMenuOpen(false);
+    };
+    const closeWithKeyboard = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setMarketMenuOpen(false);
+    };
+    document.addEventListener('pointerdown', closeOutside);
+    window.addEventListener('keydown', closeWithKeyboard);
+    return () => {
+      document.removeEventListener('pointerdown', closeOutside);
+      window.removeEventListener('keydown', closeWithKeyboard);
+    };
+  }, [marketMenuOpen]);
   const galleryItems = normalizeGallery(storefrontContent.gallery);
   const currencyCode = (
     {
@@ -1379,59 +1402,91 @@ export default function JFCarsApp({
           )}
         </nav>
         <div className="actions">
-          <div className="lang">
-            <Languages size={17} />
-            <select
-              aria-label={a.language}
-              title={
-                lang === 'pt'
-                  ? 'Português (Angola)'
-                  : lang === 'fr'
-                    ? 'Français'
-                    : lang === 'es'
-                      ? 'Español'
-                      : 'English'
-              }
-              value={lang}
-              onChange={(e) => changeLanguage(e.target.value as Lang)}
+          <div className="market-selector" ref={marketSelectorRef}>
+            <button
+              className="market-selector-trigger"
+              type="button"
+              aria-expanded={marketMenuOpen}
+              aria-controls="market-preferences-menu"
+              aria-label={`${a.language}: ${languageLabels[lang][lang]}. ${currencyLabel(currency)}`}
+              onClick={() => setMarketMenuOpen((open) => !open)}
             >
-              <option value="en">🇬🇧</option>
-              <option value="fr">🇫🇷</option>
-              <option value="es">🇪🇸</option>
-              <option value="pt">🇦🇴</option>
-            </select>
-          </div>
-          <div className="currency-control">
-            <select
-              aria-label={
-                lang === 'fr'
-                  ? 'Devise'
+              <span aria-hidden="true">
+                {lang === 'fr'
+                  ? '🇫🇷'
                   : lang === 'es'
-                    ? 'Moneda'
+                    ? '🇪🇸'
                     : lang === 'pt'
-                      ? 'Moeda'
-                      : 'Currency'
-              }
-              title={
-                lang === 'fr'
-                  ? 'Changer la devise affichée'
-                  : lang === 'es'
-                    ? 'Cambiar la moneda mostrada'
-                    : lang === 'pt'
-                      ? 'Alterar a moeda apresentada'
-                      : 'Change display currency'
-              }
-              value={currency}
-              onChange={(event) =>
-                changeCurrency(event.target.value as Currency)
-              }
-            >
-              {supportedCurrencies.map((code) => (
-                <option key={code} value={code}>
-                  {currencyLabel(code)}
-                </option>
-              ))}
-            </select>
+                      ? '🇦🇴'
+                      : '🇬🇧'}
+              </span>
+              <b>{currencyCode}</b>
+              <ChevronDown aria-hidden="true" />
+            </button>
+            {marketMenuOpen && (
+              <div
+                className="market-selector-menu"
+                id="market-preferences-menu"
+              >
+                <section>
+                  <p>
+                    <Languages aria-hidden="true" />
+                    {a.language}
+                  </p>
+                  <div className="market-language-options">
+                    {(
+                      [
+                        ['en', '🇬🇧'],
+                        ['fr', '🇫🇷'],
+                        ['es', '🇪🇸'],
+                        ['pt', '🇦🇴'],
+                      ] as const
+                    ).map(([code, flag]) => (
+                      <button
+                        key={code}
+                        type="button"
+                        className={lang === code ? 'active' : ''}
+                        aria-pressed={lang === code}
+                        onClick={() => {
+                          changeLanguage(code);
+                          setMarketMenuOpen(false);
+                        }}
+                      >
+                        <span aria-hidden="true">{flag}</span>
+                        {languageLabels[lang][code]}
+                      </button>
+                    ))}
+                  </div>
+                </section>
+                <section>
+                  <p>
+                    {lang === 'fr'
+                      ? 'Devise'
+                      : lang === 'es'
+                        ? 'Moneda'
+                        : lang === 'pt'
+                          ? 'Moeda'
+                          : 'Currency'}
+                  </p>
+                  <div className="market-currency-options">
+                    {supportedCurrencies.map((code) => (
+                      <button
+                        key={code}
+                        type="button"
+                        className={currency === code ? 'active' : ''}
+                        aria-pressed={currency === code}
+                        onClick={() => {
+                          changeCurrency(code);
+                          setMarketMenuOpen(false);
+                        }}
+                      >
+                        {currencyLabel(code)}
+                      </button>
+                    ))}
+                  </div>
+                </section>
+              </div>
+            )}
           </div>
           <button
             className="saved"

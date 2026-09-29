@@ -94,38 +94,101 @@ button {
   font-size: 13px;
   font-weight: 650;
 }
-.lang select {
-  border: 0;
-  background: transparent;
-  color: var(--ink);
-  font-weight: 700;
-  outline: none;
+.market-selector {
+  position: relative;
 }
-.lang {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  color: var(--ink);
-}
-.currency-control {
-  display: flex;
-  align-items: center;
-}
-.currency-control select {
-  min-height: 34px;
+.actions .market-selector-trigger {
+  min-height: 38px;
   border: 1px solid var(--line);
   border-radius: 999px;
   background: #fff;
   color: var(--ink);
-  padding: 6px 24px 6px 10px;
-  font-size: 11px;
-  font-weight: 800;
-  outline: none;
+  padding: 7px 10px 7px 12px;
+  gap: 8px;
 }
-.lang select:focus-visible,
-.currency-control select:focus-visible {
+.market-selector-trigger > span {
+  font-size: 17px;
+  line-height: 1;
+}
+.market-selector-trigger b {
+  min-width: 31px;
+  font-size: 11px;
+  font-weight: 850;
+}
+.market-selector-trigger svg {
+  width: 15px;
+  transition: transform 0.2s ease;
+}
+.market-selector-trigger[aria-expanded='true'] svg {
+  transform: rotate(180deg);
+}
+.market-selector-trigger:focus-visible,
+.market-selector-menu button:focus-visible {
   outline: 3px solid color-mix(in srgb, var(--yellow) 55%, transparent);
   outline-offset: 2px;
+}
+.market-selector-menu {
+  position: absolute;
+  top: calc(100% + 12px);
+  right: 0;
+  z-index: 130;
+  width: min(330px, calc(100vw - 28px));
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: #fffdf8;
+  box-shadow: 0 18px 55px #173b3530;
+}
+.market-selector-menu section + section {
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px solid var(--line);
+}
+.market-selector-menu p {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin: 0 0 9px;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 850;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.market-selector-menu p svg {
+  width: 15px;
+}
+.market-language-options,
+.market-currency-options {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 7px;
+}
+.actions .market-selector-menu button {
+  min-width: 0;
+  min-height: 42px;
+  justify-content: flex-start;
+  padding: 9px 10px;
+  border: 1px solid #e2e7e2;
+  border-radius: 10px;
+  background: #fff;
+  color: #4d625b;
+  font-size: 11px;
+  line-height: 1.2;
+  text-align: left;
+}
+.actions .market-selector-menu button:hover {
+  border-color: #aebeb5;
+  background: #f7faf7;
+}
+.actions .market-selector-menu button.active {
+  border-color: var(--forest);
+  background: var(--forest);
+  color: #fff;
+}
+.market-language-options button span {
+  flex: 0 0 auto;
+  font-size: 18px;
 }
 .currency-disclosure {
   margin: 8px 0 0;
@@ -982,7 +1045,6 @@ footer div a {
     height: 68px;
     padding: 0 18px;
   }
-  .actions .lang svg,
   .actions .saved span,
   .actions .sell {
     display: none;
@@ -7069,7 +7131,6 @@ footer .logo {
   .topbar .actions {
     gap: 4px;
   }
-  .topbar .lang svg,
   .topbar .saved span,
   .topbar .account {
     display: none !important;
@@ -7091,19 +7152,20 @@ footer .logo {
     overscroll-behavior: contain;
     border-radius: 0 0 14px 14px;
   }
-  .topbar .lang {
-    padding: 7px 3px;
+  .topbar .market-selector-trigger {
+    min-height: 36px;
+    padding: 5px 8px;
+    gap: 6px;
   }
-  .topbar .lang select {
-    width: 35px;
-    padding: 4px 1px;
-    font-size: 17px;
-  }
-  .topbar .currency-control select {
-    width: 60px;
-    min-height: 32px;
-    padding: 5px 18px 5px 7px;
+  .topbar .market-selector-trigger b {
+    min-width: 0;
     font-size: 10px;
+  }
+  .topbar .market-selector-trigger svg {
+    width: 13px;
+  }
+  .topbar .market-selector-menu {
+    top: calc(100% + 9px);
   }
   .topbar .saved {
     width: 36px;
