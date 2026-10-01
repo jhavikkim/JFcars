@@ -325,6 +325,14 @@ export default function JFCarsApp({
         : lang === 'pt'
           ? `Conversão indicativa · taxas de referência de ${currencyRateLabel}. O vendedor confirma o valor final.`
           : `Indicative conversion · reference rates from ${currencyRateLabel}. The seller confirms the final amount.`;
+  const marketSelectorDone =
+    lang === 'fr'
+      ? 'Terminé'
+      : lang === 'es'
+        ? 'Listo'
+        : lang === 'pt'
+          ? 'Concluído'
+          : 'Done';
   const priceInputStep =
     currency === 'XAF'
       ? mode === 'rent'
@@ -1447,10 +1455,7 @@ export default function JFCarsApp({
                         type="button"
                         className={lang === code ? 'active' : ''}
                         aria-pressed={lang === code}
-                        onClick={() => {
-                          changeLanguage(code);
-                          setMarketMenuOpen(false);
-                        }}
+                        onClick={() => changeLanguage(code)}
                       >
                         <span aria-hidden="true">{flag}</span>
                         {languageLabels[lang][code]}
@@ -1475,16 +1480,22 @@ export default function JFCarsApp({
                         type="button"
                         className={currency === code ? 'active' : ''}
                         aria-pressed={currency === code}
-                        onClick={() => {
-                          changeCurrency(code);
-                          setMarketMenuOpen(false);
-                        }}
+                        onClick={() => changeCurrency(code)}
                       >
                         {currencyLabel(code)}
                       </button>
                     ))}
                   </div>
                 </section>
+                <div className="market-selector-actions">
+                  <button
+                    type="button"
+                    className="market-selector-done"
+                    onClick={() => setMarketMenuOpen(false)}
+                  >
+                    {marketSelectorDone}
+                  </button>
+                </div>
               </div>
             )}
           </div>

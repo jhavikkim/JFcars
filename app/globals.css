@@ -190,6 +190,26 @@ button {
   flex: 0 0 auto;
   font-size: 18px;
 }
+.market-selector-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px solid var(--line);
+}
+.actions .market-selector-menu .market-selector-done {
+  min-height: 38px;
+  justify-content: center;
+  padding-inline: 22px;
+  border-color: var(--forest);
+  background: var(--forest);
+  color: #fff;
+  font-weight: 800;
+}
+.actions .market-selector-menu .market-selector-done:hover {
+  border-color: var(--forest);
+  background: #155942;
+}
 .currency-disclosure {
   margin: 8px 0 0;
   color: var(--muted);
