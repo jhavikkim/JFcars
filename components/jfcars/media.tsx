@@ -16,6 +16,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Images,
+  Mail,
   MapPin,
   MessageCircle,
   Package,
@@ -33,7 +34,8 @@ import {
   localeFor,
 } from '@/components/jfcars/config';
 import { useDialog } from '@/components/jfcars/useDialog';
-import { whatsappHref } from '@/lib/contact';
+import { JFCARS_EMAILS } from '@/lib/brand';
+import { mailtoHref, whatsappHref } from '@/lib/contact';
 
 function GalleryMediaTile({
   item,
@@ -220,6 +222,7 @@ export function InformationPage({
       markets: 'years of local market experience',
       marketList:
         'Serving the Republic of the Congo · Cameroon · Gabon · Cabinda · DR Congo',
+      parentBrand: 'JFcars is a Justandfun project.',
       contactKicker: 'Talk to a real person',
       contactTitle: 'How can we help?',
       contactIntro:
@@ -242,6 +245,10 @@ export function InformationPage({
       vehicleText: 'Include the make, model or listing name when possible.',
       shipment: 'Shipment updates',
       shipmentText: 'Include your shipment or batch reference if you have one.',
+      supportEmail: 'Customer support',
+      supportEmailText: 'Questions, help and follow-up',
+      salesEmail: 'Sales & orders',
+      salesEmailText: 'Vehicles, rentals, parts and quotations',
     },
     fr: {
       aboutKicker: 'Un héritage familial de plus de 25 ans',
@@ -271,6 +278,7 @@ export function InformationPage({
       markets: 'ans d’expérience sur le marché local',
       marketList:
         'Au service de la République du Congo · Cameroun · Gabon · Cabinda · RD Congo',
+      parentBrand: 'JFcars est un projet de Justandfun.',
       contactKicker: 'Parlez à une vraie personne',
       contactTitle: 'Comment pouvons-nous vous aider ?',
       contactIntro:
@@ -295,6 +303,10 @@ export function InformationPage({
       shipment: 'Suivi d’expédition',
       shipmentText:
         'Ajoutez votre référence d’expédition ou de lot si vous en avez une.',
+      supportEmail: 'Service client',
+      supportEmailText: 'Questions, assistance et suivi',
+      salesEmail: 'Ventes et commandes',
+      salesEmailText: 'Véhicules, locations, pièces et devis',
     },
     es: {
       aboutKicker: 'Un legado familiar de más de 25 años',
@@ -323,6 +335,7 @@ export function InformationPage({
       markets: 'años de experiencia en el mercado local',
       marketList:
         'Al servicio de República del Congo · Camerún · Gabón · Cabinda · RD del Congo',
+      parentBrand: 'JFcars es un proyecto de Justandfun.',
       contactKicker: 'Habla con una persona real',
       contactTitle: '¿Cómo podemos ayudarte?',
       contactIntro:
@@ -346,6 +359,10 @@ export function InformationPage({
         'Incluye la marca, el modelo o el nombre del anuncio si es posible.',
       shipment: 'Seguimiento de envíos',
       shipmentText: 'Incluye la referencia del envío o lote si la tienes.',
+      supportEmail: 'Atención al cliente',
+      supportEmailText: 'Preguntas, ayuda y seguimiento',
+      salesEmail: 'Ventas y pedidos',
+      salesEmailText: 'Vehículos, alquileres, repuestos y presupuestos',
     },
     pt: {
       aboutKicker: 'Um legado familiar com mais de 25 anos',
@@ -374,6 +391,7 @@ export function InformationPage({
       markets: 'anos de experiência no mercado local',
       marketList:
         'Ao serviço de República do Congo · Camarões · Gabão · Cabinda · RD Congo',
+      parentBrand: 'A JFcars é um projeto Justandfun.',
       contactKicker: 'Fale com uma pessoa real',
       contactTitle: 'Como podemos ajudar?',
       contactIntro:
@@ -398,6 +416,10 @@ export function InformationPage({
       shipment: 'Atualizações de expedição',
       shipmentText:
         'Inclua a referência da expedição ou do lote, se tiver uma.',
+      supportEmail: 'Apoio ao cliente',
+      supportEmailText: 'Dúvidas, assistência e acompanhamento',
+      salesEmail: 'Vendas e encomendas',
+      salesEmailText: 'Veículos, alugueres, peças e orçamentos',
     },
   }[lang];
   const whatsappLink = whatsappHref(
@@ -435,7 +457,7 @@ export function InformationPage({
         </div>
         <div className="about-story">
           <div>
-            <small>JFCARS</small>
+            <small>{words.parentBrand}</small>
             <h2>{words.storyTitle}</h2>
             <p>{words.story}</p>
             <p>{words.storySecond}</p>
@@ -540,6 +562,30 @@ export function InformationPage({
           )}
         </form>
         <aside>
+          <article className="contact-email-card">
+            <span>
+              <Mail />
+            </span>
+            <div>
+              <h2>{words.supportEmail}</h2>
+              <p>{words.supportEmailText}</p>
+              <a href={mailtoHref(JFCARS_EMAILS.contact)}>
+                {JFCARS_EMAILS.contact}
+              </a>
+            </div>
+          </article>
+          <article className="contact-email-card">
+            <span>
+              <Mail />
+            </span>
+            <div>
+              <h2>{words.salesEmail}</h2>
+              <p>{words.salesEmailText}</p>
+              <a href={mailtoHref(JFCARS_EMAILS.sales)}>
+                {JFCARS_EMAILS.sales}
+              </a>
+            </div>
+          </article>
           {[
             [words.regional, words.regionalText],
             [words.vehicle, words.vehicleText],

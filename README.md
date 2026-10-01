@@ -1,8 +1,8 @@
 # JFcars
 
-JFcars is a multilingual vehicle marketplace for Central African markets. It
-supports buying, local rentals, parts requests, shipment updates, account
-management, and an authenticated admin workspace.
+JFcars is a Justandfun project and a multilingual vehicle marketplace for
+Central African markets. It supports buying, local rentals, parts requests,
+shipment updates, account management, and an authenticated admin workspace.
 
 ## Docker deployment
 
@@ -20,13 +20,32 @@ Before accepting registrations, configure transactional email in `.env`:
 ```dotenv
 JFCARS_PUBLIC_URL=https://jfcars.4rbl.com
 RESEND_API_KEY=re_your_server_key
-JFCARS_FROM_EMAIL=JFcars <verify@jfcars.4rbl.com>
+JFCARS_FROM_EMAIL=JFcars <noreply@justandfun.com>
+JFCARS_REPLY_TO_EMAIL=contact@justandfun.com
+JFCARS_CONTACT_EMAIL=contact@justandfun.com
+JFCARS_SALES_EMAIL=sales@justandfun.com
+JFCARS_ADMIN_EMAIL=jfcars@justandfun.com
+JFCARS_INFO_EMAIL=infos@justandfun.com
 ```
 
-Verify the sender domain with the email provider. Never commit `.env`; Docker
-Compose supplies these values to the worker at runtime. Registration fails
-closed if delivery is unavailable, and the incomplete account is removed so
-the visitor can retry.
+Google Workspace/Gmail hosts the Justandfun inboxes. The web application uses
+Resend's HTTPS API for verification and other automated messages because the
+Cloudflare worker runtime does not open an SMTP connection. Verify
+`justandfun.com` in Resend and publish its SPF, DKIM and DMARC records in DNS.
+Replies to automated messages go to `contact@justandfun.com`.
+
+Mailbox responsibilities are:
+
+- `jfcars@justandfun.com`: general JFcars and administrative correspondence.
+- `contact@justandfun.com`: customer support, contact form follow-up and replies.
+- `sales@justandfun.com`: vehicle, rental, parts and quotation requests.
+- `noreply@justandfun.com`: automated verification and status messages only.
+- `infos@justandfun.com`: optional informational alias, preferably forwarded to
+  the contact mailbox rather than advertised as another support channel.
+
+Never commit `.env`; Docker Compose supplies these values to the worker at
+runtime. Registration fails closed if delivery is unavailable, and the
+incomplete account is removed so the visitor can retry.
 
 Open <http://127.0.0.1:3010>. The port is loopback-only so public traffic must
 arrive through Nginx or another reverse proxy. Stop the stack with

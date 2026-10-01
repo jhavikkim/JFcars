@@ -1445,6 +1445,19 @@ footer div a {
   font-size: 13px;
   line-height: 1.55;
 }
+.contact-page-grid aside .contact-email-card {
+  border-color: #d2e2d9;
+  background: #f5faf7;
+}
+.contact-page-grid aside .contact-email-card a {
+  display: inline-block;
+  margin-top: 9px;
+  color: var(--forest);
+  font-size: 13px;
+  font-weight: 850;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
+}
 .contact-page-error {
   margin: 0;
   color: #a33e2d;
@@ -6638,12 +6651,34 @@ footer .logo {
   margin-bottom: 15px;
   font-size: 26px;
 }
+.footer-parent {
+  display: block;
+  margin: -7px 0 13px;
+  color: var(--yellow);
+  font-size: 10px;
+  font-weight: 850;
+  letter-spacing: 0.11em;
+  text-transform: uppercase;
+}
 .footer-brand > p {
   max-width: 390px;
   margin: 0 0 19px;
   color: #f7fbf8;
   font-size: 15px;
   line-height: 1.5;
+}
+.footer-email {
+  display: inline-block;
+  margin: -6px 0 18px;
+  color: #f7fbf8;
+  font-size: 13px;
+  font-weight: 750;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 4px;
+}
+.footer-email:hover,
+.footer-email:focus-visible {
+  color: var(--yellow);
 }
 .footer-markets {
   display: flex;

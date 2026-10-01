@@ -1,10 +1,12 @@
 import { env } from 'cloudflare:workers';
+import { JFCARS_EMAILS } from '@/lib/brand';
 
 export type EmailLanguage = 'en' | 'fr' | 'es' | 'pt';
 
 type EmailEnvironment = {
   RESEND_API_KEY?: string;
   JFCARS_FROM_EMAIL?: string;
+  JFCARS_REPLY_TO_EMAIL?: string;
   JFCARS_PUBLIC_URL?: string;
 };
 
@@ -23,6 +25,7 @@ const copy = {
     body: 'Confirm this email address before signing in to your JFcars account.',
     action: 'Verify email',
     expiry: 'This secure link expires in 60 minutes. If you did not create this account, you can ignore this message.',
+    parentBrand: 'JFcars is a Justandfun project.',
   },
   fr: {
     subject: 'Vérifiez votre adresse e-mail JFcars',
@@ -31,6 +34,7 @@ const copy = {
     body: 'Confirmez cette adresse e-mail avant de vous connecter à votre compte JFcars.',
     action: 'Vérifier mon e-mail',
     expiry: 'Ce lien sécurisé expire dans 60 minutes. Si vous n’avez pas créé ce compte, ignorez ce message.',
+    parentBrand: 'JFcars est un projet de Justandfun.',
   },
   es: {
     subject: 'Verifica tu correo de JFcars',
@@ -39,6 +43,7 @@ const copy = {
     body: 'Confirma esta dirección antes de iniciar sesión en tu cuenta de JFcars.',
     action: 'Verificar correo',
     expiry: 'Este enlace seguro caduca en 60 minutos. Si no creaste esta cuenta, puedes ignorar el mensaje.',
+    parentBrand: 'JFcars es un proyecto de Justandfun.',
   },
   pt: {
     subject: 'Verifique o seu e-mail JFcars',
@@ -47,6 +52,7 @@ const copy = {
     body: 'Confirme este endereço antes de iniciar sessão na sua conta JFcars.',
     action: 'Verificar e-mail',
     expiry: 'Este link seguro expira em 60 minutos. Se não criou esta conta, pode ignorar a mensagem.',
+    parentBrand: 'A JFcars é um projeto Justandfun.',
   },
 } satisfies Record<EmailLanguage, object>;
 
@@ -91,8 +97,8 @@ export function verificationEmailContent(
   return {
     subject: text.subject,
     verificationUrl: verificationHref,
-    text: `${text.greeting(input.name)}\n\n${text.body}\n\n${verificationHref}\n\n${text.expiry}`,
-    html: `<!doctype html><html><body style="margin:0;background:#f7f2e8;color:#143d35;font-family:Arial,sans-serif"><div style="max-width:560px;margin:0 auto;padding:40px 24px"><p style="font-size:25px;font-weight:800"><span style="color:#e45b2c">JF</span>cars<span style="color:#e3b632">.</span></p><div style="background:#fff;border:1px solid #dce4df;border-radius:16px;padding:32px"><h1 style="font-family:Georgia,serif;font-size:32px">${escapeHtml(text.heading)}</h1><p>${escapeHtml(text.greeting(input.name))}</p><p style="line-height:1.6">${escapeHtml(text.body)}</p><p style="margin:28px 0"><a href="${safeUrl}" style="background:#1e7356;color:#fff;text-decoration:none;padding:14px 22px;border-radius:9px;font-weight:700">${escapeHtml(text.action)}</a></p><p style="color:#64756f;font-size:13px;line-height:1.5">${escapeHtml(text.expiry)}</p></div></div></body></html>`,
+    text: `${text.greeting(input.name)}\n\n${text.body}\n\n${verificationHref}\n\n${text.expiry}\n\n${text.parentBrand}`,
+    html: `<!doctype html><html><body style="margin:0;background:#f7f2e8;color:#143d35;font-family:Arial,sans-serif"><div style="max-width:560px;margin:0 auto;padding:40px 24px"><p style="font-size:25px;font-weight:800"><span style="color:#e45b2c">JF</span>cars<span style="color:#e3b632">.</span></p><div style="background:#fff;border:1px solid #dce4df;border-radius:16px;padding:32px"><h1 style="font-family:Georgia,serif;font-size:32px">${escapeHtml(text.heading)}</h1><p>${escapeHtml(text.greeting(input.name))}</p><p style="line-height:1.6">${escapeHtml(text.body)}</p><p style="margin:28px 0"><a href="${safeUrl}" style="background:#1e7356;color:#fff;text-decoration:none;padding:14px 22px;border-radius:9px;font-weight:700">${escapeHtml(text.action)}</a></p><p style="color:#64756f;font-size:13px;line-height:1.5">${escapeHtml(text.expiry)}</p></div><p style="margin:18px 0 0;color:#64756f;font-size:12px;text-align:center">${escapeHtml(text.parentBrand)}</p></div></body></html>`,
   };
 }
 
@@ -103,6 +109,8 @@ export async function sendVerificationEmail(
 ) {
   const apiKey = environment.RESEND_API_KEY?.trim();
   const from = environment.JFCARS_FROM_EMAIL?.trim();
+  const replyTo =
+    environment.JFCARS_REPLY_TO_EMAIL?.trim() || JFCARS_EMAILS.contact;
   if (!apiKey || !from)
     throw new Error('Email delivery is not configured on this server.');
   const content = verificationEmailContent(input, environment);
@@ -114,6 +122,7 @@ export async function sendVerificationEmail(
     },
     body: JSON.stringify({
       from,
+      reply_to: replyTo,
       to: [input.to],
       subject: content.subject,
       html: content.html,

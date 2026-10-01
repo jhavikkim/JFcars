@@ -15,6 +15,11 @@ services:
       MINIFLARE_REGISTRY_PATH: /app/.wrangler/registry
       RESEND_API_KEY: ${RESEND_API_KEY:-}
       JFCARS_FROM_EMAIL: ${JFCARS_FROM_EMAIL:-}
+      JFCARS_REPLY_TO_EMAIL: ${JFCARS_REPLY_TO_EMAIL:-contact@justandfun.com}
+      JFCARS_CONTACT_EMAIL: ${JFCARS_CONTACT_EMAIL:-contact@justandfun.com}
+      JFCARS_SALES_EMAIL: ${JFCARS_SALES_EMAIL:-sales@justandfun.com}
+      JFCARS_ADMIN_EMAIL: ${JFCARS_ADMIN_EMAIL:-jfcars@justandfun.com}
+      JFCARS_INFO_EMAIL: ${JFCARS_INFO_EMAIL:-infos@justandfun.com}
       JFCARS_PUBLIC_URL: ${JFCARS_PUBLIC_URL:-https://jfcars.4rbl.com}
     volumes:
       - jfcars_wrangler:/app/.wrangler

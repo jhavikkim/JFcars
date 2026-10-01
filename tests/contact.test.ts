@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
+import { JFCARS_EMAILS, JFCARS_PARENT_BRAND } from '../lib/brand';
 import {
   isValidEmailAddress,
   mailtoHref,
@@ -8,6 +9,19 @@ import {
   telHref,
   whatsappHref,
 } from '../lib/contact';
+
+void test('JFcars uses the Justandfun mailbox family for each responsibility', () => {
+  assert.equal(JFCARS_PARENT_BRAND, 'Justandfun');
+  assert.deepEqual(JFCARS_EMAILS, {
+    primary: 'jfcars@justandfun.com',
+    contact: 'contact@justandfun.com',
+    info: 'infos@justandfun.com',
+    sales: 'sales@justandfun.com',
+    noReply: 'noreply@justandfun.com',
+  });
+  for (const email of Object.values(JFCARS_EMAILS))
+    assert.equal(isValidEmailAddress(email), true);
+});
 
 void test('contact email validation accepts ordinary mailbox addresses', () => {
   assert.equal(isValidEmailAddress('buyer@example.com'), true);

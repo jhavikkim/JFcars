@@ -1798,6 +1798,7 @@ export const marketCopy = {
 export const footerCopy = {
   en: {
     summary: 'Buy, rent and request car parts across Central Africa.',
+    parentBrand: 'A Justandfun project',
     markets:
       'Our five markets: Republic of the Congo, Cameroon, Gabon, Angola (Cabinda) and DR Congo.',
     explore: 'Explore',
@@ -1817,9 +1818,11 @@ export const footerCopy = {
     notice:
       'Purchase and rental requests require seller confirmation. JFcars does not process payments on this website; payment is arranged directly with the seller. JFcars does not issue refunds.',
     copyright: 'All rights reserved.',
+    email: 'General enquiries',
   },
   fr: {
     summary: 'Achetez, louez et demandez des pièces auto en Afrique centrale.',
+    parentBrand: 'Un projet de Justandfun',
     markets:
       'Nos cinq marchés : République du Congo, Cameroun, Gabon, Angola (Cabinda) et RD Congo.',
     explore: 'Découvrir',
@@ -1839,9 +1842,11 @@ export const footerCopy = {
     notice:
       'Les demandes d’achat et de location nécessitent la confirmation du vendeur. JFcars ne traite aucun paiement sur ce site ; le paiement est organisé directement avec le vendeur. JFcars n’effectue aucun remboursement.',
     copyright: 'Tous droits réservés.',
+    email: 'Demandes générales',
   },
   es: {
     summary: 'Compra, alquila y solicita repuestos en África Central.',
+    parentBrand: 'Un proyecto de Justandfun',
     markets:
       'Nuestros cinco mercados: República del Congo, Camerún, Gabón, Angola (Cabinda) y RD del Congo.',
     explore: 'Explorar',
@@ -1861,9 +1866,11 @@ export const footerCopy = {
     notice:
       'Las solicitudes de compra y alquiler requieren la confirmación del vendedor. JFcars no procesa pagos en este sitio; el pago se organiza directamente con el vendedor. JFcars no realiza reembolsos.',
     copyright: 'Todos los derechos reservados.',
+    email: 'Consultas generales',
   },
   pt: {
     summary: 'Compre, alugue e peça peças auto em toda a África Central.',
+    parentBrand: 'Um projeto Justandfun',
     markets:
       'Os nossos cinco mercados: República do Congo, Camarões, Gabão, Angola (Cabinda) e RD Congo.',
     explore: 'Explorar',
@@ -1883,6 +1890,7 @@ export const footerCopy = {
     notice:
       'Os pedidos de compra e aluguer exigem a confirmação do vendedor. A JFcars não processa pagamentos neste site; o pagamento é combinado diretamente com o vendedor. A JFcars não efetua reembolsos.',
     copyright: 'Todos os direitos reservados.',
+    email: 'Questões gerais',
   },
 } as const;
 export const flowCopy = {

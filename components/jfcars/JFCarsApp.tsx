@@ -85,7 +85,8 @@ import {
   flowCopy,
   profileCopy,
 } from '@/components/jfcars/config';
-import { whatsappHref } from '@/lib/contact';
+import { JFCARS_EMAILS } from '@/lib/brand';
+import { mailtoHref, whatsappHref } from '@/lib/contact';
 import {
   isExchangeRateSnapshot,
   type CurrencyRates,
@@ -3024,7 +3025,15 @@ export default function JFCarsApp({
             >
               <span>JF</span>cars<i>.</i>
             </button>
+            <span className="footer-parent">{footerCopy[lang].parentBrand}</span>
             <p>{footerCopy[lang].summary}</p>
+            <a
+              className="footer-email"
+              href={mailtoHref(JFCARS_EMAILS.primary)}
+              aria-label={`${footerCopy[lang].email}: ${JFCARS_EMAILS.primary}`}
+            >
+              {JFCARS_EMAILS.primary}
+            </a>
             <div className="footer-markets">
               <MapPin />
               <span>{footerCopy[lang].markets}</span>

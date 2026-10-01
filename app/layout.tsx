@@ -4,7 +4,7 @@ export const metadata: Metadata = {
   metadataBase: new URL('https://jfcars.4rbl.com'),
   title: 'JFcars — Cars, rentals and parts in Central Africa',
   description:
-    'Search, compare, buy or rent cars and request auto parts across Central African markets.',
+    'JFcars, a Justandfun project: search, compare, buy or rent cars and request auto parts across Central African markets.',
   alternates: {
     canonical: '/',
     languages: {
@@ -17,7 +17,7 @@ export const metadata: Metadata = {
   },
   openGraph: {
     title: 'JFcars — Move happy',
-    description: 'Cars, rentals and parts for Central Africa.',
+    description: 'A Justandfun project for cars, rentals and parts in Central Africa.',
     images: ['/og.png'],
     locale: 'en_US',
     alternateLocale: ['fr_FR', 'es_ES', 'pt_AO'],
@@ -25,7 +25,7 @@ export const metadata: Metadata = {
   twitter: {
     card: 'summary_large_image',
     title: 'JFcars — Move happy',
-    description: 'Cars, rentals and parts for Central Africa.',
+    description: 'A Justandfun project for cars, rentals and parts in Central Africa.',
     images: ['/og.png'],
   },
 };
