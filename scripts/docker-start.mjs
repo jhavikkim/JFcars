@@ -24,6 +24,11 @@ await mkdir(new URL('../dist/server/', import.meta.url), { recursive: true });
 const bindings = [
   'RESEND_API_KEY',
   'JFCARS_FROM_EMAIL',
+  'JFCARS_REPLY_TO_EMAIL',
+  'JFCARS_CONTACT_EMAIL',
+  'JFCARS_SALES_EMAIL',
+  'JFCARS_ADMIN_EMAIL',
+  'JFCARS_INFO_EMAIL',
   'JFCARS_PUBLIC_URL',
 ]
   .filter((key) => process.env[key])

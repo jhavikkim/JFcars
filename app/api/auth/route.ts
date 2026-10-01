@@ -276,6 +276,19 @@ export async function POST(request: Request) {
         { error: 'An account already exists for this email.' },
         { status: 409 },
       );
+    if (
+      (action === 'signup' || action === 'resend-verification') &&
+      /^Email delivery (?:is not configured|failed)/i.test(message)
+    ) {
+      console.error('JFcars verification email delivery failed', error);
+      return json(
+        {
+          error: 'Verification email service unavailable',
+          code: 'email_delivery_unavailable',
+        },
+        { status: 503 },
+      );
+    }
     console.error('JFcars authentication operation failed', error);
     return json(
       { error: 'Authentication service unavailable' },

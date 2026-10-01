@@ -47,6 +47,7 @@ import {
   flowCopy,
   profileCopy,
 } from '@/components/jfcars/config';
+import { JFCARS_EMAILS } from '@/lib/brand';
 import { useDialog } from '@/components/jfcars/useDialog';
 import type { CurrencyRates } from '@/lib/exchange-rates';
 export function AccountLayer({
@@ -119,6 +120,7 @@ export function AccountLayer({
     en: {
       passwordHint: 'Use 10–128 characters.',
       genericError: 'We could not complete this request. Please try again.',
+      emailUnavailable: `Email verification is temporarily unavailable. Contact ${JFCARS_EMAILS.contact}.`,
       existing: 'An account already exists for this email.',
       invalid: 'Email or password is incorrect.',
       busy: 'Please wait…',
@@ -134,6 +136,7 @@ export function AccountLayer({
     fr: {
       passwordHint: 'Utilisez entre 10 et 128 caractères.',
       genericError: 'Impossible de terminer cette demande. Réessayez.',
+      emailUnavailable: `La vérification par e-mail est temporairement indisponible. Contactez ${JFCARS_EMAILS.contact}.`,
       existing: 'Un compte existe déjà pour cette adresse e-mail.',
       invalid: 'L’adresse e-mail ou le mot de passe est incorrect.',
       busy: 'Veuillez patienter…',
@@ -149,6 +152,7 @@ export function AccountLayer({
     es: {
       passwordHint: 'Usa entre 10 y 128 caracteres.',
       genericError: 'No pudimos completar la solicitud. Inténtalo de nuevo.',
+      emailUnavailable: `La verificación por correo no está disponible temporalmente. Contacta con ${JFCARS_EMAILS.contact}.`,
       existing: 'Ya existe una cuenta con este correo.',
       invalid: 'El correo o la contraseña son incorrectos.',
       busy: 'Espera un momento…',
@@ -164,6 +168,7 @@ export function AccountLayer({
     pt: {
       passwordHint: 'Utilize entre 10 e 128 caracteres.',
       genericError: 'Não foi possível concluir o pedido. Tente novamente.',
+      emailUnavailable: `A verificação por e-mail está temporariamente indisponível. Contacte ${JFCARS_EMAILS.contact}.`,
       existing: 'Já existe uma conta com este e-mail.',
       invalid: 'O e-mail ou a palavra-passe está incorreto.',
       busy: 'Aguarde…',
@@ -235,6 +240,10 @@ export function AccountLayer({
           setVerificationPending(true);
           return;
         }
+        if (result.code === 'email_delivery_unavailable') {
+          setAuthError(authText.emailUnavailable);
+          return;
+        }
         setAuthError(
           response.status === 409
             ? authText.existing
@@ -274,6 +283,13 @@ export function AccountLayer({
         }),
       });
       if (!response.ok) {
+        const result = (await response.json().catch(() => ({}))) as {
+          code?: string;
+        };
+        if (result.code === 'email_delivery_unavailable') {
+          setAuthError(authText.emailUnavailable);
+          return;
+        }
         setAuthError(
           response.status === 401 ? authText.invalid : authText.genericError,
         );
