@@ -114,21 +114,29 @@ export async function sendVerificationEmail(
   if (!apiKey || !from)
     throw new Error('Email delivery is not configured on this server.');
   const content = verificationEmailContent(input, environment);
-  const response = await fetcher('https://api.resend.com/emails', {
-    method: 'POST',
-    headers: {
-      authorization: `Bearer ${apiKey}`,
-      'content-type': 'application/json',
-    },
-    body: JSON.stringify({
-      from,
-      reply_to: replyTo,
-      to: [input.to],
-      subject: content.subject,
-      html: content.html,
-      text: content.text,
-    }),
-  });
+  let response: Response;
+  try {
+    response = await fetcher('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: {
+        authorization: `Bearer ${apiKey}`,
+        'content-type': 'application/json',
+      },
+      body: JSON.stringify({
+        from,
+        reply_to: replyTo,
+        to: [input.to],
+        subject: content.subject,
+        html: content.html,
+        text: content.text,
+      }),
+    });
+  } catch (error) {
+    const detail = error instanceof Error ? error.message : String(error);
+    throw new Error(`Email delivery failed (network): ${detail}`, {
+      cause: error,
+    });
+  }
   if (!response.ok) {
     const detail = (await response.text()).slice(0, 500);
     throw new Error(`Email delivery failed (${response.status}): ${detail}`);
