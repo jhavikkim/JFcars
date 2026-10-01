@@ -65,8 +65,18 @@ compile pages on demand. Bundled images are served directly instead of through
 the framework image-optimizer endpoint.
 
 JFcars owns its email/password authentication and server-side sessions. New
-accounts receive the customer role. After creating the owner account through
-the website, promote that exact email to the administrator role on the server:
+accounts receive the customer role. To bootstrap administrators without
+manually editing D1, list their exact addresses in the server `.env`:
+
+```dotenv
+JFCARS_ADMIN_EMAILS=admin@justandfun.com
+```
+
+Rebuild the container, verify the account's email address, then sign out and
+sign in again. A verified allowlisted account is promoted during sign-in. More
+than one address can be supplied as a comma-separated list.
+
+The equivalent one-time database command remains available when needed:
 
 ```bash
 docker compose exec web npm exec -- wrangler d1 execute site-creator-d1 \
@@ -74,9 +84,8 @@ docker compose exec web npm exec -- wrangler d1 execute site-creator-d1 \
   --command "UPDATE auth_users SET role='admin' WHERE email='owner@example.com';"
 ```
 
-Replace `owner@example.com` with the normalized owner email. Reload the site;
-the existing session reads the updated role immediately. There is no local or
-development administrator shortcut.
+Replace `owner@example.com` with the normalized owner email. There is no public
+administrator switch or development administrator shortcut.
 
 ## Development
 

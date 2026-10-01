@@ -4331,6 +4331,41 @@ dialog[open].photo-viewer {
   border-color: var(--coral);
   box-shadow: 0 0 0 3px #ff6a4d15;
 }
+.auth-password-field {
+  position: relative;
+}
+.auth-password-field input {
+  box-sizing: border-box;
+  width: 100%;
+  padding-right: 44px;
+}
+.auth-password-toggle {
+  position: absolute;
+  top: 50%;
+  right: 8px;
+  width: 34px;
+  height: 34px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: #536970;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  transform: translateY(-50%);
+}
+.auth-password-toggle:hover {
+  background: #f2f6f4;
+  color: var(--ink);
+}
+.auth-password-toggle:focus-visible {
+  outline: 2px solid var(--coral);
+  outline-offset: 1px;
+}
+.auth-password-toggle svg {
+  width: 18px;
+  height: 18px;
+}
 .remember {
   display: flex;
   justify-content: space-between;

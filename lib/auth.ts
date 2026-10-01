@@ -36,6 +36,17 @@ export function normalizeAuthEmail(value: unknown) {
   return isValidEmailAddress(email) ? email : '';
 }
 
+export function isConfiguredAdminEmail(
+  email: string,
+  configuredEmails: unknown,
+) {
+  const normalizedEmail = normalizeAuthEmail(email);
+  if (!normalizedEmail || typeof configuredEmails !== 'string') return false;
+  return configuredEmails
+    .split(/[\s,]+/)
+    .some((configured) => normalizeAuthEmail(configured) === normalizedEmail);
+}
+
 export async function hashPassword(password: string, suppliedSalt?: string) {
   const salt = suppliedSalt
     ? fromBase64Url(suppliedSalt)

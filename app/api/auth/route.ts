@@ -3,9 +3,11 @@ import {
   createEmailVerificationToken,
   destroyAuthSession,
   hashPassword,
+  isConfiguredAdminEmail,
   normalizeAuthEmail,
   verifyPassword,
 } from '@/lib/auth';
+import { env } from 'cloudflare:workers';
 import { sendVerificationEmail, type EmailLanguage } from '@/lib/email';
 import { ensureDatabase, json } from '@/lib/site-db';
 import { readJsonObject } from '@/lib/request-body';
@@ -13,6 +15,10 @@ import { readJsonObject } from '@/lib/request-body';
 export const dynamic = 'force-dynamic';
 
 const encoder = new TextEncoder();
+
+type AuthEnvironment = {
+  JFCARS_ADMIN_EMAILS?: string;
+};
 
 function safeName(value: unknown) {
   return Array.from(typeof value === 'string' ? value : '')
@@ -253,19 +259,28 @@ export async function POST(request: Request) {
     }
     if (action === 'resend-verification')
       return json({ ok: true, alreadyVerified: true }, { status: 200 });
+    const effectiveRole =
+      user.role === 'admin' ||
+      isConfiguredAdminEmail(
+        user.email,
+        (env as AuthEnvironment).JFCARS_ADMIN_EMAILS,
+      )
+        ? 'admin'
+        : 'user';
     await db
       .prepare(
         `UPDATE auth_users
-         SET last_login_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP
+         SET role = ?, last_login_at = CURRENT_TIMESTAMP,
+             updated_at = CURRENT_TIMESTAMP
          WHERE id = ?`,
       )
-      .bind(user.id)
+      .bind(effectiveRole, user.id)
       .run();
     const cookie = await createAuthSession(db, request, user.id);
     return json(
       {
         ok: true,
-        user: { name: user.name, email: user.email, role: user.role },
+        user: { name: user.name, email: user.email, role: effectiveRole },
       },
       { headers: { 'set-cookie': cookie }, status: 200 },
     );

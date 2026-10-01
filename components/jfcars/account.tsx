@@ -7,6 +7,8 @@ import {
   CalendarDays,
   Check,
   Cog,
+  Eye,
+  EyeOff,
   Heart,
   LogOut,
   MapPin,
@@ -110,6 +112,7 @@ export function AccountLayer({
   const [authError, setAuthError] = useState('');
   const [authNotice, setAuthNotice] = useState('');
   const [verificationPending, setVerificationPending] = useState(false);
+  const [passwordVisible, setPasswordVisible] = useState(false);
   const authFormRef = useRef<HTMLFormElement>(null);
   const f = flowCopy[lang];
   const u = ui[lang];
@@ -119,6 +122,8 @@ export function AccountLayer({
   const authText = {
     en: {
       passwordHint: 'Use 10–128 characters.',
+      showPassword: 'Show password',
+      hidePassword: 'Hide password',
       genericError: 'We could not complete this request. Please try again.',
       emailUnavailable: `Email verification is temporarily unavailable. Contact ${JFCARS_EMAILS.contact}.`,
       existing: 'An account already exists for this email.',
@@ -135,6 +140,8 @@ export function AccountLayer({
     },
     fr: {
       passwordHint: 'Utilisez entre 10 et 128 caractères.',
+      showPassword: 'Afficher le mot de passe',
+      hidePassword: 'Masquer le mot de passe',
       genericError: 'Impossible de terminer cette demande. Réessayez.',
       emailUnavailable: `La vérification par e-mail est temporairement indisponible. Contactez ${JFCARS_EMAILS.contact}.`,
       existing: 'Un compte existe déjà pour cette adresse e-mail.',
@@ -151,6 +158,8 @@ export function AccountLayer({
     },
     es: {
       passwordHint: 'Usa entre 10 y 128 caracteres.',
+      showPassword: 'Mostrar contraseña',
+      hidePassword: 'Ocultar contraseña',
       genericError: 'No pudimos completar la solicitud. Inténtalo de nuevo.',
       emailUnavailable: `La verificación por correo no está disponible temporalmente. Contacta con ${JFCARS_EMAILS.contact}.`,
       existing: 'Ya existe una cuenta con este correo.',
@@ -167,6 +176,8 @@ export function AccountLayer({
     },
     pt: {
       passwordHint: 'Utilize entre 10 e 128 caracteres.',
+      showPassword: 'Mostrar palavra-passe',
+      hidePassword: 'Ocultar palavra-passe',
       genericError: 'Não foi possível concluir o pedido. Tente novamente.',
       emailUnavailable: `A verificação por e-mail está temporariamente indisponível. Contacte ${JFCARS_EMAILS.contact}.`,
       existing: 'Já existe uma conta com este e-mail.',
@@ -464,6 +475,7 @@ export function AccountLayer({
                   setAuthError('');
                   setAuthNotice('');
                   setVerificationPending(false);
+                  setPasswordVisible(false);
                   setAuthMode('signin');
                 }}
               >
@@ -475,6 +487,7 @@ export function AccountLayer({
                   setAuthError('');
                   setAuthNotice('');
                   setVerificationPending(false);
+                  setPasswordVisible(false);
                   setAuthMode('signup');
                 }}
               >
@@ -519,16 +532,38 @@ export function AccountLayer({
               </label>
               <label>
                 {f.password}
-                <input
-                  name="authPassword"
-                  type="password"
-                  autoComplete={
-                    authMode === 'signin' ? 'current-password' : 'new-password'
-                  }
-                  minLength={10}
-                  maxLength={128}
-                  required
-                />
+                <div className="auth-password-field">
+                  <input
+                    name="authPassword"
+                    type={passwordVisible ? 'text' : 'password'}
+                    autoComplete={
+                      authMode === 'signin'
+                        ? 'current-password'
+                        : 'new-password'
+                    }
+                    minLength={10}
+                    maxLength={128}
+                    required
+                  />
+                  <button
+                    type="button"
+                    className="auth-password-toggle"
+                    aria-label={
+                      passwordVisible
+                        ? authText.hidePassword
+                        : authText.showPassword
+                    }
+                    title={
+                      passwordVisible
+                        ? authText.hidePassword
+                        : authText.showPassword
+                    }
+                    aria-pressed={passwordVisible}
+                    onClick={() => setPasswordVisible((visible) => !visible)}
+                  >
+                    {passwordVisible ? <EyeOff /> : <Eye />}
+                  </button>
+                </div>
                 <small className="auth-hint">{authText.passwordHint}</small>
               </label>
               {authError && (

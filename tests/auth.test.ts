@@ -4,6 +4,7 @@ import {
   clearAuthCookie,
   hashOpaqueToken,
   hashPassword,
+  isConfiguredAdminEmail,
   normalizeAuthEmail,
   passwordIterations,
   sessionCookieName,
@@ -14,6 +15,14 @@ void test('auth email normalization is strict and case-insensitive', () => {
   assert.equal(normalizeAuthEmail(' Owner@Example.COM '), 'owner@example.com');
   assert.equal(normalizeAuthEmail('owner@example.com?next=bad'), '');
   assert.equal(normalizeAuthEmail('not-an-email'), '');
+});
+
+void test('administrator allowlist matches exact normalized emails only', () => {
+  const configured = 'owner@example.com, ADMIN@justandfun.com';
+  assert.equal(isConfiguredAdminEmail('admin@justandfun.com', configured), true);
+  assert.equal(isConfiguredAdminEmail(' owner@example.com ', configured), true);
+  assert.equal(isConfiguredAdminEmail('other@example.com', configured), false);
+  assert.equal(isConfiguredAdminEmail('admin@justandfun.com.evil', configured), false);
 });
 
 void test('password records are salted and verify without storing plaintext', async () => {

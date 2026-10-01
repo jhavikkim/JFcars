@@ -19,6 +19,7 @@ services:
       JFCARS_CONTACT_EMAIL: ${JFCARS_CONTACT_EMAIL:-contact@justandfun.com}
       JFCARS_SALES_EMAIL: ${JFCARS_SALES_EMAIL:-sales@justandfun.com}
       JFCARS_ADMIN_EMAIL: ${JFCARS_ADMIN_EMAIL:-jfcars@justandfun.com}
+      JFCARS_ADMIN_EMAILS: ${JFCARS_ADMIN_EMAILS:-}
       JFCARS_INFO_EMAIL: ${JFCARS_INFO_EMAIL:-infos@justandfun.com}
       JFCARS_PUBLIC_URL: ${JFCARS_PUBLIC_URL:-https://jfcars.4rbl.com}
     volumes:
