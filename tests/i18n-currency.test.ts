@@ -60,3 +60,15 @@ void test('display conversion round-trips without changing canonical XAF values'
     }
   }
 });
+
+void test('live rate snapshots override the bundled display conversion', () => {
+  const liveRates = {
+    XAF: 1,
+    USD: 500,
+    EUR: 650,
+    AOA: 0.625,
+  } as const;
+  assert.equal(convertFromXaf(1_000, 'USD', liveRates), 2);
+  assert.equal(convertToXaf(2, 'USD', liveRates), 1_000);
+  assert.match(money(1_000, 'en', 'USD', liveRates), /2\.00/);
+});

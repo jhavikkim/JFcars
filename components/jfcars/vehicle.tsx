@@ -34,12 +34,14 @@ import {
 } from '@/components/jfcars/config';
 import { useDialog } from '@/components/jfcars/useDialog';
 import { whatsappHref } from '@/lib/contact';
+import type { CurrencyRates } from '@/lib/exchange-rates';
 export function VehicleDetails({
   car,
   inventory,
   user,
   lang,
   currency,
+  currencyRates,
   mode,
   close,
   selectVehicle,
@@ -53,6 +55,7 @@ export function VehicleDetails({
   user: UserAccount | null;
   lang: Lang;
   currency: Currency;
+  currencyRates: CurrencyRates;
   mode: 'buy' | 'rent' | 'parts';
   close: () => void;
   selectVehicle: (car: Car) => void;
@@ -454,8 +457,8 @@ export function VehicleDetails({
           <p>{labels.desc}</p>
           <strong>
             {mode === 'rent'
-              ? `${money(rentalRate(car), lang, currency)}/${flowCopy[lang].day}`
-              : money(car.price, lang, currency)}
+              ? `${money(rentalRate(car), lang, currency, currencyRates)}/${flowCopy[lang].day}`
+              : money(car.price, lang, currency, currencyRates)}
           </strong>
           <div className="detail-location">
             <MapPin />
@@ -649,6 +652,7 @@ export function VehicleDetails({
                   car={candidate}
                   lang={lang}
                   currency={currency}
+                  currencyRates={currencyRates}
                   mode={mode}
                   action={labels.viewVehicle}
                   onSelect={() => selectVehicle(candidate)}
@@ -673,6 +677,7 @@ export function VehicleDetails({
                   car={candidate}
                   lang={lang}
                   currency={currency}
+                  currencyRates={currencyRates}
                   mode={mode}
                   action={labels.viewVehicle}
                   onSelect={() => selectVehicle(candidate)}
@@ -815,6 +820,7 @@ export function VehicleRecommendationCard({
   car,
   lang,
   currency,
+  currencyRates,
   mode,
   action,
   onSelect,
@@ -822,6 +828,7 @@ export function VehicleRecommendationCard({
   car: Car;
   lang: Lang;
   currency: Currency;
+  currencyRates: CurrencyRates;
   mode: 'buy' | 'rent' | 'parts';
   action: string;
   onSelect: () => void;
@@ -853,8 +860,8 @@ export function VehicleRecommendationCard({
         </span>
         <strong>
           {mode === 'rent'
-            ? `${money(rentalRate(car), lang, currency)}/${flowCopy[lang].day}`
-            : money(car.price, lang, currency)}
+            ? `${money(rentalRate(car), lang, currency, currencyRates)}/${flowCopy[lang].day}`
+            : money(car.price, lang, currency, currencyRates)}
         </strong>
         <button className="recommendation-action" onClick={onSelect}>
           {action}
@@ -871,6 +878,7 @@ export function ComparePanel({
   add,
   lang,
   currency,
+  currencyRates,
   mode,
 }: {
   cars: Car[];
@@ -879,6 +887,7 @@ export function ComparePanel({
   add: (id: number) => void;
   lang: Lang;
   currency: Currency;
+  currencyRates: CurrencyRates;
   mode: 'buy' | 'rent' | 'parts';
 }) {
   useDialog(close);
@@ -928,8 +937,8 @@ export function ComparePanel({
               </h3>
               <strong>
                 {mode === 'rent'
-                  ? `${money(rentalRate(c), lang, currency)}/${f.day}`
-                  : money(c.price, lang, currency)}
+                  ? `${money(rentalRate(c), lang, currency, currencyRates)}/${f.day}`
+                  : money(c.price, lang, currency, currencyRates)}
               </strong>
               <dl>
                 <div>

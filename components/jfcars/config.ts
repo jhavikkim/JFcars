@@ -13,6 +13,11 @@ import type {
   Lang,
   UserAccount,
 } from '@/lib/marketplace/types';
+import {
+  fallbackCurrencyRateDate,
+  fallbackXafPerCurrency,
+  type CurrencyRates,
+} from '@/lib/exchange-rates';
 
 export type {
   AuthSession,
@@ -1018,19 +1023,9 @@ export const catalogBrands = (inventory: Car[]) => {
 export const letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
 export const supportedCurrencies = ['XAF', 'USD', 'EUR', 'AOA'] as const;
 
-/**
- * Canonical catalogue values remain in XAF. Display conversions use official
- * reference rates published for 18 September 2026: the BEAC euro peg
- * (EUR 1 = XAF 655.957), ECB EUR/USD (EUR 1 = USD 1.1460), and BNA EUR/AOA
- * (EUR 1 = AOA 1,046.796). These figures are indicative; sellers confirm the
- * final transaction currency and amount.
- */
-export const xafPerCurrency: Record<Currency, number> = {
-  XAF: 1,
-  EUR: 655.957,
-  USD: 655.957 / 1.146,
-  AOA: 655.957 / 1046.796,
-};
+// Canonical catalogue values remain in XAF. These verified reference rates
+// keep the storefront usable whenever the live daily feed is unavailable.
+export const xafPerCurrency = fallbackXafPerCurrency;
 
 export const isCurrency = (value: unknown): value is Currency =>
   typeof value === 'string' && supportedCurrencies.includes(value as Currency);
@@ -1044,13 +1039,19 @@ export const localeFor = (lang: Lang) =>
         ? 'pt-AO'
         : 'en-US';
 
-export const convertFromXaf = (amount: number, currency: Currency) =>
-  amount / xafPerCurrency[currency];
+export const convertFromXaf = (
+  amount: number,
+  currency: Currency,
+  rates: CurrencyRates = xafPerCurrency,
+) => amount / rates[currency];
 
-export const convertToXaf = (amount: number, currency: Currency) =>
-  Math.round(amount * xafPerCurrency[currency]);
+export const convertToXaf = (
+  amount: number,
+  currency: Currency,
+  rates: CurrencyRates = xafPerCurrency,
+) => Math.round(amount * rates[currency]);
 
-export const currencyRateDate = '2026-09-18';
+export const currencyRateDate = fallbackCurrencyRateDate;
 
 const currencyMarks: Record<Currency, string> = {
   XAF: 'FCFA',
@@ -1067,6 +1068,7 @@ const formatCurrencyParts = (
   lang: Lang,
   currency: Currency,
   compact = false,
+  rates: CurrencyRates = xafPerCurrency,
 ) =>
   new Intl.NumberFormat(localeFor(lang), {
     style: 'currency',
@@ -1079,20 +1081,25 @@ const formatCurrencyParts = (
         ? 0
         : 2,
   })
-    .formatToParts(convertFromXaf(amount, currency))
+    .formatToParts(convertFromXaf(amount, currency, rates))
     .map((part) =>
       part.type === 'currency' ? currencyMarks[currency] : part.value,
     )
     .join('');
 
-export const money = (n: number, lang: Lang, currency: Currency = 'XAF') =>
-  formatCurrencyParts(n, lang, currency);
+export const money = (
+  n: number,
+  lang: Lang,
+  currency: Currency = 'XAF',
+  rates: CurrencyRates = xafPerCurrency,
+) => formatCurrencyParts(n, lang, currency, false, rates);
 
 export const compactMoney = (
   n: number,
   lang: Lang,
   currency: Currency = 'XAF',
-) => formatCurrencyParts(n, lang, currency, true);
+  rates: CurrencyRates = xafPerCurrency,
+) => formatCurrencyParts(n, lang, currency, true, rates);
 export const rentalRate = (car: Car) =>
   Math.max(0, Math.round(car.dailyRate || 0));
 export const rentalDaysBetween = (start: string, end: string) => {

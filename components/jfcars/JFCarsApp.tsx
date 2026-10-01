@@ -67,6 +67,7 @@ import {
   convertToXaf,
   currencyLabel,
   currencyRateDate,
+  xafPerCurrency,
   isCurrency,
   supportedCurrencies,
   rentalRate,
@@ -85,6 +86,11 @@ import {
   profileCopy,
 } from '@/components/jfcars/config';
 import { whatsappHref } from '@/lib/contact';
+import {
+  isExchangeRateSnapshot,
+  type CurrencyRates,
+  type ExchangeRateSnapshot,
+} from '@/lib/exchange-rates';
 
 function LayerLoading({ label }: { label: string }) {
   return (
@@ -97,6 +103,7 @@ function LayerLoading({ label }: { label: string }) {
 
 function PriceRangeInputs({
   currency,
+  rates,
   minPrice,
   maxPrice,
   minLabel,
@@ -106,6 +113,7 @@ function PriceRangeInputs({
   onMaxCommit,
 }: {
   currency: Currency;
+  rates: CurrencyRates;
   minPrice: string;
   maxPrice: string;
   minLabel: string;
@@ -116,7 +124,7 @@ function PriceRangeInputs({
 }) {
   const displayValue = (value: string) => {
     if (value === 'Any') return '';
-    const converted = convertFromXaf(Number(value), currency);
+    const converted = convertFromXaf(Number(value), currency, rates);
     return currency === 'XAF' || currency === 'AOA'
       ? String(Math.round(converted))
       : converted.toFixed(2);
@@ -127,7 +135,7 @@ function PriceRangeInputs({
     const amount = Number(value);
     update(
       value && Number.isFinite(amount) && amount >= 0
-        ? String(convertToXaf(amount, currency))
+        ? String(convertToXaf(amount, currency, rates))
         : 'Any',
     );
   };
@@ -246,6 +254,15 @@ export default function JFCarsApp({
       'about' | 'contact' | 'help' | 'privacy' | 'terms' | null
     >(null),
     [persistenceReady, setPersistenceReady] = useState(false);
+  const [exchangeRateSnapshot, setExchangeRateSnapshot] =
+    useState<ExchangeRateSnapshot>({
+      base: 'XAF',
+      rates: xafPerCurrency,
+      asOf: currencyRateDate,
+      rateDates: {},
+      source: 'bundled-reference',
+      live: false,
+    });
   const filterPanelRef = useRef<HTMLElement>(null);
   const filterCloseRef = useRef<HTMLButtonElement>(null);
   const filterButtonRef = useRef<HTMLButtonElement>(null);
@@ -256,6 +273,25 @@ export default function JFCarsApp({
   const inventoryRef = useRef(inventory);
   const storefrontContentRef = useRef(storefrontContent);
   const marketplaceRevisionRef = useRef(marketplaceRevision);
+  useEffect(() => {
+    let active = true;
+    void fetch('/api/exchange-rates', {
+      headers: { accept: 'application/json' },
+    })
+      .then(async (response) => {
+        if (!response.ok) return null;
+        const payload: unknown = await response.json();
+        return isExchangeRateSnapshot(payload) ? payload : null;
+      })
+      .then((snapshot) => {
+        if (active && snapshot) setExchangeRateSnapshot(snapshot);
+      })
+      .catch(() => undefined);
+    return () => {
+      active = false;
+    };
+  }, []);
+  const exchangeRates = exchangeRateSnapshot.rates;
   const t = copy[lang],
     u = ui[lang],
     m = marketCopy[lang],
@@ -316,15 +352,23 @@ export default function JFCarsApp({
           ? 'es-ES'
           : 'en-GB',
     { dateStyle: 'medium', timeZone: 'UTC' },
-  ).format(new Date(`${currencyRateDate}T12:00:00Z`));
+  ).format(new Date(`${exchangeRateSnapshot.asOf}T12:00:00Z`));
   const currencyDisclosure =
-    lang === 'fr'
-      ? `Conversion indicative · taux de référence du ${currencyRateLabel}. Le vendeur confirme le montant final.`
-      : lang === 'es'
-        ? `Conversión indicativa · tipos de referencia del ${currencyRateLabel}. El vendedor confirma el importe final.`
-        : lang === 'pt'
-          ? `Conversão indicativa · taxas de referência de ${currencyRateLabel}. O vendedor confirma o valor final.`
-          : `Indicative conversion · reference rates from ${currencyRateLabel}. The seller confirms the final amount.`;
+    exchangeRateSnapshot.live
+      ? lang === 'fr'
+        ? `Conversion indicative · taux quotidiens actualisés le ${currencyRateLabel}. Le vendeur confirme le montant final.`
+        : lang === 'es'
+          ? `Conversión indicativa · tipos diarios actualizados el ${currencyRateLabel}. El vendedor confirma el importe final.`
+          : lang === 'pt'
+            ? `Conversão indicativa · taxas diárias atualizadas em ${currencyRateLabel}. O vendedor confirma o valor final.`
+            : `Indicative conversion · daily rates updated ${currencyRateLabel}. The seller confirms the final amount.`
+      : lang === 'fr'
+        ? `Conversion indicative · dernière référence vérifiée le ${currencyRateLabel}. Mise à jour en direct temporairement indisponible.`
+        : lang === 'es'
+          ? `Conversión indicativa · última referencia verificada el ${currencyRateLabel}. La actualización en directo no está disponible temporalmente.`
+          : lang === 'pt'
+            ? `Conversão indicativa · última referência verificada em ${currencyRateLabel}. A atualização em direto está temporariamente indisponível.`
+            : `Indicative conversion · last verified ${currencyRateLabel}. Live update is temporarily unavailable.`;
   const marketSelectorDone =
     lang === 'fr'
       ? 'Terminé'
@@ -333,6 +377,21 @@ export default function JFCarsApp({
         : lang === 'pt'
           ? 'Concluído'
           : 'Done';
+  const marketRateStatus = exchangeRateSnapshot.live
+    ? lang === 'fr'
+      ? `Taux quotidiens actualisés · ${currencyRateLabel}`
+      : lang === 'es'
+        ? `Tipos diarios actualizados · ${currencyRateLabel}`
+        : lang === 'pt'
+          ? `Taxas diárias atualizadas · ${currencyRateLabel}`
+          : `Daily rates updated · ${currencyRateLabel}`
+    : lang === 'fr'
+      ? `Taux de secours vérifiés · ${currencyRateLabel}`
+      : lang === 'es'
+        ? `Tipos de respaldo verificados · ${currencyRateLabel}`
+        : lang === 'pt'
+          ? `Taxas de reserva verificadas · ${currencyRateLabel}`
+          : `Verified fallback rates · ${currencyRateLabel}`;
   const priceInputStep =
     currency === 'XAF'
       ? mode === 'rent'
@@ -1200,11 +1259,11 @@ export default function JFCarsApp({
     body !== 'Any' && [localize(body, lang), () => updateFacet(setBody, 'Any')],
     fuel !== 'Any' && [localize(fuel, lang), () => updateFacet(setFuel, 'Any')],
     minPrice !== 'Any' && [
-      `≥ ${money(Number(minPrice), lang, currency)}${mode === 'rent' ? `/${f.day}` : ''}`,
+      `≥ ${money(Number(minPrice), lang, currency, exchangeRates)}${mode === 'rent' ? `/${f.day}` : ''}`,
       () => updateFacet(setMinPrice, 'Any'),
     ],
     maxPrice !== 'Any' && [
-      `${m.under} ${money(Number(maxPrice), lang, currency)}${mode === 'rent' ? `/${f.day}` : ''}`,
+      `${m.under} ${money(Number(maxPrice), lang, currency, exchangeRates)}${mode === 'rent' ? `/${f.day}` : ''}`,
       () => updateFacet(setMaxPrice, 'Any'),
     ],
     minYear !== 'Any' && [`${minYear}+`, () => updateFacet(setMinYear, 'Any')],
@@ -1302,11 +1361,11 @@ export default function JFCarsApp({
   const priceFilterSummary = (() => {
     const suffix = mode === 'rent' ? `/${f.day}` : '';
     if (minPrice !== 'Any' && maxPrice !== 'Any')
-      return `${money(Number(minPrice), lang, currency)} – ${money(Number(maxPrice), lang, currency)}${suffix}`;
+      return `${money(Number(minPrice), lang, currency, exchangeRates)} – ${money(Number(maxPrice), lang, currency, exchangeRates)}${suffix}`;
     if (minPrice !== 'Any')
-      return `≥ ${money(Number(minPrice), lang, currency)}${suffix}`;
+      return `≥ ${money(Number(minPrice), lang, currency, exchangeRates)}${suffix}`;
     if (maxPrice !== 'Any')
-      return `≤ ${money(Number(maxPrice), lang, currency)}${suffix}`;
+      return `≤ ${money(Number(maxPrice), lang, currency, exchangeRates)}${suffix}`;
     return '';
   })();
   const pageSize = 6;
@@ -1486,6 +1545,9 @@ export default function JFCarsApp({
                       </button>
                     ))}
                   </div>
+                  <small className="market-rate-status" aria-live="polite">
+                    {marketRateStatus}
+                  </small>
                 </section>
                 <div className="market-selector-actions">
                   <button
@@ -1746,7 +1808,12 @@ export default function JFCarsApp({
                       }
                     >
                       {index === 2
-                        ? `${m.under} ${compactMoney(20000000, lang, currency)}`
+                        ? `${m.under} ${compactMoney(
+                            20000000,
+                            lang,
+                            currency,
+                            exchangeRates,
+                          )}`
                         : label}
                     </button>
                   ))}
@@ -1917,6 +1984,7 @@ export default function JFCarsApp({
                   mode === 'rent' ? 60000 : 20000000,
                   lang,
                   currency,
+                  exchangeRates,
                 )}
                 {mode === 'rent' ? `/${f.day}` : ''}
               </button>
@@ -2203,13 +2271,19 @@ export default function JFCarsApp({
                             t.any,
                             ...[30000, 40000, 50000, 60000].map(
                               (amount) =>
-                                `${compactMoney(amount, lang, currency)}/${f.day}`,
+                                `${compactMoney(amount, lang, currency, exchangeRates)}/${f.day}`,
                             ),
                           ]
                         : [
                             t.any,
                             ...[15000000, 20000000, 25000000, 30000000].map(
-                              (amount) => compactMoney(amount, lang, currency),
+                              (amount) =>
+                                compactMoney(
+                                  amount,
+                                  lang,
+                                  currency,
+                                  exchangeRates,
+                                ),
                             ),
                           ]
                     }
@@ -2218,8 +2292,9 @@ export default function JFCarsApp({
                     summary={priceFilterSummary}
                   >
                     <PriceRangeInputs
-                      key={`${currency}:${mode}:${minPrice}:${maxPrice}`}
+                      key={`${currency}:${mode}:${minPrice}:${maxPrice}:${exchangeRates[currency]}`}
                       currency={currency}
+                      rates={exchangeRates}
                       minPrice={minPrice}
                       maxPrice={maxPrice}
                       minLabel={`${m.minPrice.replace('FCFA', currencyCode)}${mode === 'rent' ? ` / ${f.day}` : ''}`}
@@ -2546,8 +2621,13 @@ export default function JFCarsApp({
                             </div>
                             <h4>
                               {mode === 'rent'
-                                ? `${money(rentalRate(car), lang, currency)}/${f.day}`
-                                : money(car.price, lang, currency)}
+                                ? `${money(rentalRate(car), lang, currency, exchangeRates)}/${f.day}`
+                                : money(
+                                    car.price,
+                                    lang,
+                                    currency,
+                                    exchangeRates,
+                                  )}
                             </h4>
                           </div>
                           <div className="meta">
@@ -2767,6 +2847,7 @@ export default function JFCarsApp({
             }
             lang={lang}
             currency={currency}
+            currencyRates={exchangeRates}
             mode={mode}
           />
         </Suspense>
@@ -2782,6 +2863,7 @@ export default function JFCarsApp({
             user={user}
             lang={lang}
             currency={currency}
+            currencyRates={exchangeRates}
             mode={mode}
             whatsappNumber={storefrontContent.whatsappNumber}
             inCart={(mode === 'rent' ? rentalCart : cart).includes(
@@ -2844,6 +2926,7 @@ export default function JFCarsApp({
             setOrders={setUserOrders}
             lang={lang}
             currency={currency}
+            currencyRates={exchangeRates}
             onCurrencyChange={changeCurrency}
             onLanguageChange={changeLanguage}
             verificationStatus={verificationStatus}

@@ -190,6 +190,13 @@ button {
   flex: 0 0 auto;
   font-size: 18px;
 }
+.market-rate-status {
+  display: block;
+  margin-top: 9px;
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.4;
+}
 .market-selector-actions {
   display: flex;
   justify-content: flex-end;

@@ -48,6 +48,7 @@ import {
   profileCopy,
 } from '@/components/jfcars/config';
 import { useDialog } from '@/components/jfcars/useDialog';
+import type { CurrencyRates } from '@/lib/exchange-rates';
 export function AccountLayer({
   panel,
   close,
@@ -67,6 +68,7 @@ export function AccountLayer({
   setOrders,
   lang,
   currency,
+  currencyRates,
   onCurrencyChange,
   onLanguageChange,
   verificationStatus,
@@ -89,6 +91,7 @@ export function AccountLayer({
   setOrders: (orders: OrderRecord[]) => void;
   lang: Lang;
   currency: Currency;
+  currencyRates: CurrencyRates;
   onCurrencyChange: (currency: Currency) => void;
   onLanguageChange: (language: Lang) => void;
   verificationStatus?: 'success' | 'invalid' | null;
@@ -586,8 +589,8 @@ export function AccountLayer({
                         </small>
                         <strong>
                           {kind === 'rent'
-                            ? `${money(rentalRate(c), lang, currency)}/${f.day}`
-                            : money(amount, lang, currency)}
+                            ? `${money(rentalRate(c), lang, currency, currencyRates)}/${f.day}`
+                            : money(amount, lang, currency, currencyRates)}
                         </strong>
                         {kind === 'buy' && c.origin === 'abroad' && (
                           <small className="cart-import-note">
@@ -660,6 +663,7 @@ export function AccountLayer({
                           picked.reduce((n, item) => n + item.amount, 0),
                           lang,
                           currency,
+                          currencyRates,
                         )
                       : f.chooseDates}
                   </b>
@@ -856,6 +860,7 @@ export function AccountLayer({
                   emptyText={p.purchasesText}
                   lang={lang}
                   currency={currency}
+                  currencyRates={currencyRates}
                 />
               )}
               {profileTab === 'rentals' && (
@@ -867,6 +872,7 @@ export function AccountLayer({
                   emptyText={p.rentalsText}
                   lang={lang}
                   currency={currency}
+                  currencyRates={currencyRates}
                 />
               )}
               {profileTab === 'settings' && (
@@ -1053,12 +1059,14 @@ export function ProfileOrders({
   emptyText,
   lang,
   currency,
+  currencyRates,
 }: {
   orders: OrderRecord[];
   emptyTitle: string;
   emptyText: string;
   lang: Lang;
   currency: Currency;
+  currencyRates: CurrencyRates;
 }) {
   if (!orders.length)
     return <ProfileEmpty icon={Package} title={emptyTitle} text={emptyText} />;
@@ -1083,7 +1091,7 @@ export function ProfileOrders({
               </span>
             )}
           </div>
-          <strong>{money(order.total, lang, currency)}</strong>
+          <strong>{money(order.total, lang, currency, currencyRates)}</strong>
           <small>{orderStatus(order.status, lang)}</small>
         </article>
       ))}
